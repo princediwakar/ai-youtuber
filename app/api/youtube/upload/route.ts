@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     const privacyStatus = formData.get('privacyStatus') as string || 'unlisted'
     const playlistId = formData.get('playlistId') as string
     const position = formData.get('position') as string
+    const uploadMode = formData.get('uploadMode') as string || 'playlist'
     const relativePath = formData.get('relativePath') as string || ''
     const folderStructure = formData.get('folderStructure') as string || ''
     const allFileNames = formData.get('allFileNames') as string || '[]'
@@ -49,6 +50,11 @@ export async function POST(request: NextRequest) {
     const customTitlePrefix = formData.get('customTitlePrefix') as string || ''
     const customTitleSuffix = formData.get('customTitleSuffix') as string || ''
     const addPlaylistNavigation = formData.get('addPlaylistNavigation') === 'true'
+    
+    // YouTube Shorts detection
+    const isShort = formData.get('isShort') === 'true'
+    const duration = parseFloat(formData.get('duration') as string || '0')
+    const aspectRatio = parseFloat(formData.get('aspectRatio') as string || '1.78')
 
     console.log('Upload request data:', {
       fileName: videoFile?.name,
@@ -140,6 +146,16 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Optimize for YouTube Shorts
+    if (isShort && duration <= 60 && aspectRatio <= 1.0) {
+      description = generateShortsDescription(videoFile.name, description)
+      tags = [...tags, 'shorts', 'short', 'vertical', 'mobile'].slice(0, 10)
+      // Use Entertainment category for Shorts unless user explicitly chose a different category
+      if (finalCategory === '27') {
+        finalCategory = '24' // Entertainment category works well for Shorts
+      }
+    }
+    
     console.log('Final metadata for upload:', {
       title: finalTitle,
       descriptionLength: description.length,
@@ -189,8 +205,8 @@ export async function POST(request: NextRequest) {
 
       const videoId = response.data.id
 
-      // Add to playlist if specified
-      if (playlistId && videoId) {
+      // Add to playlist if specified (only for playlist mode)
+      if (uploadMode === 'playlist' && playlistId && videoId) {
         try {
           await youtube.playlistItems.insert({
             part: ['snippet'],
@@ -626,6 +642,20 @@ function generateFallbackDescription(fileName: string, folderName: string, relat
   description += `💡 Like and subscribe for more educational content!\n`
   description += `💬 Share your thoughts and questions in the comments below.\n\n`
   description += `#education #learning #content #tutorial #guide`
+  
+  return description
+}
+
+function generateShortsDescription(fileName: string, originalDescription: string): string {
+  const cleanName = fileName.replace(/\.[^/.]+$/, '').replace(/^\d+[\.\-_\s]*/, '')
+  
+  // Create a short, engaging description optimized for Shorts
+  let description = `🔥 ${cleanName}\n\n`
+  description += `📱 Quick tip in 60 seconds or less!\n\n`
+  description += `💡 Follow for more bite-sized content!\n`
+  description += `👍 Like if this helped you!\n`
+  description += `💬 What do you think? Comment below!\n\n`
+  description += `#Shorts #QuickTip #Viral #Mobile #Short`
   
   return description
 }

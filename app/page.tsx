@@ -18,6 +18,9 @@ interface VideoFile {
   videoId?: string
   error?: string
   thumbnail?: string
+  isShort?: boolean
+  duration?: number
+  aspectRatio?: number
 }
 
 interface UploadSettings {
@@ -25,6 +28,8 @@ interface UploadSettings {
   privacyStatus: 'private' | 'unlisted' | 'public'
   maxVideos: number
   contentType: string
+  // Upload mode
+  uploadMode: 'playlist' | 'individual'
   // Advanced settings
   madeForKids: boolean
   category: string
@@ -62,6 +67,8 @@ export default function HomePage() {
     privacyStatus: 'unlisted',
     maxVideos: 10,
     contentType: 'auto',
+    // Upload mode
+    uploadMode: 'playlist',
     // Advanced settings
     madeForKids: false,
     category: '27', // Education
@@ -519,7 +526,12 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
     }
   }
 
-  const generateVideoThumbnail = (file: File): Promise<string> => {
+  const analyzeVideo = (file: File): Promise<{
+    thumbnail: string
+    isShort: boolean
+    duration: number
+    aspectRatio: number
+  }> => {
     return new Promise((resolve) => {
       const video = document.createElement('video')
       const canvas = document.createElement('canvas')
@@ -541,20 +553,43 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
         
         // Convert to data URL
         const thumbnail = canvas.toDataURL('image/jpeg', 0.8)
-        resolve(thumbnail)
+        
+        // Calculate aspect ratio
+        const aspectRatio = video.videoWidth / video.videoHeight
+        
+        // Detect if it's a Short:
+        // - Duration <= 60 seconds
+        // - Vertical or square aspect ratio (≤ 1.0)
+        const isShort = video.duration <= 60 && aspectRatio <= 1.0
+        
+        resolve({
+          thumbnail,
+          isShort,
+          duration: video.duration,
+          aspectRatio
+        })
         
         // Clean up
         URL.revokeObjectURL(video.src)
       }
       
       video.onerror = () => {
-        // Return empty string if thumbnail generation fails
-        resolve('')
+        // Return defaults if analysis fails
+        resolve({
+          thumbnail: '',
+          isShort: false,
+          duration: 0,
+          aspectRatio: 16/9
+        })
         URL.revokeObjectURL(video.src)
       }
       
       video.src = URL.createObjectURL(file)
     })
+  }
+
+  const generateVideoThumbnail = (file: File): Promise<string> => {
+    return analyzeVideo(file).then(result => result.thumbnail)
   }
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -589,19 +624,23 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
     newVideos.sort((a, b) => a.path.localeCompare(b.path))
     setVideos(newVideos)
     
-    // Generate thumbnails for each video
+    // Analyze each video (thumbnails + Short detection)
     newVideos.forEach(async (video, index) => {
       try {
-        const thumbnail = await generateVideoThumbnail(video.file)
-        if (thumbnail) {
-          setVideos(prevVideos => 
-            prevVideos.map((v, i) => 
-              i === index ? { ...v, thumbnail } : v
-            )
+        const analysis = await analyzeVideo(video.file)
+        setVideos(prevVideos => 
+          prevVideos.map((v, i) => 
+            i === index ? { 
+              ...v, 
+              thumbnail: analysis.thumbnail,
+              isShort: analysis.isShort,
+              duration: analysis.duration,
+              aspectRatio: analysis.aspectRatio
+            } : v
           )
-        }
+        )
       } catch (error) {
-        console.error(`Failed to generate thumbnail for ${video.name}:`, error)
+        console.error(`Failed to analyze video ${video.name}:`, error)
       }
     })
     
@@ -614,6 +653,15 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
       const playlistName = rootFolder !== 'Root' ? rootFolder : extractPlaylistName(newVideos[0].name)
       setUploadSettings(prev => ({ ...prev, playlistName }))
     }
+
+    // Auto-detect if we should suggest individual upload mode for Shorts
+    setTimeout(() => {
+      const shortVideos = newVideos.filter(v => v.isShort).length
+      if (shortVideos > 0 && shortVideos === newVideos.length) {
+        // All videos are Shorts, suggest individual upload
+        setUploadSettings(prev => ({ ...prev, uploadMode: 'individual' }))
+      }
+    }, 2000) // Give time for video analysis to complete
 
     // Category suggestion will happen when upload starts, not when files are selected
   }, [uploadSettings.playlistName, uploadSettings.category])
@@ -793,53 +841,55 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
       const videosToProcess = videos.slice(0, uploadSettings.maxVideos)
       const processedVideos = await preProcessVideos(videosToProcess)
       
-      // Phase 2: Playlist management
-      let playlistId: string
+      // Phase 2: Playlist management (only for playlist mode)
+      let playlistId: string | null = null
       let existingVideos: Array<{videoId: string, title: string, position: number}> = []
       
-      if (uploadSettings.useExistingPlaylist) {
-        if (!uploadSettings.selectedPlaylistId) {
-          throw new Error('Please select an existing playlist')
-        }
-        playlistId = uploadSettings.selectedPlaylistId
-        setCurrentPlaylistId(playlistId)
-        
-        // Fetch existing videos for duplicate detection
-        await fetchExistingPlaylistVideos(playlistId)
-        existingVideos = existingPlaylistVideos
-      } else {
-        if (!uploadSettings.playlistName) {
-          throw new Error('Please enter a playlist name')
-        }
-        
-        const playlistDescription = await generatePlaylistDescription(videos)
-        const playlistResponse = await fetch('/api/youtube/playlist', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: uploadSettings.playlistName,
-            description: playlistDescription,
-            privacyStatus: uploadSettings.privacyStatus
+      if (uploadSettings.uploadMode === 'playlist') {
+        if (uploadSettings.useExistingPlaylist) {
+          if (!uploadSettings.selectedPlaylistId) {
+            throw new Error('Please select an existing playlist')
+          }
+          playlistId = uploadSettings.selectedPlaylistId
+          setCurrentPlaylistId(playlistId)
+          
+          // Fetch existing videos for duplicate detection
+          await fetchExistingPlaylistVideos(playlistId)
+          existingVideos = existingPlaylistVideos
+        } else {
+          if (!uploadSettings.playlistName) {
+            throw new Error('Please enter a playlist name')
+          }
+          
+          const playlistDescription = await generatePlaylistDescription(videos)
+          const playlistResponse = await fetch('/api/youtube/playlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: uploadSettings.playlistName,
+              description: playlistDescription,
+              privacyStatus: uploadSettings.privacyStatus
+            })
           })
-        })
 
-        if (!playlistResponse.ok) {
-          const error = await playlistResponse.json()
-          throw new Error(error.details || 'Failed to create playlist')
+          if (!playlistResponse.ok) {
+            const error = await playlistResponse.json()
+            throw new Error(error.details || 'Failed to create playlist')
+          }
+
+          const { playlistId: newPlaylistId } = await playlistResponse.json()
+          playlistId = newPlaylistId
+          setCurrentPlaylistId(playlistId)
+          
+          // Invalidate playlists cache when a new playlist is created
+          clearPlaylistCache()
+          console.log('Playlists cache invalidated due to new playlist creation')
         }
-
-        const { playlistId: newPlaylistId } = await playlistResponse.json()
-        playlistId = newPlaylistId
-        setCurrentPlaylistId(playlistId)
-        
-        // Invalidate playlists cache when a new playlist is created
-        clearPlaylistCache()
-        console.log('Playlists cache invalidated due to new playlist creation')
       }
 
       // Phase 3: Filter duplicates and prepare upload queue
       let finalVideos = processedVideos
-      if (uploadSettings.useExistingPlaylist && existingVideos.length > 0) {
+      if (uploadSettings.uploadMode === 'playlist' && uploadSettings.useExistingPlaylist && existingVideos.length > 0) {
         finalVideos = processedVideos.filter(({ video, metadata }) => {
           const isDuplicate = existingVideos.some(existing => 
             existing.title.trim().toLowerCase() === metadata.title.trim().toLowerCase()
@@ -853,7 +903,7 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
       const uploadQueue = finalVideos.map(({ video, metadata }, index) => ({
         video,
         metadata,
-        position: uploadSettings.useExistingPlaylist 
+        position: uploadSettings.uploadMode === 'playlist' && uploadSettings.useExistingPlaylist 
           ? (existingVideos.length + index) 
           : index
       }))
@@ -884,12 +934,18 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
             formData.append('description', metadata.description)
             formData.append('tags', JSON.stringify(metadata.tags))
             formData.append('category', metadata.category)
-            formData.append('playlistId', playlistId)
-            formData.append('position', position.toString())
+            if (playlistId) {
+              formData.append('playlistId', playlistId)
+              formData.append('position', position.toString())
+            }
             formData.append('privacyStatus', uploadSettings.privacyStatus)
             formData.append('madeForKids', uploadSettings.madeForKids.toString())
+            formData.append('uploadMode', uploadSettings.uploadMode)
+            formData.append('isShort', (video.isShort || false).toString())
+            formData.append('duration', (video.duration || 0).toString())
+            formData.append('aspectRatio', (video.aspectRatio || 1.78).toString())
 
-            const response = await fetch('/api/youtube/upload-optimized', {
+            const response = await fetch('/api/youtube/upload', {
               method: 'POST',
               body: formData
             })
@@ -1155,7 +1211,64 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
                 <div className="upload-card">
                   <h3 className="text-lg font-semibold mb-4">Upload Settings</h3>
 
+                  {/* Upload Mode Selection */}
+                  <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-md font-semibold text-gray-800">Upload Mode</h4>
+                      {videos.filter(v => v.isShort).length > 0 && (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                          {videos.filter(v => v.isShort).length} Short{videos.filter(v => v.isShort).length !== 1 ? 's' : ''} detected
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 mb-4">
+                      Choose how to organize your videos. Playlists are great for courses and series, while individual uploads work well for standalone content and Shorts.
+                    </p>
+
+                    <div className="flex items-center space-x-6 mb-4">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="uploadMode"
+                          value="playlist"
+                          checked={uploadSettings.uploadMode === 'playlist'}
+                          onChange={(e) => setUploadSettings(prev => ({ ...prev, uploadMode: e.target.value as 'playlist' | 'individual' }))}
+                          className="w-4 h-4 text-youtube border-gray-300 focus:ring-youtube"
+                        />
+                        <span className="ml-2 text-sm font-medium text-gray-700">Upload to Playlist</span>
+                      </label>
+                      
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="uploadMode"
+                          value="individual"
+                          checked={uploadSettings.uploadMode === 'individual'}
+                          onChange={(e) => setUploadSettings(prev => ({ ...prev, uploadMode: e.target.value as 'playlist' | 'individual' }))}
+                          className="w-4 h-4 text-youtube border-gray-300 focus:ring-youtube"
+                        />
+                        <span className="ml-2 text-sm font-medium text-gray-700">
+                          Individual Videos
+                          {videos.filter(v => v.isShort).length > 0 && uploadSettings.uploadMode === 'individual' && (
+                            <span className="ml-1 text-xs text-purple-600">(Recommended for Shorts)</span>
+                          )}
+                        </span>
+                      </label>
+                    </div>
+
+                    {uploadSettings.uploadMode === 'individual' && (
+                      <div className="p-3 bg-blue-100 rounded-lg">
+                        <p className="text-sm text-blue-800 font-medium mb-1">Individual Upload Mode</p>
+                        <p className="text-xs text-blue-700">
+                          Videos will be uploaded as standalone content without being added to any playlist. 
+                          This is perfect for YouTube Shorts, one-off videos, or content that doesn't belong to a series.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Playlist Selection Section */}
+                  {uploadSettings.uploadMode === 'playlist' && (
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-md font-semibold text-gray-800">Playlist Selection</h4>
@@ -1335,6 +1448,7 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
                       </div>
                     )}
                   </div>
+                  )}
 
                   <div className="grid md:grid-cols-2 gap-4">
                     {/* Privacy Setting */}
@@ -1618,8 +1732,10 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
                       onClick={handleOptimizedUpload}
                       disabled={
                         isUploading || 
-                        (!uploadSettings.useExistingPlaylist && !uploadSettings.playlistName) ||
-                        (uploadSettings.useExistingPlaylist && !uploadSettings.selectedPlaylistId)
+                        (uploadSettings.uploadMode === 'playlist' && (
+                          (!uploadSettings.useExistingPlaylist && !uploadSettings.playlistName) ||
+                          (uploadSettings.useExistingPlaylist && !uploadSettings.selectedPlaylistId)
+                        ))
                       }
                       className="btn-primary flex items-center"
                     >
@@ -1857,11 +1973,30 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
                           </div>
                           
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {video.name}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {video.name}
+                              </p>
+                              {video.isShort && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                  Short
+                                </span>
+                              )}
+                            </div>
                             <div className="flex items-center space-x-2 text-xs text-gray-500">
                               <span>{video.size}</span>
+                              {video.duration && (
+                                <>
+                                  <span>•</span>
+                                  <span>{Math.round(video.duration)}s</span>
+                                </>
+                              )}
+                              {video.aspectRatio && (
+                                <>
+                                  <span>•</span>
+                                  <span>{video.aspectRatio < 1 ? 'Vertical' : video.aspectRatio === 1 ? 'Square' : 'Landscape'}</span>
+                                </>
+                              )}
                               {video.relativePath && (
                                 <>
                                   <span>•</span>
