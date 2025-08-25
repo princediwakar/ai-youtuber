@@ -383,6 +383,43 @@ export default function HomePage() {
     return title || 'Untitled Video'
   }
 
+  const generateFallbackDescription = (filename: string, folder: string, relativePath: string): string => {
+    const baseFilename = filename.replace(/\.[^/.]+$/, '')
+    let description = `Video: ${baseFilename}`
+    
+    if (folder) {
+      description += `\nFrom: ${folder}`
+    }
+    
+    if (relativePath && relativePath !== filename) {
+      description += `\nPath: ${relativePath}`
+    }
+    
+    return description
+  }
+
+  const generateBasicTags = (filename: string, folder: string): string[] => {
+    const tags: string[] = []
+    
+    // Add filename-based tags
+    const baseFilename = filename.replace(/\.[^/.]+$/, '')
+    const words = baseFilename
+      .replace(/[\-_]+/g, ' ')
+      .replace(/^\d+[\.\-_\s]*/, '')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(word => word.length > 2)
+    
+    tags.push(...words.slice(0, 5)) // Take first 5 meaningful words
+    
+    // Add folder-based tag if available
+    if (folder) {
+      tags.push(folder.toLowerCase())
+    }
+    
+    return tags.filter(tag => tag.length > 2).slice(0, 10) // Max 10 tags
+  }
+
   const checkForDuplicateVideos = (videos: VideoFile[], existingVideos: Array<{videoId: string, title: string, position: number}>): VideoFile[] => {
     if (existingVideos.length === 0) return videos
     
