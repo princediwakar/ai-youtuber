@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { Upload, Youtube, FolderOpen, User, LogOut, CheckCircle, AlertCircle, Clock, FileVideo, Play, X } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
+import Link from 'next/link'
 
 interface VideoFile {
   file: File
@@ -1908,6 +1909,34 @@ ${videos.slice(0, 5).map((v, i) => `${i + 1}. ${v.name.replace(/^\d+[\.\-_\s]*/,
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div className="flex items-center space-x-4">
+              <p className="text-sm text-gray-600">
+                © {new Date().getFullYear()} Universal YouTube Uploader
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-6">
+              <Link 
+                href="/privacy" 
+                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Privacy Policy
+              </Link>
+              <Link 
+                href="/terms" 
+                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Terms of Service
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
