@@ -3,7 +3,8 @@ import OpenAI from 'openai';
 import { createQuizJob } from '@/lib/database';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: 'https://api.deepseek.com'
 });
 
 export async function POST(request: NextRequest) {
@@ -102,7 +103,7 @@ Make sure the question is appropriate for a 15-20 second video format and tests 
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "deepseek-chat",
       messages: [{ role: "user", content: fullPrompt }],
       temperature: 0.7,
       max_tokens: 500

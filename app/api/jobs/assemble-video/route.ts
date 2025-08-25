@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPendingJobs, updateJob } from '@/lib/database';
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { tmpdir } from 'os';
 
-// Set the ffmpeg binary path
-if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic);
-}
+// Set FFmpeg path for production
+const correctPath = path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
+ffmpeg.setFfmpegPath(correctPath);
+console.log('FFmpeg path set to:', correctPath);
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +21,7 @@ export async function POST(request: NextRequest) {
     console.log('Starting video assembly batch...');
 
     // Get jobs at step 3 (assembly_pending)
-    const jobs = await getPendingJobs(3, 2); // Process 2 jobs at a time (video processing is heavy)
+    const jobs = await getPendingJobs(3, 2); // Process 2 jobs at a time
     
     if (jobs.length === 0) {
       return NextResponse.json({ 
@@ -38,7 +37,7 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`Assembling video for job ${job.id} - ${job.test_type} ${job.subject}`);
 
-        // Assemble video from frames
+        // Create video from frames using FFmpeg
         const videoBuffer = await assembleVideo(job.data.frames, job.id);
         
         // Update job to next step with video data
@@ -47,7 +46,7 @@ export async function POST(request: NextRequest) {
           status: 'upload_pending',
           data: { 
             ...job.data, 
-            videoBuffer: videoBuffer.toString('base64') // Store as base64 temporarily
+            videoBuffer: videoBuffer.toString('base64') 
           }
         });
         
@@ -82,148 +81,79 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function assembleVideo(frameStrings: string[], jobId: string): Promise<Buffer> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Create temporary directory for this job
-      const tempDir = path.join('/tmp', `quiz-video-${jobId}-${uuidv4()}`);
-      fs.mkdirSync(tempDir, { recursive: true });
+async function assembleVideo(frames: string[], jobId: string): Promise<Buffer> {
+  const tempDir = path.join(tmpdir(), `quiz-video-${jobId}-${Date.now()}`);
+  await fs.mkdir(tempDir, { recursive: true });
 
-      console.log(`Created temp directory: ${tempDir}`);
-
-      // Convert base64 frames back to image files
-      const framePaths: string[] = [];
-      for (let i = 0; i < frameStrings.length; i++) {
-        const framePath = path.join(tempDir, `frame${i}.png`);
-        const frameBuffer = Buffer.from(frameStrings[i], 'base64');
-        fs.writeFileSync(framePath, frameBuffer);
-        framePaths.push(framePath);
-        console.log(`Saved frame ${i} to ${framePath}`);
-      }
-
-      // Create input list file for ffmpeg
-      const inputListPath = path.join(tempDir, 'input.txt');
-      const inputList = [
-        `file '${framePaths[0]}'`, // Question frame - 3 seconds
-        'duration 3',
-        `file '${framePaths[1]}'`, // Options frame - 8 seconds  
-        'duration 8',
-        `file '${framePaths[2]}'`, // Thinking frame - 3 seconds
-        'duration 3',
-        `file '${framePaths[3]}'`, // Answer frame - 6 seconds
-        'duration 6'
-      ].join('\n');
-      
-      fs.writeFileSync(inputListPath, inputList);
-      console.log('Created input list file');
-
-      const outputPath = path.join(tempDir, 'quiz.mp4');
-
-      // Use ffmpeg to create video from frames with specific timing
-      ffmpeg()
-        .input(inputListPath)
-        .inputOptions(['-f', 'concat', '-safe', '0'])
-        .outputOptions([
-          '-c:v libx264',        // H.264 codec for compatibility
-          '-pix_fmt yuv420p',    // Pixel format for web compatibility
-          '-r 30',               // 30 FPS
-          '-s 1080x1920',        // Vertical resolution for Shorts
-          '-t 20',               // Total duration: 20 seconds
-          '-movflags +faststart' // Optimize for web streaming
-        ])
-        .output(outputPath)
-        .on('start', (commandLine) => {
-          console.log('FFmpeg started with command:', commandLine);
-        })
-        .on('progress', (progress) => {
-          console.log(`Processing: ${progress.percent}% done`);
-        })
-        .on('end', () => {
-          console.log('FFmpeg processing finished');
-          
-          try {
-            // Read the generated video file
-            const videoBuffer = fs.readFileSync(outputPath);
-            console.log(`Generated video size: ${videoBuffer.length} bytes`);
-            
-            // Cleanup temporary files
-            cleanup(tempDir);
-            
-            resolve(videoBuffer);
-          } catch (readError) {
-            console.error('Failed to read generated video:', readError);
-            cleanup(tempDir);
-            reject(readError);
-          }
-        })
-        .on('error', (error) => {
-          console.error('FFmpeg error:', error);
-          cleanup(tempDir);
-          reject(new Error(`Video assembly failed: ${error.message}`));
-        })
-        .run();
-
-    } catch (error) {
-      console.error('Video assembly setup failed:', error);
-      reject(error);
-    }
-  });
-}
-
-function cleanup(tempDir: string) {
   try {
-    if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-      console.log(`Cleaned up temp directory: ${tempDir}`);
+    console.log(`Creating video from ${frames.length} frames in ${tempDir}`);
+
+    // Save frames as images
+    const imagePaths: string[] = [];
+    for (let i = 0; i < frames.length; i++) {
+      const frameData = frames[i].replace(/^data:image\/png;base64,/, '');
+      const imagePath = path.join(tempDir, `frame_${i.toString().padStart(3, '0')}.png`);
+      await fs.writeFile(imagePath, frameData, 'base64');
+      imagePaths.push(imagePath);
     }
-  } catch (error) {
-    console.error('Cleanup failed:', error);
-  }
-}
 
-// Alternative simpler approach using image slideshow
-async function assembleVideoSimple(frameStrings: string[], jobId: string): Promise<Buffer> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const tempDir = path.join('/tmp', `quiz-simple-${jobId}-${uuidv4()}`);
-      fs.mkdirSync(tempDir, { recursive: true });
-
-      // Save frames
-      for (let i = 0; i < frameStrings.length; i++) {
-        const framePath = path.join(tempDir, `frame${i.toString().padStart(2, '0')}.png`);
-        const frameBuffer = Buffer.from(frameStrings[i], 'base64');
-        fs.writeFileSync(framePath, frameBuffer);
-      }
-
-      const outputPath = path.join(tempDir, 'quiz.mp4');
-
-      // Create slideshow with custom frame durations
+    // Create video using FFmpeg
+    const outputPath = path.join(tempDir, 'output.mp4');
+    
+    await new Promise<void>((resolve, reject) => {
+      // Create video from images using simpler FFmpeg pattern input
+      const framePattern = path.join(tempDir, 'frame_%03d.png');
+      
       ffmpeg()
-        .input(path.join(tempDir, 'frame%02d.png'))
+        .input(framePattern)
         .inputOptions([
-          '-framerate', '1/3'  // 1 frame every 3 seconds by default
+          '-framerate 1/3', // 3 seconds per frame
+          '-loop 1'
         ])
         .outputOptions([
           '-c:v libx264',
           '-pix_fmt yuv420p',
-          '-s 1080x1920',
-          '-r 30',
-          '-movflags +faststart'
+          '-r 30', // 30 fps output
+          '-s 1080x1920', // YouTube Shorts resolution
+          '-t 12' // Maximum 12 seconds
         ])
         .output(outputPath)
-        .on('end', () => {
-          const videoBuffer = fs.readFileSync(outputPath);
-          cleanup(tempDir);
-          resolve(videoBuffer);
+        .on('start', (commandLine) => {
+          console.log('FFmpeg command:', commandLine);
         })
-        .on('error', (error) => {
-          cleanup(tempDir);
-          reject(error);
+        .on('end', () => {
+          console.log(`Video assembly completed: ${outputPath}`);
+          resolve();
+        })
+        .on('error', (err) => {
+          console.error('FFmpeg error:', err);
+          reject(err);
         })
         .run();
+    });
 
-    } catch (error) {
-      reject(error);
+    // Read the generated video
+    const videoBuffer = await fs.readFile(outputPath);
+    console.log(`Video file size: ${(videoBuffer.length / 1024 / 1024).toFixed(2)} MB`);
+
+    // Also save video to persistent directory for testing
+    const persistentDir = path.join(process.cwd(), 'generated-videos');
+    await fs.mkdir(persistentDir, { recursive: true });
+    const persistentPath = path.join(persistentDir, `quiz-${jobId}-${Date.now()}.mp4`);
+    await fs.copyFile(outputPath, persistentPath);
+    console.log(`Video also saved to: ${persistentPath}`);
+
+    return videoBuffer;
+
+  } finally {
+    // Cleanup temporary files
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      console.warn('Failed to cleanup temp directory:', cleanupError);
     }
-  });
+  }
 }
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;

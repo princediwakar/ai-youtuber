@@ -11,6 +11,7 @@ export function getPool(): Pool {
     });
   }
   return pool;
+
 }
 
 // Quiz job types

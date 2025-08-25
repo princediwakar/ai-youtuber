@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['googleapis']
+    serverComponentsExternalPackages: ['googleapis', 'canvas', 'fluent-ffmpeg', 'pg']
   },
   env: {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,

@@ -90,25 +90,25 @@ Use the test buttons to verify each pipeline step.
 2. Create 4 cron jobs with these settings:
 
 **Job 1: Question Generation**
-- URL: `https://your-app.vercel.app/api/jobs/generate-quiz`
+- URL: `https://youtube-playlist-uploader.vercel.app/api/jobs/generate-quiz`
 - Schedule: `*/30 * * * *` (every 30 minutes)
 - Method: POST
 - Headers: `Authorization: Bearer YOUR_CRON_SECRET`
 
 **Job 2: Frame Creation** 
-- URL: `https://your-app.vercel.app/api/jobs/create-frames`
+- URL: `https://youtube-playlist-uploader.vercel.app/api/jobs/create-frames`
 - Schedule: `5,35 * * * *` (5 minutes after Job 1)
 - Method: POST  
 - Headers: `Authorization: Bearer YOUR_CRON_SECRET`
 
 **Job 3: Video Assembly**
-- URL: `https://your-app.vercel.app/api/jobs/assemble-video`
+- URL: `https://youtube-playlist-uploader.vercel.app/api/jobs/assemble-video`
 - Schedule: `10,40 * * * *` (10 minutes after Job 1)
 - Method: POST
 - Headers: `Authorization: Bearer YOUR_CRON_SECRET`
 
 **Job 4: YouTube Upload**
-- URL: `https://your-app.vercel.app/api/jobs/upload-quiz-videos`
+- URL: `https://youtube-playlist-uploader.vercel.app/api/jobs/upload-quiz-videos`
 - Schedule: `15,45 * * * *` (15 minutes after Job 1)
 - Method: POST
 - Headers: `Authorization: Bearer YOUR_CRON_SECRET`
