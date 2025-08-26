@@ -108,13 +108,27 @@ async function assembleVideo(frames: string[], jobId: string, question: any): Pr
     
     console.log(`Frame durations: ${frame1Duration}s, ${frame2Duration}s, ${frame3Duration}s (total: ${totalDuration}s)`);
     
-    // Check for background audio file
-    const backgroundAudioPath = path.join(process.cwd(), 'public', 'audio', 'background.mp3');
-    const hasBackgroundAudio = await fs.access(backgroundAudioPath).then(() => true).catch(() => false);
+    // Check for background audio files (with priority order)
+    const audioOptions = [
+      'uplifting-ambient.mp3'            // Original background track (fallback)
+    ];
     
-    if (hasBackgroundAudio) {
-      console.log('Background audio found, adding to video');
-    } else {
+    let backgroundAudioPath = '';
+    let hasBackgroundAudio = false;
+    
+    // Try audio files in priority order
+    for (const audioFile of audioOptions) {
+      const audioPath = path.join(process.cwd(), 'public', 'audio', audioFile);
+      const exists = await fs.access(audioPath).then(() => true).catch(() => false);
+      if (exists) {
+        backgroundAudioPath = audioPath;
+        hasBackgroundAudio = true;
+        console.log(`Selected background audio: ${audioFile}`);
+        break;
+      }
+    }
+    
+    if (!hasBackgroundAudio) {
       console.log('No background audio found, creating video without audio');
     }
     
