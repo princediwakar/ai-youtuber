@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 // Initialize DeepSeek client using OpenAI SDK
 const deepseek = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: 'https://api.deepseek.com/v1'
+  baseURL: 'https://api.deepseek.com/'
 })
 
 export interface ContentAnalysis {

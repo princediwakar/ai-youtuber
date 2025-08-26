@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         console.log(`Assembling video for job ${job.id} - ${job.test_type} ${job.subject}`);
 
         // Create video from frames using FFmpeg
-        const videoBuffer = await assembleVideo(job.data.frames, job.id);
+        const videoBuffer = await assembleVideo(job.data.frames, job.id, job.data.question);
         
         // Update job to next step with video data
         await updateJob(job.id, {
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function assembleVideo(frames: string[], jobId: string): Promise<Buffer> {
+async function assembleVideo(frames: string[], jobId: string, question: any): Promise<Buffer> {
   const tempDir = path.join(tmpdir(), `quiz-video-${jobId}-${Date.now()}`);
   await fs.mkdir(tempDir, { recursive: true });
 
@@ -97,25 +97,43 @@ async function assembleVideo(frames: string[], jobId: string): Promise<Buffer> {
       imagePaths.push(imagePath);
     }
 
-    // Create video using FFmpeg
+    // Create video using FFmpeg with dynamic timing
     const outputPath = path.join(tempDir, 'output.mp4');
     
+    // Calculate durations for each frame
+    const frame1Duration = getFrameDuration(question, 1);
+    const frame2Duration = getFrameDuration(question, 2);
+    const frame3Duration = getFrameDuration(question, 3);
+    const totalDuration = frame1Duration + frame2Duration + frame3Duration;
+    
+    console.log(`Frame durations: ${frame1Duration}s, ${frame2Duration}s, ${frame3Duration}s (total: ${totalDuration}s)`);
+    
     await new Promise<void>((resolve, reject) => {
-      // Create video from images using simpler FFmpeg pattern input
-      const framePattern = path.join(tempDir, 'frame_%03d.png');
+      const command = ffmpeg();
       
-      ffmpeg()
-        .input(framePattern)
-        .inputOptions([
-          '-framerate 1/3', // 3 seconds per frame
-          '-loop 1'
-        ])
+      // Add each frame as separate input
+      imagePaths.forEach((imagePath) => {
+        command.input(imagePath);
+      });
+      
+      command
+        .inputOptions(['-loop 1'])
         .outputOptions([
           '-c:v libx264',
           '-pix_fmt yuv420p',
           '-r 30', // 30 fps output
           '-s 1080x1920', // YouTube Shorts resolution
-          '-t 12' // Maximum 12 seconds
+          // Create filter complex for dynamic timing
+          '-filter_complex', 
+          `[0:v]scale=1080:1920,setpts=PTS-STARTPTS,loop=loop=-1:size=1:start=0[f0];` +
+          `[1:v]scale=1080:1920,setpts=PTS-STARTPTS,loop=loop=-1:size=1:start=0[f1];` +
+          `[2:v]scale=1080:1920,setpts=PTS-STARTPTS,loop=loop=-1:size=1:start=0[f2];` +
+          `[f0]trim=duration=${frame1Duration}[v0];` +
+          `[f1]trim=duration=${frame2Duration}[v1];` +
+          `[f2]trim=duration=${frame3Duration}[v2];` +
+          `[v0][v1][v2]concat=n=3:v=1:a=0[outv]`,
+          '-map', '[outv]',
+          '-t', totalDuration.toString()
         ])
         .output(outputPath)
         .on('start', (commandLine) => {
@@ -152,6 +170,21 @@ async function assembleVideo(frames: string[], jobId: string): Promise<Buffer> {
     } catch (cleanupError) {
       console.warn('Failed to cleanup temp directory:', cleanupError);
     }
+  }
+}
+
+// Helper function to determine frame duration based on content length
+function getFrameDuration(question: any, frameNumber: number): number {
+  if (frameNumber === 1) {
+    // Frame 1: Question + Options - dynamic based on content length
+    const questionLength = (question?.question?.length || 0);
+    if (questionLength < 100) return 5;      // Short questions: 5 seconds
+    if (questionLength < 200) return 7;      // Medium questions: 7 seconds
+    return 9;                                // Long questions: 9 seconds
+  } else if (frameNumber === 2) {
+    return 4;  // Frame 2: Answer reveal - 4 seconds
+  } else {
+    return 7;  // Frame 3: Explanation - 7 seconds
   }
 }
 
