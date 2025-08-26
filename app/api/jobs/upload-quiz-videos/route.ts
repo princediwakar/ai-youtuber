@@ -246,10 +246,17 @@ async function uploadToYouTubeWithRetry(videoBuffer: Buffer, metadata: any, maxR
 
 async function uploadToYouTube(videoBuffer: Buffer, metadata: any): Promise<string> {
   try {
+    // Determine the redirect URI based on environment
+    const redirectUri = process.env.NEXTAUTH_URL 
+      ? `${process.env.NEXTAUTH_URL}/api/auth/callback/google`
+      : process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:3000/api/auth/callback/google'
+        : (() => { throw new Error('NEXTAUTH_URL must be set in production environment'); })();
+
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      'http://localhost:3000/api/auth/callback/google'
+      redirectUri
     );
 
     // Set the refresh token from environment
