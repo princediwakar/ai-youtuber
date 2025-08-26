@@ -46,7 +46,8 @@ npm run dev
 - `/api/youtube/` - YouTube API integration:
   - `upload`, `upload-optimized` - Video uploads
   - `analyze-playlist`, `analyze-video` - Content analysis
-  - `playlist`, `playlist-videos` - Playlist management
+  - `playlist` - Create and list user playlists
+  - `playlist-videos` - List videos within a specific playlist
   - `suggest-category` - Category suggestions
 - `/api/quiz-dashboard/` - Dashboard data
 

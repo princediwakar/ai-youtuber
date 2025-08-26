@@ -12,8 +12,8 @@ export async function GET() {
     const recentJobsQuery = `
       SELECT 
         id,
-        test_type,
-        subject,
+        persona,
+        category,
         difficulty,
         status,
         step,

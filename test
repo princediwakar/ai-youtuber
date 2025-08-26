@@ -1,4 +1,0 @@
- https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube%20https%3A%2F%2Fwww
-  .googleapis.com%2Fauth%2Fyoutube.upload%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fyoutube.force-ssl&prompt=consent&response_type=code&clie
-  nt_id=841911259733-p7kbb8rbsc49s7j64cndir1cv0dsr32f.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fauth%2Fcal
-  lback%2Fgoogle

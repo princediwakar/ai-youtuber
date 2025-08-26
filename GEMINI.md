@@ -69,10 +69,9 @@ The application exposes several API endpoints under `/api/`.
     *   `assemble-video`: Compiles frames into a video file.
     *   `upload-quiz-videos`: Uploads the final video to YouTube.
 *   **/api/youtube/**: Interacts with the YouTube API for the uploader functionality.
-    *   `add-navigation`: (Purpose to be clarified)
     *   `analyze-playlist`: Analyzes the content of a YouTube playlist.
     *   `analyze-video`: Analyzes a single video's metadata.
-    *   `playlist`: Fetches user's playlists.
+    *   `playlist`: Creates and fetches user's playlists.
     *   `playlist-videos`: Fetches videos within a specific playlist.
     *   `suggest-category`: Suggests a YouTube category for a video.
     *   `upload`: Handles direct video uploads.

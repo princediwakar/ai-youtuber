@@ -12,8 +12,8 @@ interface JobStats {
 
 interface QuizJob {
   id: string;
-  test_type: string;
-  subject: string;
+  persona: string;
+  category: string;
   difficulty: string;
   status: string;
   step: number;
@@ -257,7 +257,7 @@ export default function QuizDashboard() {
                       {job.id.slice(-8)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {job.test_type} {job.subject}
+                      {job.persona} {job.category}
                       <div className="text-xs text-gray-500">{job.difficulty}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

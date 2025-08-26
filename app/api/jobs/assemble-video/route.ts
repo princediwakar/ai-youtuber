@@ -110,7 +110,12 @@ async function assembleVideo(frames: string[], jobId: string, question: any): Pr
     
     // Check for background audio files (with priority order)
     const audioOptions = [
-      'uplifting-ambient.mp3'            // Original background track (fallback)
+      '1.mp3',
+      '2.mp3',
+      '3.mp3',
+      '4.mp3',
+      '5.mp3',
+      '6.mp3',            // Original background track (fallback)
     ];
     
     let backgroundAudioPath = '';
