@@ -13,7 +13,8 @@ export const authOptions: NextAuthOptions = {
             'email',
             'profile',
             'https://www.googleapis.com/auth/youtube',
-            'https://www.googleapis.com/auth/youtube.upload'
+            'https://www.googleapis.com/auth/youtube.upload',
+            'https://www.googleapis.com/auth/youtube.force-ssl'
           ].join(' '),
           prompt: 'consent',
           access_type: 'offline',
