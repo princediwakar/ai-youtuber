@@ -171,6 +171,18 @@ export async function markJobCompleted(jobId: string, youtubeVideoId: string, me
   }
 }
 
+export async function deleteAllJobs(): Promise<number> {
+  const pool = getPool();
+  
+  // Delete all uploaded videos first (due to foreign key constraint)
+  await pool.query('DELETE FROM uploaded_videos');
+  
+  // Delete all quiz jobs
+  const result = await pool.query('DELETE FROM quiz_jobs');
+  
+  return result.rowCount || 0;
+}
+
 export async function getJobStats(): Promise<{
   total: number;
   pending: number;

@@ -97,7 +97,7 @@ async function assembleVideo(frames: string[], jobId: string, question: any): Pr
       imagePaths.push(imagePath);
     }
 
-    // Create video using FFmpeg with dynamic timing
+    // Create video using FFmpeg with dynamic timing and background audio
     const outputPath = path.join(tempDir, 'output.mp4');
     
     // Calculate durations for each frame
@@ -108,32 +108,57 @@ async function assembleVideo(frames: string[], jobId: string, question: any): Pr
     
     console.log(`Frame durations: ${frame1Duration}s, ${frame2Duration}s, ${frame3Duration}s (total: ${totalDuration}s)`);
     
+    // Check for background audio file
+    const backgroundAudioPath = path.join(process.cwd(), 'public', 'audio', 'background.mp3');
+    const hasBackgroundAudio = await fs.access(backgroundAudioPath).then(() => true).catch(() => false);
+    
+    if (hasBackgroundAudio) {
+      console.log('Background audio found, adding to video');
+    } else {
+      console.log('No background audio found, creating video without audio');
+    }
+    
     await new Promise<void>((resolve, reject) => {
       const command = ffmpeg();
       
-      // Add each frame as separate input
+      // Add each frame as separate input with loop option
       imagePaths.forEach((imagePath) => {
-        command.input(imagePath);
+        command.input(imagePath).inputOptions(['-loop 1']);
       });
       
+      // Add background audio if available (without loop option)
+      if (hasBackgroundAudio) {
+        command.input(backgroundAudioPath);
+      }
+      
+      const videoFilterComplex = 
+        `[0:v]scale=1080:1920,setpts=PTS-STARTPTS[f0];` +
+        `[1:v]scale=1080:1920,setpts=PTS-STARTPTS[f1];` +
+        `[2:v]scale=1080:1920,setpts=PTS-STARTPTS[f2];` +
+        `[f0]trim=duration=${frame1Duration}[v0];` +
+        `[f1]trim=duration=${frame2Duration}[v1];` +
+        `[f2]trim=duration=${frame3Duration}[v2];` +
+        `[v0][v1][v2]concat=n=3:v=1:a=0[outv]`;
+      
+      const audioFilterComplex = hasBackgroundAudio ? 
+        `[3:a]volume=0.3,afade=t=in:st=0:d=1,afade=t=out:st=${totalDuration-1}:d=1,aloop=loop=-1:size=2e+09[bg_audio]` : '';
+      
+      const fullFilterComplex = hasBackgroundAudio ? 
+        videoFilterComplex + ';' + audioFilterComplex : videoFilterComplex;
+      
       command
-        .inputOptions(['-loop 1'])
         .outputOptions([
           '-c:v libx264',
+          '-c:a aac',
+          '-b:a 128k',
           '-pix_fmt yuv420p',
           '-r 30', // 30 fps output
           '-s 1080x1920', // YouTube Shorts resolution
-          // Create filter complex for dynamic timing
-          '-filter_complex', 
-          `[0:v]scale=1080:1920,setpts=PTS-STARTPTS,loop=loop=-1:size=1:start=0[f0];` +
-          `[1:v]scale=1080:1920,setpts=PTS-STARTPTS,loop=loop=-1:size=1:start=0[f1];` +
-          `[2:v]scale=1080:1920,setpts=PTS-STARTPTS,loop=loop=-1:size=1:start=0[f2];` +
-          `[f0]trim=duration=${frame1Duration}[v0];` +
-          `[f1]trim=duration=${frame2Duration}[v1];` +
-          `[f2]trim=duration=${frame3Duration}[v2];` +
-          `[v0][v1][v2]concat=n=3:v=1:a=0[outv]`,
+          '-filter_complex', fullFilterComplex,
           '-map', '[outv]',
-          '-t', totalDuration.toString()
+          ...(hasBackgroundAudio ? ['-map', '[bg_audio]'] : []),
+          '-t', totalDuration.toString(),
+          '-shortest'
         ])
         .output(outputPath)
         .on('start', (commandLine) => {

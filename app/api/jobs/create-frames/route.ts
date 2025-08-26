@@ -1,27 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPendingJobs, updateJob } from '@/lib/database';
-import puppeteer from 'puppeteer';
+import puppeteer, { Page } from 'puppeteer';
 import { promises as fs } from 'fs';
 import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
-    // Auth check using CRON_SECRET
+    // Authentication check using CRON_SECRET
     const authHeader = request.headers.get('Authorization');
     if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    console.log('Starting PUPPETEER HTML quiz video frame creation...');
+    console.log('Starting optimized video frame creation...');
 
-    // Get jobs at step 2 (frames_pending)
+    // Fetch pending jobs for frame creation (step 2)
     const jobs = await getPendingJobs(2, 1);
     
     if (jobs.length === 0) {
       return NextResponse.json({ 
         success: true, 
         processed: 0, 
-        message: 'No jobs pending frame creation' 
+        message: 'No jobs pending frame creation.' 
       });
     }
 
@@ -29,11 +29,12 @@ export async function POST(request: NextRequest) {
 
     for (const job of jobs) {
       try {
-        console.log(`Creating PUPPETEER HTML frames for job ${job.id} - ${job.test_type} ${job.subject}`);
+        console.log(`Creating frames for job ${job.id} - ${job.test_type} ${job.subject}`);
 
-        // Create frames using Puppeteer + HTML
-        const frames = await createPuppeteerFrames(job.data.question, job.test_type, job.subject);
+        // Generate frames using the improved Puppeteer and HTML/CSS logic
+        const frames = await createOptimizedFrames(job.data.question, job.test_type, job.subject);
         
+        // Update the job to the next step (assembly_pending)
         await updateJob(job.id, {
           step: 3,
           status: 'assembly_pending',
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
         });
         
         processedJobs.push({ id: job.id, test_type: job.test_type, subject: job.subject });
-        console.log(`PUPPETEER HTML frame creation completed for job ${job.id}`);
+        console.log(`Frame creation completed for job ${job.id}`);
 
       } catch (error) {
         console.error(`Failed to create frames for job ${job.id}:`, error);
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Frame creation failed:', error);
+    console.error('Frame creation process failed:', error);
     return NextResponse.json(
       { success: false, error: 'Frame creation failed' },
       { status: 500 }
@@ -70,7 +71,41 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function createPuppeteerFrames(question: any, testType: string, subject: string): Promise<string[]> {
+/**
+ * A robust helper function to generate a single frame.
+ * It sets content, adjusts fonts, takes a screenshot, and saves a debug file.
+ * @param page - The Puppeteer Page object.
+ * @param htmlContent - The full HTML string for the frame.
+ * @param frameName - A descriptive name for the frame (e.g., 'question').
+ * @param debugDir - The directory to save debug images.
+ * @returns {Promise<string>} A promise that resolves to the base64 encoded PNG image string.
+ */
+async function generateFrame(page: Page, htmlContent: string, frameName: string, debugDir: string): Promise<string> {
+    console.log(`Generating frame: ${frameName}...`);
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    await page.evaluate('adjustFontSizes()');
+    
+    // Directly get the base64 encoded string from Puppeteer
+    const screenshotBase64 = await page.screenshot({ type: 'png', encoding: 'base64' });
+    
+    const framePath = path.join(debugDir, `${Date.now()}-frame-${frameName}.png`);
+    // Save the base64 string as an image file
+    await fs.writeFile(framePath, screenshotBase64, 'base64');
+    console.log(`Successfully saved frame to: ${framePath}`);
+    
+    return `data:image/png;base64,${screenshotBase64}`;
+}
+
+
+/**
+ * Creates video frames using Puppeteer by rendering dynamic HTML.
+ * This version uses a new browser page for each frame to ensure reliability.
+ * @param {object} question - The question data object.
+ * @param {string} testType - The type of test (e.g., 'GRE').
+ * @param {string} subject - The subject of the test (e.g., 'Verbal').
+ * @returns {Promise<string[]>} A promise that resolves to an array of base64 encoded PNG image strings.
+ */
+async function createOptimizedFrames(question: any, testType: string, subject: string): Promise<string[]> {
   const frames: string[] = [];
   const width = 1080;
   const height = 1920;
@@ -78,7 +113,7 @@ async function createPuppeteerFrames(question: any, testType: string, subject: s
   let browser;
   
   try {
-    console.log('Launching Puppeteer for HTML frame generation...');
+    console.log('Launching Puppeteer for frame generation...');
     
     const debugDir = path.join(process.cwd(), 'debug-frames');
     await fs.mkdir(debugDir, { recursive: true });
@@ -87,285 +122,185 @@ async function createPuppeteerFrames(question: any, testType: string, subject: s
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security'],
     });
-    
-    const page = await browser.newPage();
-    await page.setViewport({ width, height });
 
+    // Helper function to escape HTML special characters
+    const escapeHtml = (text: string | undefined | null) => {
+        if (text === null || typeof text === 'undefined') return '';
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;").replace(/`/g, "&#96;");
+    };
+
+    // Normalize and escape data
     let options = question?.options || {};
     if (Array.isArray(options)) {
-      options = { A: options[0] || 'Option A', B: options[1] || 'Option B', C: options[2] || 'Option C', D: options[3] || 'Option D' };
+      options = { A: options[0], B: options[1], C: options[2], D: options[3] };
     }
     const correctAnswer = question?.answer || 'A';
 
-    // --- Common CSS and Head ---
+    const escapedQuestionText = escapeHtml(question?.question);
+    const escapedExplanationText = escapeHtml(question?.explanation);
+    const escapedOptions = {
+        A: escapeHtml(options.A), B: escapeHtml(options.B),
+        C: escapeHtml(options.C), D: escapeHtml(options.D),
+    };
+
+    // --- Common Head with Dynamic Font Sizing Script ---
     const commonHead = `
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
           :root {
-            --base-font-size: 40px; /* Base for dynamic scaling; adjust here to resize all text proportionally */
-            --label-multiplier: 1.25; /* e.g., 50px */
-            --footer-multiplier: 1; /* e.g., 40px */
-            --heading-multiplier: 3.5; /* e.g., 140px for main headings */
-            --subheading-multiplier: 2.5; /* e.g., 100px for secondary titles */
-            --body-multiplier: 1.5; /* e.g., 60px for questions/explanations */
-            --option-multiplier: 1.25; /* e.g., 50px for options */
-            --line-height-body: 1.5; /* Standard for readability */
-            --line-height-heading: 1.2; /* Tighter for headings */
+            --bg-gradient: linear-gradient(135deg, #FF6FD8 0%, #3813C2 50%, #2E8BFD 100%);
+            --card-bg: rgba(255, 255, 255, 0.15);
+            --text-light: #ffffff;
+            --correct-gradient: linear-gradient(90deg, #38E54D, #1FAA59);
+            --radius: 25px;
+            --padding-container: 60px;
           }
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
-            width: ${width}px;
-            height: ${height}px;
-            font-family: 'Inter', sans-serif;
-            color: #1A202C;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            background: linear-gradient(135deg, #6B7280 0%, #1A202C 100%);
-            animation: fadeIn 0.5s ease-in;
+            width: ${width}px; height: ${height}px; font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient); color: var(--text-light);
+            display: flex; flex-direction: column; justify-content: space-between;
+            align-items: center; padding: 40px; overflow: hidden;
           }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          .top-label {
-            padding: 40px;
-            font-size: calc(var(--base-font-size) * var(--label-multiplier));
-            line-height: var(--line-height-heading);
-            font-weight: 600;
-            color: #FFFFFF;
-            background: linear-gradient(90deg, #4C51BF, #7F9CF5);
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+          .header-label, .footer-label { font-family: 'Poppins', sans-serif; font-weight: 700; flex-shrink: 0; }
+          .header-label {
+            font-size: 2rem; text-transform: uppercase; letter-spacing: 3px;
+            background: var(--card-bg); border-radius: var(--radius);
+            padding: 20px 40px; backdrop-filter: blur(10px);
           }
           .footer-label {
-            padding: 30px;
-            font-size: calc(var(--base-font-size) * var(--footer-multiplier));
-            line-height: var(--line-height-heading);
-            font-weight: 600;
-            color: #E2E8F0;
-            background: rgba(0,0,0,0.3);
-            text-align: center;
-            transition: all 0.3s ease;
+            font-size: 1.5rem; background: linear-gradient(90deg, #FF6FD8, #2E8BFD);
+            border-radius: 999px; padding: 15px 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
           }
-          .footer-label:hover {
-            background: rgba(0,0,0,0.5);
+          .content-container {
+            flex-grow: 1; display: flex; flex-direction: column;
+            justify-content: space-evenly; align-items: center;
+            width: 100%; padding: 20px var(--padding-container); text-align: center;
           }
-          .content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 50px;
+          .card {
+            background: none;
+            backdrop-filter: none;
+            box-shadow: none;
+            padding: 0;
+            width: 100%;
+            max-width: 900px;
           }
+          .title-text { font-family: 'Poppins', sans-serif; font-size: 3.5rem; font-weight: 800; margin-bottom: 40px; text-shadow: 2px 4px 12px rgba(0,0,0,0.5); }
+          .question-text, .explanation-text { line-height: 1.5; font-weight: 600; }
+          .options-grid { display: grid; grid-template-columns: 1fr; gap: 25px; width: 100%; max-width: 800px; }
+          .option {
+            background: var(--card-bg); border-radius: var(--radius); padding: 25px;
+            font-size: 2.2rem; font-weight: 700; backdrop-filter: blur(8px);
+            transition: all 0.3s ease; word-wrap: break-word;
+            position: relative;
+          }
+          .option.correct { 
+            background: var(--correct-gradient); 
+            transform: scale(1.05); 
+            box-shadow: 0 8px 20px rgba(56,229,77,0.5); 
+            overflow: hidden;
+          }
+          .option.incorrect { opacity: 0.6; }
+          .explanation-title { font-family: 'Poppins', sans-serif; font-size: 3rem; font-weight: 700; margin-bottom: 30px; color: #FFD93D; }
+
+          .sparkle-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+          .sparkle {
+            position: absolute; width: 8px; height: 8px;
+            background: white; border-radius: 50%;
+            box-shadow: 0 0 10px 2px #fff, 0 0 20px 5px #FFD93D;
+            opacity: 1;
+            transform: scale(1.5);
+          }
+          .sparkle:nth-child(1) { top: 20%; left: 15%; }
+          .sparkle:nth-child(2) { top: 80%; left: 30%; }
+          .sparkle:nth-child(3) { top: 50%; right: 20%; }
+          .sparkle:nth-child(4) { top: 10%; right: 40%; }
+          .sparkle:nth-child(5) { top: 90%; left: 80%; }
+
         </style>
+        <script>
+          function adjustFontSizes() {
+            const adjustText = (element, maxLength, baseSize, minSize) => {
+              if (!element) return;
+              const textLength = element.textContent.length;
+              if (textLength > maxLength) {
+                const newSize = Math.max(minSize, baseSize * (maxLength / textLength));
+                element.style.fontSize = \`\${newSize}rem\`;
+              } else {
+                element.style.fontSize = \`\${baseSize}rem\`;
+              }
+            };
+            adjustText(document.querySelector('.question-text'), 100, 3.2, 1.8);
+            adjustText(document.querySelector('.explanation-text'), 200, 2.8, 1.6);
+            document.querySelectorAll('.option').forEach(opt => adjustText(opt, 25, 2.2, 1.5));
+          }
+        </script>
       </head>
     `;
 
-    // --- Frame 1: Question ---
-    const frame1Html = `
-      <!DOCTYPE html>
-      <html>
-      ${commonHead}
-      <style>
-        .main-heading {
-          font-family: 'Playfair Display', serif;
-          font-size: calc(var(--base-font-size) * var(--heading-multiplier));
-          line-height: var(--line-height-heading);
-          color: #E2E8F0;
-          text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
-          margin-bottom: 50px;
-          animation: slideIn 0.5s ease-out;
-        }
-        @keyframes slideIn {
-          from { transform: translateY(-20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        .question-window {
-          background: #FFFFFF;
-          border-radius: 20px;
-          padding: 80px;
-          width: 95%;
-          box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-          margin-bottom: 60px;
-          transition: transform 0.3s ease;
-        }
-        .question-window:hover {
-          transform: scale(1.02);
-        }
-        .question-text {
-          font-size: calc(var(--base-font-size) * var(--body-multiplier));
-          line-height: var(--line-height-body);
-          font-weight: 600;
-          color: #1A202C;
-        }
-        .options-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 30px;
-          width: 95%;
-        }
-        .option {
-          background: #EDF2F7;
-          border: 2px solid #4C51BF;
-          border-radius: 15px;
-          padding: 35px;
-          font-size: calc(var(--base-font-size) * var(--option-multiplier));
-          line-height: var(--line-height-body);
-          font-weight: 600;
-          transition: all 0.3s ease;
-          cursor: pointer;
-        }
-        .option:hover {
-          background: #4C51BF;
-          color: #FFFFFF;
-          transform: translateY(-5px);
-          box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-      </style>
-      <body>
-        <div class="top-label">${testType} - ${subject}</div>
-        <div class="content">
-          <div class="main-heading">Quiz Challenge</div>
-          <div class="question-window">
-            <div class="question-text">${question?.question || 'Sample Quiz Question'}</div>
-          </div>
-          <div class="options-grid">
-            <div class="option">A) ${options.A || 'Option A'}</div>
-            <div class="option">B) ${options.B || 'Option B'}</div>
-            <div class="option">C) ${options.C || 'Option C'}</div>
-            <div class="option">D) ${options.D || 'Option D'}</div>
-          </div>
-        </div>
-        <div class="footer-label">@gibbiAI</div>
-      </body>
-      </html>
-    `;
-    
-    await page.setContent(frame1Html);
-    const frame1Screenshot = await page.screenshot({ type: 'png' });
-    const frame1Path = path.join(debugDir, `${Date.now()}-frame1-question.png`);
-    await fs.writeFile(frame1Path, frame1Screenshot);
-    console.log(`HTML Frame 1 (Question) created successfully and saved to: ${frame1Path}`);
-    frames.push(`data:image/png;base64,${frame1Screenshot.toString('base64')}`);
+    const sparkleHtml = `<div class="sparkle-container">
+        <div class="sparkle"></div><div class="sparkle"></div>
+        <div class="sparkle"></div><div class="sparkle"></div>
+        <div class="sparkle"></div></div>`;
 
-    // --- Frame 2: Answer Reveal ---
-    const frame2Html = `
-      <!DOCTYPE html>
-      <html>
-      ${commonHead}
-      <style>
-        .options-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 30px;
-          width: 95%;
-        }
-        .option {
-          border: 2px solid #4C51BF;
-          border-radius: 15px;
-          padding: 35px;
-          font-size: calc(var(--base-font-size) * var(--option-multiplier));
-          line-height: var(--line-height-body);
-          font-weight: 600;
-          transition: all 0.3s ease;
-        }
-        .option.correct {
-          background: #48BB78;
-          color: #FFFFFF;
-          border-color: #2F855A;
-          box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-          transform: scale(1.05);
-        }
-        .option.incorrect {
-          background: #E2E8F0;
-          color: #718096;
-          border-color: #CBD5E0;
-          opacity: 0.7;
-        }
-      </style>
-      <body>
-        <div class="top-label">${testType} - ${subject}</div>
-        <div class="content">
+    // --- Frame 1: Question ---
+    const page1 = await browser.newPage();
+    await page1.setViewport({ width, height });
+    const frame1Html = `<!DOCTYPE html><html>${commonHead}<body>
+        <div class="header-label">${testType} - ${subject}</div>
+        <div class="content-container">
+          <div class="card"><div class="question-text">${escapedQuestionText || 'Default Question'}</div></div>
           <div class="options-grid">
-            <div class="option ${correctAnswer === 'A' ? 'correct' : 'incorrect'}">A) ${options.A || 'Option A'}</div>
-            <div class="option ${correctAnswer === 'B' ? 'correct' : 'incorrect'}">B) ${options.B || 'Option B'}</div>
-            <div class="option ${correctAnswer === 'C' ? 'correct' : 'incorrect'}">C) ${options.C || 'Option C'}</div>
-            <div class="option ${correctAnswer === 'D' ? 'correct' : 'incorrect'}">D) ${options.D || 'Option D'}</div>
+            <div class="option">A) ${escapedOptions.A || 'Opt A'}</div>
+            <div class="option">B) ${escapedOptions.B || 'Opt B'}</div>
+            <div class="option">C) ${escapedOptions.C || 'Opt C'}</div>
+            <div class="option">D) ${escapedOptions.D || 'Opt D'}</div>
           </div>
         </div>
-        <div class="footer-label">@gibbiAI</div>
-      </body>
-      </html>
-    `;
-    
-    await page.setContent(frame2Html);
-    const frame2Screenshot = await page.screenshot({ type: 'png' });
-    const frame2Path = path.join(debugDir, `${Date.now()}-frame2-answer.png`);
-    await fs.writeFile(frame2Path, frame2Screenshot);
-    console.log(`HTML Frame 2 (Answer) created successfully and saved to: ${frame2Path}`);
-    frames.push(`data:image/png;base64,${frame2Screenshot.toString('base64')}`);
+        <div class="footer-label">@gibbiAI</div></body></html>`;
+    frames.push(await generateFrame(page1, frame1Html, 'question', debugDir));
+    await page1.close();
+
+    // --- Frame 2: Answer Reveal (with question and sparkles) ---
+    const page2 = await browser.newPage();
+    await page2.setViewport({ width, height });
+    const frame2Html = `<!DOCTYPE html><html>${commonHead}<body>
+        <div class="header-label">${testType} - ${subject}</div>
+        <div class="content-container">
+          <div class="card"><div class="question-text">${escapedQuestionText || 'Default Question'}</div></div>
+          <div class="options-grid">
+            <div class="option ${correctAnswer === 'A' ? 'correct' : 'incorrect'}">A) ${escapedOptions.A || 'Opt A'} ${correctAnswer === 'A' ? sparkleHtml : ''}</div>
+            <div class="option ${correctAnswer === 'B' ? 'correct' : 'incorrect'}">B) ${escapedOptions.B || 'Opt B'} ${correctAnswer === 'B' ? sparkleHtml : ''}</div>
+            <div class="option ${correctAnswer === 'C' ? 'correct' : 'incorrect'}">C) ${escapedOptions.C || 'Opt C'} ${correctAnswer === 'C' ? sparkleHtml : ''}</div>
+            <div class="option ${correctAnswer === 'D' ? 'correct' : 'incorrect'}">D) ${escapedOptions.D || 'Opt D'} ${correctAnswer === 'D' ? sparkleHtml : ''}</div>
+          </div>
+        </div>
+        <div class="footer-label">@gibbiAI</div></body></html>`;
+    frames.push(await generateFrame(page2, frame2Html, 'answer', debugDir));
+    await page2.close();
 
     // --- Frame 3: Explanation ---
-    const frame3Html = `
-      <!DOCTYPE html>
-      <html>
-      ${commonHead}
-      <style>
-        .explanation-window {
-          background: #FFFFFF;
-          border-radius: 20px;
-          padding: 80px;
-          width: 95%;
-          box-shadow: 0 10px 20px rgba(0,0,0,0.15);
-          transition: transform 0.3s ease;
-        }
-        .explanation-window:hover {
-          transform: scale(1.02);
-        }
-        .explanation-title {
-          font-family: 'Playfair Display', serif;
-          font-size: calc(var(--base-font-size) * var(--subheading-multiplier));
-          line-height: var(--line-height-heading);
-          color: #4C51BF;
-          margin-bottom: 40px;
-          animation: slideIn 0.5s ease-out;
-        }
-        .explanation-text {
-          font-size: calc(var(--base-font-size) * var(--body-multiplier));
-          line-height: var(--line-height-body);
-          font-weight: 400;
-          color: #2D3748;
-        }
-      </style>
-      <body>
-        <div class="top-label">${testType} - ${subject}</div>
-        <div class="content">
-          <div class="explanation-window">
+    const page3 = await browser.newPage();
+    await page3.setViewport({ width, height });
+    const frame3Html = `<!DOCTYPE html><html>${commonHead}<body>
+        <div class="header-label">${testType} - ${subject}</div>
+        <div class="content-container">
+          <div class="card">
             <div class="explanation-title">Explanation</div>
-            <div class="explanation-text">${question?.explanation || 'This demonstrates the concept being tested.'}</div>
+            <div class="explanation-text">${escapedExplanationText || 'Sample explanation.'}</div>
           </div>
         </div>
-        <div class="footer-label">@gibbiAI</div>
-      </body>
-      </html>
-    `;
-    
-    await page.setContent(frame3Html);
-    const frame3Screenshot = await page.screenshot({ type: 'png' });
-    const frame3Path = path.join(debugDir, `${Date.now()}-frame3-explanation.png`);
-    await fs.writeFile(frame3Path, frame3Screenshot);
-    console.log(`HTML Frame 3 (Explanation) created successfully and saved to: ${frame3Path}`);
-    frames.push(`data:image/png;base64,${frame3Screenshot.toString('base64')}`);
+        <div class="footer-label">@gibbiAI</div></body></html>`;
+    frames.push(await generateFrame(page3, frame3Html, 'explanation', debugDir));
+    await page3.close();
 
-    console.log(`Created ${frames.length} redesigned HTML frames with Puppeteer.`);
+    console.log(`Successfully created ${frames.length} frames.`);
     return frames;
 
   } catch (error) {

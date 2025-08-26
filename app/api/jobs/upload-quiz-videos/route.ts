@@ -201,7 +201,7 @@ Ready to challenge yourself? Watch and see how you do! 🚀`;
     'test prep',
     'education',
     question.topic || 'general',
-    'quick quiz'
+    'quick quiz',
   ].slice(0, 10); // YouTube allows max 10 tags
 
   return {

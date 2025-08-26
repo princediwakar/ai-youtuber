@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const folderName = formData.get('folderName') as string || ''
     
     // Advanced settings
-    const madeForKids = formData.get('madeForKids') === 'true'
+    const madeForKids = formData.get('madeForKids') === 'false'
     const category = formData.get('category') as string || '27'
     const useAiAnalysis = formData.get('useAiAnalysis') === 'true'
     const titleFormat = formData.get('titleFormat') as string || 'original'
