@@ -2,8 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-// Assuming your database helper functions are in this path
-// You will need to implement `createQuizJob` and `getRecentQuizTopics`
 import { createQuizJob } from '@/lib/database';
 
 const openai = new OpenAI({
@@ -11,43 +9,82 @@ const openai = new OpenAI({
   baseURL: 'https://api.deepseek.com'
 });
 
-// --- DYNAMIC CONTENT LIBRARIES ---
-// These libraries are the core of generating unique and varied questions.
-// You can easily add more topics and styles here to expand the variety.
+// --- VOCABULARY PERSONA CONFIGURATION ---
 
 /**
- * A library of specific sub-topics for each test and subject.
- * This ensures the AI doesn't repeatedly generate questions about the same general area.
+ * Vocabulary improvement categories and sub-topics
  */
-const SUB_TOPICS = {
-  'SAT-Math': ['Linear Equations', 'Quadratic Functions', 'Systems of Equations', 'Circle Geometry', 'Triangle Properties', 'Data Interpretation', 'Probability', 'Ratios & Proportions', 'Exponents and Radicals'],
-  'SAT-Reading': ['Vocabulary-in-Context', 'Main Idea of a Paragraph', 'Author\'s Tone or Purpose', 'Logical Inference'],
-  'SAT-Writing': ['Subject-Verb Agreement', 'Pronoun-Antecedent Agreement', 'Punctuation (Commas, Semicolons)', 'Sentence Fragments', 'Parallel Structure', 'Modifier Placement', 'Idiomatic Expressions'],
-  'GMAT-Quantitative': ['Data Sufficiency (Number Properties)', 'Problem Solving (Rates & Work)', 'Integer Properties', 'Percents & Ratios', 'Combinatorics', 'Geometry (Area & Volume)'],
-  'GMAT-Verbal': ['Sentence Correction (Idioms)', 'Sentence Correction (Comparisons)', 'Critical Reasoning (Strengthen/Weaken)', 'Critical Reasoning (Find the Assumption)'],
-  'GRE-Quantitative': ['Quantitative Comparison (Algebra)', 'Quantitative Comparison (Geometry)', 'Data Interpretation (Charts)', 'Number Properties', 'Exponents & Roots', 'Probability'],
-  'GRE-Verbal': ['Text Completion (Vocabulary)', 'Sentence Equivalence (Synonyms)', 'Short-form Logical Puzzles']
+const VOCABULARY_CATEGORIES = {
+  'word_meaning': [
+    'Advanced Academic Vocabulary',
+    'Business & Professional Terms',
+    'Scientific & Technical Words',
+    'Literary & Artistic Terms',
+    'Historical & Political Vocabulary',
+    'Common SAT/GRE Words',
+    'Everyday Advanced Words'
+  ],
+  'synonyms_antonyms': [
+    'Common Word Pairs',
+    'Academic Synonyms',
+    'Emotional & Descriptive Words',
+    'Action & Movement Words',
+    'Complex Concept Words'
+  ],
+  'word_usage': [
+    'Commonly Confused Words',
+    'Formal vs Informal Usage',
+    'Context-Dependent Meanings',
+    'Idiomatic Expressions',
+    'Collocations'
+  ],
+  'etymology': [
+    'Greek & Latin Roots',
+    'Word Origins & History',
+    'Prefix & Suffix Patterns',
+    'Language Evolution'
+  ],
+  'contextual_vocabulary': [
+    'Reading Comprehension Vocabulary',
+    'Subject-Specific Terms',
+    'Contextual Clues',
+    'Inferring Meaning'
+  ]
 };
 
 /**
- * A library of different "angles" or styles to frame the question.
- * This changes *how* the question is asked, making the content feel more dynamic.
+ * Different question formats for vocabulary learning
  */
-const QUESTION_STYLES = [
-  "a straightforward problem-solving question",
-  "a 'common mistake' trap question that tricks most students",
-  "a question that requires thinking backward from the options",
-  "a 'spot the error' type question for a grammar rule",
-  "a question based on a simple, easily described scenario (e.g., a simple chart or geometric shape)",
-  "a question testing a core concept in a creative way",
-  "a 'word in context' question, providing one clear sentence for context"
+const QUESTION_FORMATS = [
+  'multiple_choice',
+  'fill_blank',
+  'match_definition',
+  'context_clues',
+  'synonym_selection',
+  'antonym_identification',
+  'word_formation',
+  'usage_correction'
+];
+
+/**
+ * Question styles to make learning engaging
+ */
+const VOCABULARY_STYLES = [
+  "a straightforward definition-based question",
+  "a context-based question with a sentence or short passage",
+  "a synonym/antonym identification challenge",
+  "a word usage scenario with multiple options",
+  "an etymology-based question about word origins",
+  "a fill-in-the-blank with contextual clues",
+  "a commonly confused words scenario",
+  "a formal vs informal usage distinction"
 ];
 
 // Helper function to get a random element from an array
 const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 /**
- * API endpoint to generate a batch of quiz questions.
+ * API endpoint to generate vocabulary improvement quiz questions.
  * This function is designed to be triggered by a cron job.
  */
 export async function POST(request: NextRequest) {
@@ -58,35 +95,29 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    console.log('Starting single quiz generation...');
+    console.log('Starting vocabulary quiz generation...');
 
-    // 2. Dynamic Job Pool
-    // This pool defines the types of questions we can generate.
-    const jobPool = [
-      { test_type: 'SAT' as const, subject: 'Math', difficulty: 'medium' as const },
-      { test_type: 'SAT' as const, subject: 'Reading', difficulty: 'hard' as const },
-      { test_type: 'SAT' as const, subject: 'Writing', difficulty: 'easy' as const },
-      { test_type: 'GMAT' as const, subject: 'Verbal', difficulty: 'medium' as const },
-      { test_type: 'GMAT' as const, subject: 'Quantitative', difficulty: 'hard' as const },
-      { test_type: 'GRE' as const, subject: 'Verbal', difficulty: 'easy' as const },
-      { test_type: 'GRE' as const, subject: 'Quantitative', difficulty: 'medium' as const },
-      { test_type: 'SAT' as const, subject: 'Math', difficulty: 'easy' as const },
-    ];
-
-    // Create only one job per request
-    const jobConfig = getRandomElement(jobPool);
+    // 2. Generate Vocabulary Job Configuration
+    const category = getRandomElement(Object.keys(VOCABULARY_CATEGORIES));
+    const questionFormat = getRandomElement(QUESTION_FORMATS);
+    const difficulty = getRandomElement(['easy', 'medium', 'hard'] as const);
+    const targetAudience = getRandomElement(['general', 'students', 'professionals']);
     
+    const jobConfig = {
+      persona: 'vocabulary' as const,
+      category: 'english',
+      question_format: questionFormat,
+      difficulty,
+      target_audience: targetAudience,
+      tags: ['vocabulary', 'english', 'education', category]
+    };
+
     const createdJobs = [];
 
-    // 3. Process Single Job
+    // 3. Process Single Vocabulary Job
     try {
-      // To prevent immediate repetition, you can fetch the last few topics generated.
-      // This requires a database function `getRecentQuizTopics`.
-      // const recentTopics = await getRecentQuizTopics(jobConfig.test_type, jobConfig.subject, 5);
-      const recentTopics: string[] = []; // Using an empty array as a placeholder
-
-      // Generate the actual question using our dynamic prompt function
-      const questionData = await generateDynamicQuizQuestion(jobConfig, recentTopics);
+      // Generate the vocabulary question using our specialized function
+      const questionData = await generateVocabularyQuestion(category, questionFormat, difficulty);
       
       if (questionData) {
         // Store the generated question in the database
@@ -97,14 +128,19 @@ export async function POST(request: NextRequest) {
           data: { question: questionData }
         });
         
-        createdJobs.push({ id: jobId, ...jobConfig, topic: questionData.topic });
-        console.log(`✅ Created quiz job ${jobId} for ${jobConfig.test_type} ${jobConfig.subject} on topic: ${questionData.topic}`);
+        createdJobs.push({ 
+          id: jobId, 
+          ...jobConfig, 
+          category_topic: questionData.category_topic,
+          question_type: questionData.question_type 
+        });
+        console.log(`✅ Created vocabulary quiz job ${jobId} for ${category} (${questionFormat}) - ${questionData.category_topic}`);
       }
     } catch (error) {
-      console.error(`❌ Failed to create quiz for ${jobConfig.test_type} ${jobConfig.subject}:`, error);
+      console.error(`❌ Failed to create vocabulary quiz for ${category}:`, error);
     }
 
-    console.log(`Job creation completed. Created ${createdJobs.length} job.`);
+    console.log(`Vocabulary job creation completed. Created ${createdJobs.length} job.`);
 
     return NextResponse.json({ 
       success: true,
@@ -113,80 +149,88 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Quiz generation failed:', error);
+    console.error('❌ Vocabulary quiz generation failed:', error);
     return NextResponse.json(
-      { success: false, error: 'Quiz generation failed' },
+      { success: false, error: 'Vocabulary quiz generation failed' },
       { status: 500 }
     );
   }
 }
 
 /**
- * Generates a single, unique quiz question by dynamically building a prompt.
- * @param config - The configuration for the quiz question (test, subject, difficulty).
- * @param recentTopics - An array of recent topics to avoid generating duplicates.
- * @returns The parsed quiz question data or null if generation fails.
+ * Generates a vocabulary improvement question using AI.
+ * @param category - The vocabulary category (word_meaning, synonyms_antonyms, etc.)
+ * @param questionFormat - The format of the question (multiple_choice, fill_blank, etc.)
+ * @param difficulty - The difficulty level (easy, medium, hard)
+ * @returns The parsed vocabulary question data or null if generation fails.
  */
-async function generateDynamicQuizQuestion(
-  config: {
-    test_type: 'SAT' | 'GMAT' | 'GRE';
-    subject: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-  },
-  recentTopics: string[] = []
+async function generateVocabularyQuestion(
+  category: string,
+  questionFormat: string,
+  difficulty: 'easy' | 'medium' | 'hard'
 ) {
-  const promptKey = `${config.test_type}-${config.subject}` as keyof typeof SUB_TOPICS;
+  // 1. Select specific topic and style for this question
+  const topicOptions = VOCABULARY_CATEGORIES[category as keyof typeof VOCABULARY_CATEGORIES] || VOCABULARY_CATEGORIES['word_meaning'];
+  const selectedTopic = getRandomElement(topicOptions);
+  const selectedStyle = getRandomElement(VOCABULARY_STYLES);
 
-  // 1. Dynamically select content for the prompt
-  const availableTopics = SUB_TOPICS[promptKey] || SUB_TOPICS['SAT-Math'];
-  const selectedTopic = getRandomElement(availableTopics.filter(t => !recentTopics.includes(t)));
-  const selectedStyle = getRandomElement(QUESTION_STYLES);
-
-  // 2. Define refined, video-first base prompts
-  const basePrompts = {
-    'SAT-Math': `Generate a ${config.difficulty} SAT Math question.`,
-    'SAT-Reading': `Generate a ${config.difficulty} SAT Reading question. Focus on Vocabulary-in-Context. If you test a word's meaning, you MUST provide a single, concise sentence for context. ABSOLUTELY NO long passages.`,
-    'SAT-Writing': `Generate a ${config.difficulty} SAT Writing question testing a specific grammar or style rule.`,
-    'GMAT-Verbal': `Generate a ${config.difficulty} GMAT Verbal question. Focus on Sentence Correction or a very short Critical Reasoning puzzle. NO long reading passages.`,
-    'GMAT-Quantitative': `Generate a ${config.difficulty} GMAT Quantitative question.`,
-    'GRE-Verbal': `Generate a ${config.difficulty} GRE Verbal question. Focus on vocabulary, sentence equivalence, or a quick logic puzzle. ABSOLUTELY NO reading comprehension passages.`,
-    'GRE-Quantitative': `Generate a ${config.difficulty} GRE Quantitative question.`
+  // 2. Define format-specific instructions
+  const formatInstructions = {
+    'multiple_choice': 'Create a multiple choice question with 4 options (A, B, C, D). Only one correct answer.',
+    'fill_blank': 'Create a fill-in-the-blank question with 4 word choices. The sentence should have clear context clues.',
+    'match_definition': 'Create a question asking to match a word with its definition. Provide 4 definition choices.',
+    'context_clues': 'Create a question where the word meaning must be inferred from context. Provide a sentence and 4 meaning choices.',
+    'synonym_selection': 'Create a question asking for the best synonym. Provide 4 synonym choices with subtle differences.',
+    'antonym_identification': 'Create a question asking for the antonym. Provide 4 antonym choices.',
+    'word_formation': 'Create a question about word formation (prefixes, suffixes, roots). Test understanding of word building.',
+    'usage_correction': 'Create a question about correct word usage in context. Show incorrect usage and ask for the correction.'
   };
-  
-  const basePrompt = basePrompts[promptKey];
-  
-  // 3. Assemble the final, unique prompt
-  const fullPrompt = `${basePrompt}
 
-TOPIC FOCUS: Your question MUST be about **${selectedTopic}**.
+  // 3. Build the comprehensive prompt
+  const fullPrompt = `Generate a ${difficulty} level vocabulary question to help improve English vocabulary skills.
+
+CATEGORY: ${category.replace('_', ' ').toUpperCase()}
+TOPIC FOCUS: Your question MUST focus on **${selectedTopic}**.
+QUESTION FORMAT: ${formatInstructions[questionFormat as keyof typeof formatInstructions] || formatInstructions['multiple_choice']}
 QUESTION STYLE: Frame it as **${selectedStyle}**.
 
+EDUCATIONAL OBJECTIVES:
+- Help users learn new vocabulary words
+- Improve understanding of word meanings and usage
+- Build contextual vocabulary skills
+- Make learning engaging and memorable
+
 CRITICAL REQUIREMENTS FOR VIDEO FORMAT:
-- The question must be self-contained and perfect for a 15-20 second video.
-- It must be easily understandable within 5-7 seconds of reading.
-- Question length: 50-250 characters.
-- Options length: 10-75 characters each.
-- Explanation length: 50-350 characters. It must be clear, step-by-step, and educational.
-- Only ONE correct answer. Options must be distinct and plausible.
-${recentTopics.length > 0 ? `- ORIGINALITY: Do NOT create a question about these recent topics: ${recentTopics.join(', ')}.` : ''}
+- Perfect for a 15-20 second educational video
+- Clear and concise for quick comprehension
+- Question text: 50-300 characters
+- Each option: 10-80 characters
+- Explanation: 50-400 characters with educational value
+- Use words appropriate for ${difficulty} level learners
+- Include helpful context or memory aids in explanation
+
+DIFFICULTY GUIDELINES:
+- Easy: Common words, basic contexts, obvious clues
+- Medium: Intermediate words, moderate complexity, some nuance
+- Hard: Advanced words, complex contexts, subtle distinctions
 
 Format your response EXACTLY like this (no extra text, markdown, or commentary):
-Question: [Your unique question text]
+Question: [Your vocabulary question]
 A) [Option A]
 B) [Option B]
 C) [Option C] 
 D) [Option D]
 Answer: [Single letter: A, B, C, or D]
-Explanation: [Clear, step-by-step reasoning and solution]
+Explanation: [Educational explanation with context, etymology, or usage tips]
 
-Generate the question now.`;
+Generate the vocabulary question now.`;
 
   try {
     const response = await openai.chat.completions.create({
       model: "deepseek-chat",
       messages: [{ role: "user", content: fullPrompt }],
-      temperature: 0.8, // Increased for more creative and varied outputs
-      max_tokens: 500
+      temperature: 0.9, // Higher temperature for creative vocabulary questions
+      max_tokens: 600
     });
 
     const content = response.choices[0].message.content;
@@ -194,21 +238,28 @@ Generate the question now.`;
       throw new Error('No content generated from AI');
     }
 
-    // Pass the selected topic to the parser so it can be stored with the question
-    return parseQuizResponse(content, selectedTopic);
+    // Parse and return the vocabulary question
+    return parseVocabularyResponse(content, selectedTopic, category, questionFormat);
   } catch (error) {
-    console.error('OpenAI API error:', error);
+    console.error('Vocabulary generation error:', error);
     return null;
   }
 }
 
 /**
- * Parses the raw text response from the AI into a structured object.
+ * Parses the vocabulary question response from AI into a structured object.
  * @param content - The raw string response from the OpenAI API.
- * @param topic - The topic that was used to generate the question.
- * @returns A structured quiz object or null if parsing fails.
+ * @param categoryTopic - The specific topic that was used to generate the question.
+ * @param category - The vocabulary category.
+ * @param questionFormat - The format of the question.
+ * @returns A structured vocabulary question object or null if parsing fails.
  */
-function parseQuizResponse(content: string, topic: string = 'general') {
+function parseVocabularyResponse(
+  content: string, 
+  categoryTopic: string, 
+  category: string, 
+  questionFormat: string
+) {
   try {
     const lines = content.trim().split('\n').map(line => line.trim()).filter(line => line);
     
@@ -223,9 +274,14 @@ function parseQuizResponse(content: string, topic: string = 'general') {
       options[key] = text;
     });
 
-    // Enhanced validation to ensure a complete and valid question was generated
+    // Enhanced validation for vocabulary questions
     if (!question || Object.keys(options).length !== 4 || !['A', 'B', 'C', 'D'].includes(answer) || !explanation) {
-      throw new Error(`Incomplete or invalid response parsed. Content: "${content}"`);
+      throw new Error(`Incomplete or invalid vocabulary response parsed. Content: "${content}"`);
+    }
+    
+    // Validate question length for video format
+    if (question.length > 300) {
+      console.warn('Question might be too long for video format:', question.length, 'characters');
     }
     
     return {
@@ -233,11 +289,16 @@ function parseQuizResponse(content: string, topic: string = 'general') {
       options,
       answer,
       explanation,
-      topic // Return the dynamically selected topic for storage
+      category_topic: categoryTopic,
+      category,
+      question_type: questionFormat,
+      educational_value: explanation // Alias for educational context
     };
   } catch (error) {
-    console.error('Failed to parse quiz response:', error);
-    // Return null to indicate failure, allowing the main loop to continue
+    console.error('Failed to parse vocabulary response:', error);
     return null; 
   }
 }
+
+export const runtime = 'nodejs';
+export const maxDuration = 60;

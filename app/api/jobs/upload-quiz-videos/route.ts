@@ -82,14 +82,14 @@ export async function POST(request: NextRequest) {
         // Track active uploads
         uploadTracker.activeUploads++;
         
-        console.log(`Uploading video for job ${job.id} - ${job.test_type} ${job.subject} (${i + 1}/${jobs.length})`);
+        console.log(`Uploading video for job ${job.id} - ${job.persona} ${job.category} (${i + 1}/${jobs.length})`);
         console.log(`Rate limit status: ${uploadTracker.dailyCount}/${MAX_DAILY_UPLOADS} daily, ${uploadTracker.activeUploads}/${MAX_CONCURRENT_UPLOADS} concurrent`);
 
         // Convert video buffer back from base64
         const videoBuffer = Buffer.from(job.data.videoBuffer, 'base64');
         
         // Generate metadata for the video
-        const metadata = generateVideoMetadata(job.data.question, job.test_type, job.subject, job.id);
+        const metadata = generateVideoMetadata(job.data.question, job.persona, job.category, job.id);
         
         // Upload to YouTube with retry logic
         const youtubeVideoId = await uploadToYouTubeWithRetry(videoBuffer, metadata, 3);
@@ -102,8 +102,8 @@ export async function POST(request: NextRequest) {
         
         processedJobs.push({ 
           id: job.id, 
-          test_type: job.test_type, 
-          subject: job.subject,
+          persona: job.persona, 
+          category: job.category,
           youtube_video_id: youtubeVideoId
         });
         
@@ -154,55 +154,60 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generateVideoMetadata(question: any, testType: string, subject: string, jobId: string) {
-  // Generate quiz-focused title
+function generateVideoMetadata(question: any, persona: string, category: string, jobId: string) {
+  // Generate vocabulary-focused titles
   const titles = {
-    'SAT-Math': `SAT Math Quick Quiz: ${question.topic || 'Problem Solving'} 🧮`,
-    'SAT-Reading': `SAT Reading Practice: ${question.topic || 'Comprehension'} 📚`,
-    'SAT-Writing': `SAT Writing Skills: ${question.topic || 'Grammar'} ✍️`,
-    'GMAT-Verbal': `GMAT Verbal Challenge: ${question.topic || 'Critical Thinking'} 💼`,
-    'GMAT-Quantitative': `GMAT Quant Practice: ${question.topic || 'Problem Solving'} 📊`,
-    'GRE-Verbal': `GRE Verbal Skills: ${question.topic || 'Word Power'} 🎓`,
-    'GRE-Quantitative': `GRE Math Challenge: ${question.topic || 'Quantitative'} 🔢`
+    'vocabulary-english': `📚 Vocabulary Challenge: ${question.category_topic || 'Word Power'} ✨`,
+    'current_affairs-world_news': `🌍 Current Affairs Quiz: ${question.category_topic || 'World Updates'} 📰`
   };
   
-  const titleKey = `${testType}-${subject}`;
-  const title = titles[titleKey] || `${testType} ${subject} Practice Question #${jobId.slice(-4)}`;
+  const titleKey = `${persona}-${category}`;
+  const title = titles[titleKey] || `${persona.charAt(0).toUpperCase() + persona.slice(1)} ${question.category_topic || 'Quiz'} #${jobId.slice(-4)}`;
   
   // Generate educational description
-  const description = `🎯 Quick ${testType} practice question - can you solve it?
+  let description = '';
+  if (persona === 'vocabulary') {
+    description = `📚 Boost your English vocabulary with this quick challenge!
 
 ${question.question.slice(0, 150)}${question.question.length > 150 ? '...' : ''}
 
-Test your ${subject.toLowerCase()} skills with this practice problem! 
+🎯 Perfect for improving your word knowledge and language skills!
+
+⏱️ 20-second vocabulary challenge
+🧠 Think, choose, learn new words
+✅ Answer with helpful explanation
+📖 Build your vocabulary daily
+
+Great for:
+• English language learners
+• Students preparing for exams
+• Anyone wanting to improve vocabulary
+• Quick learning breaks
+
+#Vocabulary #English #WordPower #LanguageLearning #Education #Shorts #Quiz #StudyTips
+
+Expand your vocabulary one word at a time! 🚀📚`;
+  } else {
+    description = `🎯 Quick ${persona} challenge - test your knowledge!
+
+${question.question.slice(0, 150)}${question.question.length > 150 ? '...' : ''}
 
 ⏱️ 20-second challenge
 🧠 Think, choose, learn
 ✅ Answer revealed with explanation
 
-Perfect for:
-• ${testType} test preparation
-• Quick study breaks
-• Skill assessment
-• Educational practice
-
-#${testType} #StudyTips #Quiz #Shorts #TestPrep #${subject} #Practice #Education #QuickLearning
-
-Ready to challenge yourself? Watch and see how you do! 🚀`;
+#Quiz #Shorts #Education #Learning`;
+  }
 
   // Generate relevant tags
-  const tags = [
-    testType.toLowerCase(),
-    'quiz',
-    'practice', 
-    'shorts',
-    'study',
-    subject.toLowerCase(),
-    'test prep',
-    'education',
-    question.topic || 'general',
-    'quick quiz',
-  ].slice(0, 10); // YouTube allows max 10 tags
+  const baseTags = ['quiz', 'shorts', 'education', 'learning'];
+  let specificTags = [];
+  
+  if (persona === 'vocabulary') {
+    specificTags = ['vocabulary', 'english', 'words', 'language'];
+  }
+  
+  const tags = [...baseTags, ...specificTags, question.category_topic || 'general'].slice(0, 10);
 
   return {
     title: title.slice(0, 100), // YouTube title limit

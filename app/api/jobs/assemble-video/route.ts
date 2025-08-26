@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     for (const job of jobs) {
       try {
-        console.log(`Assembling video for job ${job.id} - ${job.test_type} ${job.subject}`);
+        console.log(`Assembling video for job ${job.id} - ${job.persona} ${job.category}`);
 
         // Create video from frames using FFmpeg
         const videoBuffer = await assembleVideo(job.data.frames, job.id, job.data.question);
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
           }
         });
         
-        processedJobs.push({ id: job.id, test_type: job.test_type, subject: job.subject });
+        processedJobs.push({ id: job.id, persona: job.persona, category: job.category });
         console.log(`Video assembly completed for job ${job.id}`);
 
       } catch (error) {
@@ -203,9 +203,9 @@ function getFrameDuration(question: any, frameNumber: number): number {
   if (frameNumber === 1) {
     // Frame 1: Question + Options - dynamic based on content length
     const questionLength = (question?.question?.length || 0);
-    if (questionLength < 100) return 5;      // Short questions: 5 seconds
-    if (questionLength < 200) return 7;      // Medium questions: 7 seconds
-    return 9;                                // Long questions: 9 seconds
+    if (questionLength < 100) return 8;      // Short questions: 5 seconds
+    if (questionLength < 200) return 12;      // Medium questions: 7 seconds
+    return 15;                                // Long questions: 9 seconds
   } else if (frameNumber === 2) {
     return 4;  // Frame 2: Answer reveal - 4 seconds
   } else {

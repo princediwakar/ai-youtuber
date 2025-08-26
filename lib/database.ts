@@ -17,12 +17,16 @@ export function getPool(): Pool {
 // Quiz job types
 export interface QuizJob {
   id: string;
-  test_type: 'SAT' | 'GMAT' | 'GRE';
-  subject: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  persona: 'vocabulary' | 'current_affairs' | 'test_prep' | 'general_knowledge' | 'language_learning';
+  category: string;
+  question_format: string;
+  difficulty: 'beginner' | 'easy' | 'medium' | 'hard' | 'expert';
+  language: string;
+  target_audience: string;
   status: string;
   step: number;
   data: any;
+  tags: string[];
   error_message?: string;
   created_at: Date;
   updated_at: Date;
@@ -41,24 +45,32 @@ export interface UploadedVideo {
 
 // Database operations
 export async function createQuizJob(jobData: {
-  test_type: 'SAT' | 'GMAT' | 'GRE';
-  subject: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  persona: 'vocabulary' | 'current_affairs' | 'test_prep' | 'general_knowledge' | 'language_learning';
+  category: string;
+  question_format: string;
+  difficulty: 'beginner' | 'easy' | 'medium' | 'hard' | 'expert';
+  language?: string;
+  target_audience?: string;
+  tags?: string[];
   status?: string;
   step?: number;
   data?: any;
 }): Promise<string> {
   const pool = getPool();
   const query = `
-    INSERT INTO quiz_jobs (test_type, subject, difficulty, status, step, data)
-    VALUES ($1, $2, $3, $4, $5, $6)
+    INSERT INTO quiz_jobs (persona, category, question_format, difficulty, language, target_audience, tags, status, step, data)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING id
   `;
   
   const values = [
-    jobData.test_type,
-    jobData.subject,
+    jobData.persona,
+    jobData.category,
+    jobData.question_format,
     jobData.difficulty,
+    jobData.language || 'en',
+    jobData.target_audience || 'general',
+    JSON.stringify(jobData.tags || []),
     jobData.status || 'pending',
     jobData.step || 1,
     JSON.stringify(jobData.data || {})
@@ -80,7 +92,8 @@ export async function getPendingJobs(step: number, limit: number = 10): Promise<
   const result = await pool.query(query, [step, limit]);
   return result.rows.map(row => ({
     ...row,
-    data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data
+    data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags
   }));
 }
 

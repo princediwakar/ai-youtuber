@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
 
     for (const job of jobs) {
       try {
-        console.log(`Creating frames for job ${job.id} - ${job.test_type} ${job.subject}`);
+        console.log(`Creating frames for job ${job.id} - ${job.persona} ${job.category}`);
 
         // Generate frames using the improved Puppeteer and HTML/CSS logic
-        const frames = await createOptimizedFrames(job.data.question, job.test_type, job.subject);
+        const frames = await createOptimizedFrames(job.data.question, job.persona, job.category);
         
         // Update the job to the next step (assembly_pending)
         await updateJob(job.id, {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
           }
         });
         
-        processedJobs.push({ id: job.id, test_type: job.test_type, subject: job.subject });
+        processedJobs.push({ id: job.id, persona: job.persona, category: job.category });
         console.log(`Frame creation completed for job ${job.id}`);
 
       } catch (error) {
@@ -102,10 +102,10 @@ async function generateFrame(page: Page, htmlContent: string, frameName: string,
  * This version uses a new browser page for each frame to ensure reliability.
  * @param {object} question - The question data object.
  * @param {string} testType - The type of test (e.g., 'GRE').
- * @param {string} subject - The subject of the test (e.g., 'Verbal').
+ * @param {string} category - The category of the quiz (e.g., 'english').
  * @returns {Promise<string[]>} A promise that resolves to an array of base64 encoded PNG image strings.
  */
-async function createOptimizedFrames(question: any, testType: string, subject: string): Promise<string[]> {
+async function createOptimizedFrames(question: any, persona: string, category: string): Promise<string[]> {
   const frames: string[] = [];
   const width = 1080;
   const height = 1920;
@@ -253,7 +253,7 @@ async function createOptimizedFrames(question: any, testType: string, subject: s
     const page1 = await browser.newPage();
     await page1.setViewport({ width, height });
     const frame1Html = `<!DOCTYPE html><html>${commonHead}<body>
-        <div class="header-label">${testType} - ${subject}</div>
+        <div class="header-label">${persona} - ${category}</div>
         <div class="content-container">
           <div class="card"><div class="question-text">${escapedQuestionText || 'Default Question'}</div></div>
           <div class="options-grid">
@@ -271,7 +271,7 @@ async function createOptimizedFrames(question: any, testType: string, subject: s
     const page2 = await browser.newPage();
     await page2.setViewport({ width, height });
     const frame2Html = `<!DOCTYPE html><html>${commonHead}<body>
-        <div class="header-label">${testType} - ${subject}</div>
+        <div class="header-label">${persona} - ${category}</div>
         <div class="content-container">
           <div class="card"><div class="question-text">${escapedQuestionText || 'Default Question'}</div></div>
           <div class="options-grid">
@@ -289,7 +289,7 @@ async function createOptimizedFrames(question: any, testType: string, subject: s
     const page3 = await browser.newPage();
     await page3.setViewport({ width, height });
     const frame3Html = `<!DOCTYPE html><html>${commonHead}<body>
-        <div class="header-label">${testType} - ${subject}</div>
+        <div class="header-label">${persona} - ${category}</div>
         <div class="content-container">
           <div class="card">
             <div class="explanation-title">Explanation</div>
