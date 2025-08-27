@@ -98,15 +98,16 @@ export async function POST(request: NextRequest) {
         console.log(`Assembling video for job ${job.id} - ${job.persona} ${job.category}`);
 
         // Create video from frames using FFmpeg
-        const videoBuffer = await assembleVideo(job.data.frames, job.id, job.data.question);
+        const { videoBuffer, persistentPath } = await assembleVideo(job.data.frames, job.id, job.data.question);
         
-        // Update job to next step with video data
+        // Update job to next step WITHOUT storing video data in database
         await updateJob(job.id, {
           step: 4,
           status: 'upload_pending',
           data: { 
-            ...job.data, 
-            videoBuffer: videoBuffer.toString('base64') 
+            ...job.data,
+            videoPath: persistentPath, // Store file path instead of buffer
+            videoSize: videoBuffer.length
           }
         });
         
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function assembleVideo(frames: string[], jobId: string, question: any): Promise<Buffer> {
+async function assembleVideo(frames: string[], jobId: string, question: any): Promise<{videoBuffer: Buffer, persistentPath: string}> {
   const tempDir = path.join(tmpdir(), `quiz-video-${jobId}-${Date.now()}`);
   await fs.mkdir(tempDir, { recursive: true });
 
@@ -264,7 +265,7 @@ async function assembleVideo(frames: string[], jobId: string, question: any): Pr
     await fs.copyFile(outputPath, persistentPath);
     console.log(`Video also saved to: ${persistentPath}`);
 
-    return videoBuffer;
+    return { videoBuffer, persistentPath };
 
   } finally {
     // Cleanup temporary files
