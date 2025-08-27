@@ -16,47 +16,15 @@ export async function POST(request: NextRequest) {
 
     console.log('Starting optimized video frame creation...');
 
-    // Debug: Test database connection using direct client for production
-    const { createClient } = await import('@/lib/database');
-    const client = createClient();
-    
-    let debugInfo: any = {};
-    
-    try {
-      await client.connect();
-      
-      // Test basic connection
-      const connectionTest = await client.query('SELECT NOW() as current_time, current_database() as db_name');
-      console.log('DB Connection test:', connectionTest.rows[0]);
-      debugInfo.connectionTest = connectionTest.rows[0];
-      
-      // Test raw query
-      const rawQuery = await client.query(`
-        SELECT id, step, status, persona, category, created_at 
-        FROM quiz_jobs 
-        WHERE step = 2 AND status LIKE '%pending%'
-        ORDER BY created_at ASC 
-        LIMIT 5
-      `);
-      console.log('Raw query results:', rawQuery.rows);
-      debugInfo.rawQueryCount = rawQuery.rows.length;
-      debugInfo.rawQueryResults = rawQuery.rows;
-      
-    } finally {
-      await client.end();
-    }
-
     // Fetch pending jobs for frame creation (step 2)
     const jobs = await getPendingJobs(2, 1);
-    console.log('getPendingJobs results:', jobs);
-    debugInfo.getPendingJobsResults = jobs;
+    console.log('Found', jobs.length, 'jobs to process');
     
     if (jobs.length === 0) {
       return NextResponse.json({ 
         success: true, 
         processed: 0, 
-        message: 'No jobs pending frame creation.',
-        debug: debugInfo
+        message: 'No jobs pending frame creation.'
       });
     }
 
