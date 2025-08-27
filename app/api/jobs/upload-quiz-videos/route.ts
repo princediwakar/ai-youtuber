@@ -85,8 +85,19 @@ export async function POST(request: NextRequest) {
         console.log(`Uploading video for job ${job.id} - ${job.persona} ${job.category} (${i + 1}/${jobs.length})`);
         console.log(`Rate limit status: ${uploadTracker.dailyCount}/${MAX_DAILY_UPLOADS} daily, ${uploadTracker.activeUploads}/${MAX_CONCURRENT_UPLOADS} concurrent`);
 
-        // Convert video buffer back from base64
-        const videoBuffer = Buffer.from(job.data.videoBuffer, 'base64');
+        // Read video from file path (no longer stored in database)
+        let videoBuffer;
+        if (job.data.videoPath) {
+          // Read video from saved file path
+          videoBuffer = fs.readFileSync(job.data.videoPath);
+          console.log(`Read video from file: ${job.data.videoPath} (${(videoBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
+        } else if (job.data.videoBuffer) {
+          // Fallback: convert from base64 if still stored in database
+          videoBuffer = Buffer.from(job.data.videoBuffer, 'base64');
+          console.log(`Read video from database buffer (${(videoBuffer.length / 1024 / 1024).toFixed(2)} MB)`);
+        } else {
+          throw new Error('No video data found - neither videoPath nor videoBuffer available');
+        }
         
         // Generate metadata for the video
         const metadata = generateVideoMetadata(job.data.question, job.persona, job.category, job.id);
