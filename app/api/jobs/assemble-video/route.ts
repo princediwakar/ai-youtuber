@@ -131,7 +131,7 @@ async function assembleVideoWithConcat(framePaths: string[], jobId: string, ques
 
     const persistentPath = path.join(PERSISTENT_VIDEO_DIR, `quiz-${jobId}.mp4`);
     
-    const audioPath = '/public/audio/6.mp3';
+    const audioPath = path.join(process.cwd(), 'public', 'audio', '6.mp3'); 
     const audioExists = await fs.stat(audioPath).then(() => true).catch(() => false);
 
     const ffmpegArgs = [
