@@ -10,20 +10,40 @@ const isProduction = process.env.NODE_ENV === 'production';
 let ffmpegPath;
 
 if (isProduction) {
-  // Try multiple possible paths for Vercel serverless
-  const possiblePaths = [
-    '/var/task/node_modules/ffmpeg-static/ffmpeg',
-    path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
-    require('ffmpeg-static')
-  ];
-  
-  ffmpegPath = possiblePaths.find(p => {
-    try {
-      return require('fs').existsSync(p);
-    } catch {
-      return false;
+  // For Vercel serverless, use the ffmpeg-static package directly
+  try {
+    ffmpegPath = require('ffmpeg-static');
+    console.log('Using ffmpeg-static package path:', ffmpegPath);
+    
+    // Verify the path exists
+    if (!require('fs').existsSync(ffmpegPath)) {
+      console.error('FFmpeg binary not found at:', ffmpegPath);
+      throw new Error(`FFmpeg binary not found at: ${ffmpegPath}`);
     }
-  }) || require('ffmpeg-static');
+    
+  } catch (error) {
+    console.error('Failed to resolve FFmpeg path:', error);
+    // Fallback to trying different paths
+    const possiblePaths = [
+      '/var/task/node_modules/ffmpeg-static/ffmpeg',
+      '/var/runtime/node_modules/ffmpeg-static/ffmpeg',
+      path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+    ];
+    
+    ffmpegPath = possiblePaths.find(p => {
+      try {
+        const exists = require('fs').existsSync(p);
+        console.log(`Checking path ${p}: ${exists}`);
+        return exists;
+      } catch {
+        return false;
+      }
+    });
+    
+    if (!ffmpegPath) {
+      throw new Error('No valid FFmpeg path found in serverless environment');
+    }
+  }
 } else {
   ffmpegPath = require('ffmpeg-static');
 }
