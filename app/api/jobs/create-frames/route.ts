@@ -6,6 +6,10 @@ import path from 'path';
 import { tmpdir } from 'os';
 import chromium from '@sparticuz/chromium';
 
+// Runtime configuration exports for Vercel
+export const runtime = 'nodejs';
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest) {
   try {
     // Authentication check using CRON_SECRET
@@ -130,12 +134,16 @@ async function createOptimizedFrames(question: any, persona: string, category: s
     browser = await puppeteer.launch({
       headless: true,
       args: isProduction 
-        ? chromium.args.concat([
+        ? [
+            ...chromium.args,
             '--no-sandbox',
             '--disable-setuid-sandbox', 
             '--disable-web-security',
-            '--disable-features=VizDisplayCompositor'
-          ])
+            '--disable-features=VizDisplayCompositor',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding'
+          ]
         : [
             '--no-sandbox',
             '--disable-setuid-sandbox', 
@@ -334,6 +342,3 @@ async function createOptimizedFrames(question: any, persona: string, category: s
   }
 }
 
-// Configure for Vercel deployment
-export const runtime = 'nodejs';
-export const maxDuration = 300;
