@@ -141,8 +141,6 @@ export async function updateJob(
     error_message?: string;
   }
 ): Promise<void> {
-  const pool = getPool();
-  
   const setParts = [];
   const values = [];
   let paramIndex = 1;
@@ -176,7 +174,21 @@ export async function updateJob(
   `;
   
   values.push(jobId);
-  await pool.query(query, values);
+  
+  // Use direct client connection for serverless environments to ensure consistency
+  if (process.env.NODE_ENV === 'production') {
+    const client = createClient();
+    try {
+      await client.connect();
+      await client.query(query, values);
+    } finally {
+      await client.end();
+    }
+  } else {
+    // Use pool for development
+    const pool = getPool();
+    await pool.query(query, values);
+  }
 }
 
 export async function markJobCompleted(jobId: string, youtubeVideoId: string, metadata: {
