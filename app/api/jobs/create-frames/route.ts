@@ -270,7 +270,7 @@ async function createAndStoreFrames(jobId: string, question: any, persona: strin
     ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
     ctx.font = `48px ${theme.FONT_FAMILY}`;
     ctx.textAlign = 'center';
-    ctx.fillText(`${persona.charAt(0).toUpperCase() + persona.slice(1)} Quiz`, width / 2, 100);
+    ctx.fillText(`QUIZ TIME`, width / 2, 100);
   };
 
   const drawFooter = (ctx: CanvasRenderingContext2D) => {
@@ -302,11 +302,11 @@ async function createAndStoreFrames(jobId: string, question: any, persona: strin
     frame.ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
     frame.ctx.textAlign = 'center';
 
-    let y = 300;
+    let y = 350;
     if (questionText.length < 20) {
       frame.ctx.font = `140px ${theme.FONT_FAMILY}`;
       frame.ctx.fillText(questionText, width / 2, y);
-      y += 80;
+      y += 120;
       frame.ctx.font = `45px ${theme.FONT_FAMILY}`;
       frame.ctx.fillText('What is the meaning of this word?', width / 2, y);
     } else {
@@ -314,11 +314,11 @@ async function createAndStoreFrames(jobId: string, question: any, persona: strin
       const questionLines = wrapText(frame.ctx, questionText, width - 120);
       questionLines.forEach(line => {
         frame.ctx.fillText(line, width / 2, y);
-        y += 75;
+        y += 85;
       });
     }
 
-    const optionsYStart = (persona === 'vocabulary' && questionText.length < 20) ? 550 : y + 100;
+    const optionsYStart = (persona === 'vocabulary' && questionText.length < 20) ? 650 : y + 150;
     let optionY = optionsYStart;
 
     frame.ctx.font = `50px ${theme.FONT_FAMILY}`;
@@ -327,21 +327,43 @@ async function createAndStoreFrames(jobId: string, question: any, persona: strin
     const buttonX = (width - buttonWidth) / 2;
 
     Object.entries(options).forEach(([key, value]) => {
+      const optionText = `${key}) ${value}`;
+      const textWidth = frame.ctx.measureText(optionText).width;
+      const maxTextWidth = buttonWidth - 40; // 20px padding on each side
+      
+      let currentButtonHeight = buttonHeight;
+      let lines = [optionText];
+      
+      // If text is too wide, wrap it
+      if (textWidth > maxTextWidth) {
+        lines = wrapText(frame.ctx, optionText, maxTextWidth);
+        currentButtonHeight = Math.max(buttonHeight, lines.length * 60 + 20);
+      }
+      
       if (isAnswerFrame) {
         const isCorrect = key === correctAnswer;
         if (isCorrect) {
-          drawRoundRect(frame.ctx, buttonX, optionY, buttonWidth, buttonHeight, 20, theme.COLOR_CORRECT_BG);
+          drawRoundRect(frame.ctx, buttonX, optionY, buttonWidth, currentButtonHeight, 20, theme.COLOR_CORRECT_BG);
           frame.ctx.fillStyle = theme.COLOR_CORRECT_TEXT;
         } else {
-          drawRoundRect(frame.ctx, buttonX, optionY, buttonWidth, buttonHeight, 20, theme.COLOR_BUTTON_BG);
+          drawRoundRect(frame.ctx, buttonX, optionY, buttonWidth, currentButtonHeight, 20, theme.COLOR_BUTTON_BG);
           frame.ctx.fillStyle = theme.MUTED_TEXT_COLOR;
         }
       } else {
-        drawRoundRect(frame.ctx, buttonX, optionY, buttonWidth, buttonHeight, 20, theme.COLOR_BUTTON_BG);
+        drawRoundRect(frame.ctx, buttonX, optionY, buttonWidth, currentButtonHeight, 20, theme.COLOR_BUTTON_BG);
         frame.ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
       }
-      frame.ctx.fillText(`${key}) ${value}`, width / 2, optionY + buttonHeight / 2 + 15);
-      optionY += buttonHeight + 40;
+      
+      // Draw text lines centered vertically in button
+      const lineHeight = 60;
+      const totalTextHeight = lines.length * lineHeight;
+      const startY = optionY + (currentButtonHeight - totalTextHeight) / 2 + lineHeight / 2 + 10;
+      
+      lines.forEach((line, lineIndex) => {
+        frame.ctx.fillText(line, width / 2, startY + lineIndex * lineHeight);
+      });
+      
+      optionY += currentButtonHeight + 60;
     });
 
     drawFooter(frame.ctx);
@@ -353,8 +375,8 @@ async function createAndStoreFrames(jobId: string, question: any, persona: strin
   const frame3 = createBaseCanvas();
   drawHeader(frame3.ctx);
 
-  const contentYStart = 250;
-  const contentYEnd = height - 250;
+  const contentYStart = 300;
+  const contentYEnd = height - 300;
   const contentHeight = contentYEnd - contentYStart;
   const textPadding = 80;
   const textMaxWidth = width - (textPadding * 2);
@@ -390,10 +412,10 @@ async function createAndStoreFrames(jobId: string, question: any, persona: strin
 
   y3 += titleHeight + spaceAfterTitle;
 
-  frame3.ctx.textAlign = 'left';
+  frame3.ctx.textAlign = 'center';
   frame3.ctx.font = `${finalFontSize}px ${theme.FONT_FAMILY}`;
   finalLines.forEach(line => {
-    frame3.ctx.fillText(line, textPadding, y3);
+    frame3.ctx.fillText(line, width / 2, y3);
     y3 += finalLineHeight;
   });
 
