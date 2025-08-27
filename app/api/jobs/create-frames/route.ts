@@ -1,238 +1,413 @@
+// app/api/jobs/create-frames/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getPendingJobs, updateJob } from '@/lib/database';
-import { createCanvas } from 'canvas';
+import { createCanvas, Canvas, CanvasRenderingContext2D, registerFont } from 'canvas';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-// Runtime configuration exports for Vercel
+// --- FONT REGISTRATION ---
+try {
+  const fontPath = path.join(process.cwd(), 'public', 'fonts', 'Poppins-Bold.ttf');
+  registerFont(fontPath, { family: 'Poppins', weight: 'bold' });
+  console.log('Successfully registered Poppins-Bold font.');
+} catch (error) {
+  console.error('Failed to register font:', error);
+}
+
+// --- THEME CONFIGURATION ---
+interface Theme {
+  name: string;
+  FONT_FAMILY: string;
+  COLOR_BG_DARK: string;
+  COLOR_BG_LIGHT: string;
+  COLOR_TEXT_PRIMARY: string;
+  COLOR_BUTTON_BG: string;
+  COLOR_CORRECT_BG: string;
+  COLOR_CORRECT_TEXT: string;
+  MUTED_TEXT_COLOR: string;
+}
+
+// First, ensure your Theme interface includes the 'name' property
+interface Theme {
+  name: string;
+  FONT_FAMILY: string;
+  COLOR_BG_DARK: string;
+  COLOR_BG_LIGHT: string;
+  COLOR_TEXT_PRIMARY: string;
+  COLOR_BUTTON_BG: string;
+  COLOR_CORRECT_BG: string;
+  COLOR_CORRECT_TEXT: string;
+  MUTED_TEXT_COLOR: string;
+}
+
+// Corrected 'themes' constant as an array of Theme objects
+const themes: Theme[] = [
+
+  {
+    name: 'darkCoffee',
+    FONT_FAMILY: 'Poppins',
+    COLOR_BG_DARK: '#4b3832',
+    COLOR_BG_LIGHT: '#854442',
+    COLOR_TEXT_PRIMARY: '#fff4e6',
+    COLOR_BUTTON_BG: '#3c2f2f',
+    COLOR_CORRECT_BG: '#be9b7b',
+    COLOR_CORRECT_TEXT: '#3c2f2f',
+    MUTED_TEXT_COLOR: 'rgba(255, 244, 230, 0.5)',
+  },
+  {
+    name: 'lightCoffee',
+    FONT_FAMILY: 'Poppins',
+    COLOR_BG_DARK: '#fff4e6',
+    COLOR_BG_LIGHT: '#fff4e6',
+    COLOR_TEXT_PRIMARY: '#3c2f2f',
+    COLOR_BUTTON_BG: '#be9b7b',
+    COLOR_CORRECT_BG: '#854442',
+    COLOR_CORRECT_TEXT: '#fff4e6',
+    MUTED_TEXT_COLOR: 'rgba(60, 47, 47, 0.5)',
+  },
+  {
+    name: 'warmPaper',
+    FONT_FAMILY: 'Poppins',
+    COLOR_BG_DARK: '#FFFCF2',
+    COLOR_BG_LIGHT: '#FFFCF2',
+    COLOR_TEXT_PRIMARY: '#252422',
+    COLOR_BUTTON_BG: '#CCC5B9',
+    COLOR_CORRECT_BG: '#EB5E28',
+    COLOR_CORRECT_TEXT: '#FFFCF2',
+    MUTED_TEXT_COLOR: 'rgba(37, 36, 34, 0.5)',
+  },
+  {
+    name: 'desertBloom',
+    FONT_FAMILY: 'Poppins',
+    COLOR_BG_DARK: '#F4F1DE',
+    COLOR_BG_LIGHT: '#F4F1DE',
+    COLOR_TEXT_PRIMARY: '#3D405B',
+    COLOR_BUTTON_BG: '#E07A5F', // Terracotta buttons for a warmer, bolder feel
+    COLOR_CORRECT_BG: '#81B29A', // The sage green acts as a cool, surprising "bloom"
+    COLOR_CORRECT_TEXT: '#F4F1DE',
+    MUTED_TEXT_COLOR: 'rgba(61, 64, 91, 0.5)',
+  },
+  {
+    name: 'charcoalOrange',
+    FONT_FAMILY: 'Poppins',
+    COLOR_BG_DARK: '#252422',
+    COLOR_BG_LIGHT: '#403D39',
+    COLOR_TEXT_PRIMARY: '#FFFCF2',
+    COLOR_BUTTON_BG: '#403D39',
+    COLOR_CORRECT_BG: '#EB5E28',
+    COLOR_CORRECT_TEXT: '#252422',
+    MUTED_TEXT_COLOR: 'rgba(255, 252, 242, 0.6)',
+  },
+  {
+    name: 'sageTerracotta',
+    FONT_FAMILY: 'Poppins',
+    COLOR_BG_DARK: '#F4F1DE',
+    COLOR_BG_LIGHT: '#F4F1DE',
+    COLOR_TEXT_PRIMARY: '#3D405B',
+    COLOR_BUTTON_BG: '#E07A5F',
+    COLOR_CORRECT_BG: '#81B29A',
+    COLOR_CORRECT_TEXT: '#F4F1DE',
+    MUTED_TEXT_COLOR: 'rgba(61, 64, 91, 0.5)',
+  },
+  {
+    name: 'midnightGarden',
+    FONT_FAMILY: 'Poppins',
+    COLOR_BG_DARK: '#3D405B',
+    COLOR_BG_LIGHT: '#3D405B',
+    COLOR_TEXT_PRIMARY: '#F4F1DE',
+    COLOR_BUTTON_BG: '#81B29A',
+    COLOR_CORRECT_BG: '#F2CC8F',
+    COLOR_CORRECT_TEXT: '#3D405B',
+    MUTED_TEXT_COLOR: 'rgba(244, 241, 222, 0.6)',
+  },
+  {
+    name: 'sunsetDune',
+    FONT_FAMILY: 'Poppins',
+    COLOR_BG_DARK: '#F4F1DE',
+    COLOR_BG_LIGHT: '#F4F1DE',
+    COLOR_TEXT_PRIMARY: '#3D405B',
+    COLOR_BUTTON_BG: '#F2CC8F',
+    COLOR_CORRECT_BG: '#E07A5F',
+    COLOR_CORRECT_TEXT: '#F4F1DE',
+    MUTED_TEXT_COLOR: 'rgba(61, 64, 91, 0.5)',
+  },
+  {
+    name: 'slateGold',
+    FONT_FAMILY: 'Poppins',
+    COLOR_BG_DARK: '#3D405B',
+    COLOR_BG_LIGHT: '#494c6f', // A slightly lighter variant of the dark slate
+    COLOR_TEXT_PRIMARY: '#F2CC8F',
+    COLOR_BUTTON_BG: 'rgba(244, 241, 222, 0.1)', // A subtle, almost transparent button
+    COLOR_CORRECT_BG: '#81B29A',
+    COLOR_CORRECT_TEXT: '#3D405B',
+    MUTED_TEXT_COLOR: 'rgba(242, 204, 143, 0.6)',
+  },
+];
+
+
+// --- CONFIGURATION & SETUP ---
+const FRAMES_STORAGE_DIR = path.join('/tmp', 'generated-frames');
+
+async function setupStorage() {
+  try {
+    await fs.mkdir(FRAMES_STORAGE_DIR, { recursive: true });
+  } catch (error) {
+    console.error("Failed to create frames storage directory:", error);
+  }
+}
+setupStorage();
+
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
-    // Authentication check using CRON_SECRET
     const authHeader = request.headers.get('Authorization');
     if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
-
-    console.log('Starting optimized video frame creation...');
-
-    // Fetch pending jobs for frame creation (step 2)
-    const jobs = await getPendingJobs(2, 1);
-    console.log('Found', jobs.length, 'jobs to process');
-    
+    const jobs = await getPendingJobs(2, 2);
     if (jobs.length === 0) {
-      return NextResponse.json({ 
-        success: true, 
-        processed: 0, 
-        message: 'No jobs pending frame creation.'
-      });
+      return NextResponse.json({ success: true, processed: 0, message: 'No jobs pending frame creation.' });
     }
 
-    const processedJobs = [];
-
-    for (const job of jobs) {
-      try {
-        console.log(`Creating frames for job ${job.id} - ${job.persona} ${job.category}`);
-
-        // Generate frames using the Canvas API
-        const frames = await createOptimizedFrames(job.data.question, job.persona, job.category);
-        
-        // Update the job to the next step (assembly_pending)
-        console.log(`Updating job ${job.id} to step 3 with assembly_pending status`);
-        await updateJob(job.id, {
-          step: 3,
-          status: 'assembly_pending',
-          data: { 
-            ...job.data, 
-            frames: frames 
-          }
-        });
-        console.log(`Successfully updated job ${job.id} to step 3`);
-        
-        processedJobs.push({ id: job.id, persona: job.persona, category: job.category });
-        console.log(`Frame creation completed for job ${job.id}`);
-
-      } catch (error) {
-        console.error(`Failed to create frames for job ${job.id}:`, error);
-        await updateJob(job.id, {
-          status: 'failed',
-          error_message: `Frame creation failed: ${error.message}`
-        });
-      }
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      processed: processedJobs.length,
-      jobs: processedJobs
+    const processPromises = jobs.map((job) => {
+      // Select a random theme for every job
+          // Select a random theme object directly from the array
+    const randomIndex = Math.floor(Math.random() * themes.length);
+    const selectedTheme = themes[randomIndex];
+      return processJob(job, selectedTheme);
     });
 
+    const results = await Promise.allSettled(processPromises);
+    const processedJobs = results
+        .filter(r => r.status === 'fulfilled' && r.value)
+        .map(r => (r as PromiseFulfilledResult<any>).value);
+    return NextResponse.json({ success: true, processed: processedJobs.length, jobs: processedJobs });
   } catch (error) {
     console.error('Frame creation process failed:', error);
-    return NextResponse.json(
-      { success: false, error: 'Frame creation failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Frame creation failed' }, { status: 500 });
+  }
+}
+
+async function processJob(job: any, theme: Theme) {
+  try {
+    console.log(`Creating frames for job ${job.id} with theme ${theme.name}`); // Use theme.name
+    const framePaths = await createAndStoreFrames(job.id, job.data.question, job.persona, job.category, theme);
+    await updateJob(job.id, {
+      step: 3,
+      status: 'assembly_pending',
+      data: { ...job.data, framePaths: framePaths }
+    });
+    console.log(`✅ Frame creation completed for job ${job.id}`);
+    return { id: job.id, persona: job.persona, category: job.category };
+  } catch (error) {
+    console.error(`❌ Failed to create frames for job ${job.id}:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    await updateJob(job.id, {
+      status: 'failed',
+      error_message: `Frame creation failed: ${errorMessage}`
+    });
+    return null;
+  }
+}
+
+async function saveDebugFrame(canvas: Canvas, filename: string) {
+  if (process.env.DEBUG_MODE !== 'true') return;
+  try {
+    const debugDir = path.join(process.cwd(), 'debug-frames');
+    await fs.mkdir(debugDir, { recursive: true });
+    await fs.writeFile(path.join(debugDir, filename), canvas.toBuffer('image/png'));
+    console.log(`📸 Saved debug frame: ${filename}`);
+  } catch (error) {
+    console.error(`Failed to save debug frame ${filename}:`, error);
   }
 }
 
 /**
- * Creates video frames using Canvas API.
- * @param {object} question - The question data object.
- * @param {string} persona - The type of quiz (e.g., 'vocabulary').
- * @param {string} category - The category of the quiz (e.g., 'english').
- * @returns {Promise<string[]>} A promise that resolves to an array of base64 encoded PNG image strings.
+ * Creates and stores video frames using a dynamic theme.
  */
-async function createOptimizedFrames(question: any, persona: string, category: string): Promise<string[]> {
+async function createAndStoreFrames(jobId: string, question: any, persona: string, category: string, theme: Theme): Promise<string[]> {
   const width = 1080;
   const height = 1920;
 
-  try {
-    console.log('Creating frames using Canvas API...');
+  const questionText = question?.question || 'Despite the company’s efforts to ___ its carbon emissions, critics argued the new policy would only ___ the problem.';
+  const explanationText = question?.explanation || 'Affect is a verb meaning ‘to influence’, while effect is a noun meaning ‘a result’. You affect something to produce an effect.';
+  const correctAnswer = question?.answer || 'B';
+  const options = question?.options || { A: 'lessen & lesson', B: 'affect & effect', C: 'compliment & complement', D: 'elicit & illicit' };
 
-    // Normalize and escape data
-    let options = question?.options || {};
-    if (Array.isArray(options)) {
-      options = { A: options[0], B: options[1], C: options[2], D: options[3] };
-    }
-    const correctAnswer = question?.answer || 'A';
+  // --- Helper Functions ---
+  const createBaseCanvas = () => {
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, theme.COLOR_BG_DARK);
+    gradient.addColorStop(1, theme.COLOR_BG_LIGHT);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    return { canvas, ctx };
+  };
 
-    const questionText = question?.question || 'Sample Question';
-    const explanationText = question?.explanation || 'Sample explanation text.';
-    const optionTexts = {
-        A: options.A || 'Option A',
-        B: options.B || 'Option B', 
-        C: options.C || 'Option C',
-        D: options.D || 'Option D',
-    };
-
-    const frames = [];
-
-    // Helper to create canvas with gradient background
-    const createBaseCanvas = () => {
-      const canvas = createCanvas(width, height);
-      const ctx = canvas.getContext('2d');
-      
-      // Create gradient background
-      const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, '#FF6FD8');
-      gradient.addColorStop(0.5, '#3813C2');
-      gradient.addColorStop(1, '#2E8BFD');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-      
-      return { canvas, ctx };
-    };
-
-    // Helper to wrap text
-    const wrapText = (ctx: any, text: string, maxWidth: number) => {
-      const words = text.split(' ');
-      const lines = [];
-      let currentLine = words[0];
-
-      for (let i = 1; i < words.length; i++) {
+  const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number) => {
+    const words = text.split(' ');
+    let lines = [];
+    let currentLine = words[0] || '';
+    for (let i = 1; i < words.length; i++) {
         const word = words[i];
-        const width = ctx.measureText(currentLine + " " + word).width;
-        if (width < maxWidth) {
-          currentLine += " " + word;
+        const testLine = `${currentLine} ${word}`;
+        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+            lines.push(currentLine);
+            currentLine = word;
         } else {
-          lines.push(currentLine);
-          currentLine = word;
+            currentLine = testLine;
         }
-      }
-      lines.push(currentLine);
-      return lines;
-    };
+    }
+    lines.push(currentLine);
+    return lines;
+  };
 
-    // Frame 1: Question
-    const frame1 = createBaseCanvas();
-    frame1.ctx.fillStyle = 'white';
-    frame1.ctx.font = 'bold 24px Arial';
-    frame1.ctx.textAlign = 'center';
-    
-    // Question text
-    const questionLines = wrapText(frame1.ctx, questionText, width - 80);
-    let y = height / 3;
-    questionLines.forEach((line: string) => {
-      frame1.ctx.fillText(line, width / 2, y);
-      y += 30;
-    });
-    
-    // Options
-    y += 20;
-    frame1.ctx.font = '20px Arial';
-    Object.entries(optionTexts).forEach(([key, value]) => {
-      const optionText = `${key}) ${value}`;
-      const optionLines = wrapText(frame1.ctx, optionText, width - 100);
-      optionLines.forEach((line: string) => {
-        frame1.ctx.fillText(line, width / 2, y);
-        y += 25;
+  const drawHeader = (ctx: CanvasRenderingContext2D) => {
+    ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+    ctx.font = `48px ${theme.FONT_FAMILY}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(`${persona.charAt(0).toUpperCase() + persona.slice(1)} Quiz`, width / 2, 100);
+  };
+
+  const drawFooter = (ctx: CanvasRenderingContext2D) => {
+    ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+    ctx.font = `40px ${theme.FONT_FAMILY}`;
+    ctx.textAlign = 'center';
+    ctx.fillText('@gibbiai', width / 2, height - 60);
+  };
+
+  const drawRoundRect = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number, fill: string) => {
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  // --- Frame 1 & 2 (Question/Answer) ---
+  const frames = [];
+  for (let i = 1; i <= 2; i++) {
+    const isAnswerFrame = i === 2;
+    const frame = createBaseCanvas();
+    drawHeader(frame.ctx);
+
+    frame.ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+    frame.ctx.textAlign = 'center';
+
+    let y = 300;
+    if (questionText.length < 20) {
+      frame.ctx.font = `140px ${theme.FONT_FAMILY}`;
+      frame.ctx.fillText(questionText, width / 2, y);
+      y += 80;
+      frame.ctx.font = `45px ${theme.FONT_FAMILY}`;
+      frame.ctx.fillText('What is the meaning of this word?', width / 2, y);
+    } else {
+      frame.ctx.font = `64px ${theme.FONT_FAMILY}`;
+      const questionLines = wrapText(frame.ctx, questionText, width - 120);
+      questionLines.forEach(line => {
+        frame.ctx.fillText(line, width / 2, y);
+        y += 75;
       });
-      y += 10;
-    });
-    
-    frames.push(`data:image/png;base64,${frame1.canvas.toBuffer().toString('base64')}`);
+    }
 
-    // Frame 2: Answer (with correct option highlighted)
-    const frame2 = createBaseCanvas();
-    frame2.ctx.fillStyle = 'white';
-    frame2.ctx.font = 'bold 24px Arial';
-    frame2.ctx.textAlign = 'center';
-    
-    // Question text (same as frame 1)
-    const questionLines2 = wrapText(frame2.ctx, questionText, width - 80);
-    let y2 = height / 3;
-    questionLines2.forEach((line: string) => {
-      frame2.ctx.fillText(line, width / 2, y2);
-      y2 += 30;
-    });
-    
-    // Options with correct answer highlighted
-    y2 += 20;
-    frame2.ctx.font = '20px Arial';
-    Object.entries(optionTexts).forEach(([key, value]) => {
-      if (key === correctAnswer) {
-        // Highlight correct answer
-        frame2.ctx.fillStyle = '#38E54D';
-        frame2.ctx.fillRect(50, y2 - 20, width - 100, 30);
-        frame2.ctx.fillStyle = 'white';
+    const optionsYStart = (persona === 'vocabulary' && questionText.length < 20) ? 550 : y + 100;
+    let optionY = optionsYStart;
+
+    frame.ctx.font = `50px ${theme.FONT_FAMILY}`;
+    const buttonWidth = width * 0.8;
+    const buttonHeight = 120;
+    const buttonX = (width - buttonWidth) / 2;
+
+    Object.entries(options).forEach(([key, value]) => {
+      if (isAnswerFrame) {
+        const isCorrect = key === correctAnswer;
+        if (isCorrect) {
+          drawRoundRect(frame.ctx, buttonX, optionY, buttonWidth, buttonHeight, 20, theme.COLOR_CORRECT_BG);
+          frame.ctx.fillStyle = theme.COLOR_CORRECT_TEXT;
+        } else {
+          drawRoundRect(frame.ctx, buttonX, optionY, buttonWidth, buttonHeight, 20, theme.COLOR_BUTTON_BG);
+          frame.ctx.fillStyle = theme.MUTED_TEXT_COLOR;
+        }
       } else {
-        frame2.ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        drawRoundRect(frame.ctx, buttonX, optionY, buttonWidth, buttonHeight, 20, theme.COLOR_BUTTON_BG);
+        frame.ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
       }
-      
-      const optionText = `${key}) ${value}`;
-      const optionLines = wrapText(frame2.ctx, optionText, width - 100);
-      optionLines.forEach((line: string) => {
-        frame2.ctx.fillText(line, width / 2, y2);
-        y2 += 25;
-      });
-      y2 += 10;
+      frame.ctx.fillText(`${key}) ${value}`, width / 2, optionY + buttonHeight / 2 + 15);
+      optionY += buttonHeight + 40;
     });
-    
-    frames.push(`data:image/png;base64,${frame2.canvas.toBuffer().toString('base64')}`);
 
-    // Frame 3: Explanation
-    const frame3 = createBaseCanvas();
-    frame3.ctx.fillStyle = 'white';
-    frame3.ctx.font = 'bold 28px Arial';
-    frame3.ctx.textAlign = 'center';
-    frame3.ctx.fillText('Explanation', width / 2, 100);
-    
-    frame3.ctx.font = '18px Arial';
-    const explanationLines = wrapText(frame3.ctx, explanationText, width - 80);
-    let y3 = 150;
-    explanationLines.forEach((line: string) => {
-      frame3.ctx.fillText(line, width / 2, y3);
-      y3 += 22;
-    });
-    
-    frames.push(`data:image/png;base64,${frame3.canvas.toBuffer().toString('base64')}`);
-
-    console.log(`Successfully created ${frames.length} frames using Canvas API.`);
-    return frames;
-
-  } catch (error) {
-    console.error('Canvas frame creation failed:', error);
-    throw new Error(`Frame creation failed: ${error.message}`);
+    drawFooter(frame.ctx);
+    await saveDebugFrame(frame.canvas, `${theme.name}-job-${jobId}-frame-${i}-${isAnswerFrame ? 'answer' : 'question'}.png`);
+    frames.push(frame.canvas);
   }
+
+  // --- Frame 3: Explanation (with Dynamic Layout) ---
+  const frame3 = createBaseCanvas();
+  drawHeader(frame3.ctx);
+
+  const contentYStart = 250;
+  const contentYEnd = height - 250;
+  const contentHeight = contentYEnd - contentYStart;
+  const textPadding = 80;
+  const textMaxWidth = width - (textPadding * 2);
+
+  let finalFontSize = 55;
+  let finalLines = [];
+  let finalLineHeight = 0;
+
+  for (let fs = finalFontSize; fs >= 20; fs -= 2) {
+    const lineHeight = fs * 1.4;
+    frame3.ctx.font = `${fs}px ${theme.FONT_FAMILY}`;
+    const lines = wrapText(frame3.ctx, explanationText, textMaxWidth);
+    const totalTextHeight = lines.length * lineHeight;
+
+    if (totalTextHeight <= contentHeight - 150) {
+      finalFontSize = fs;
+      finalLines = lines;
+      finalLineHeight = lineHeight;
+      break;
+    }
+  }
+
+  const titleHeight = 70;
+  const spaceAfterTitle = 60;
+  const bodyHeight = finalLines.length * finalLineHeight;
+  const totalBlockHeight = titleHeight + spaceAfterTitle + bodyHeight;
+  let y3 = contentYStart + (contentHeight - totalBlockHeight) / 2;
+
+  frame3.ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+  frame3.ctx.textAlign = 'center';
+  frame3.ctx.font = `${titleHeight}px ${theme.FONT_FAMILY}`;
+  frame3.ctx.fillText('Explanation', width / 2, y3);
+
+  y3 += titleHeight + spaceAfterTitle;
+
+  frame3.ctx.textAlign = 'left';
+  frame3.ctx.font = `${finalFontSize}px ${theme.FONT_FAMILY}`;
+  finalLines.forEach(line => {
+    frame3.ctx.fillText(line, textPadding, y3);
+    y3 += finalLineHeight;
+  });
+
+  drawFooter(frame3.ctx);
+  await saveDebugFrame(frame3.canvas, `${theme.name}-job-${jobId}-frame-3-explanation.png`);
+  frames.push(frame3.canvas);
+
+  // --- Save Canvases to Final Storage ---
+  const savePromises = frames.map(async (canvas, index) => {
+    const buffer = canvas.toBuffer('image/png');
+    const filePath = path.join(FRAMES_STORAGE_DIR, `{theme.name}-job-${jobId}-frame-${index + 1}.png`);
+    await fs.writeFile(filePath, buffer);
+    return filePath;
+  });
+
+  return Promise.all(savePromises);
 }

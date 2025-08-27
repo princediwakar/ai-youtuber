@@ -1,190 +1,201 @@
+// app/api/jobs/assemble-video/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getPendingJobs, updateJob } from '@/lib/database';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
-import { Muxer, ArrayBufferTarget } from 'mp4-muxer';
+import { spawn } from 'child_process';
+const ffmpegPath = require('ffmpeg-static');
 
-console.log('Using pure JavaScript video creation with mp4-muxer');
+// --- CONFIGURATION ---
+const PERSISTENT_VIDEO_DIR = path.join('/tmp', 'generated-videos');
+// Set to true in your .env.local for local debugging
+const isDebug = process.env.DEBUG_MODE === 'true';
+
+// --- SETUP ---
+async function setupStorage() {
+  try {
+    await fs.mkdir(PERSISTENT_VIDEO_DIR, { recursive: true });
+  } catch (error) {
+    console.error("Failed to create persistent video directory:", error);
+  }
+}
+setupStorage();
+
+/**
+ * Saves a copy of the generated video to a local 'generated-videos' folder for debugging.
+ * This function only runs if the DEBUG_MODE environment variable is set to 'true'.
+ * @param {string} sourcePath - The path of the generated video file in the temporary directory.
+ * @param {string} jobId - The ID of the job, used for naming the debug file.
+ */
+async function saveDebugVideo(sourcePath: string, jobId: string) {
+  if (!isDebug) {
+    return;
+  }
+
+  try {
+    const debugDir = path.join(process.cwd(), 'generated-videos');
+    await fs.mkdir(debugDir, { recursive: true });
+    const destinationPath = path.join(debugDir, path.basename(sourcePath));
+    await fs.copyFile(sourcePath, destinationPath);
+    console.log(`[DEBUG] Video for job ${jobId} saved to: ${destinationPath}`);
+  } catch (error) {
+    // Log an error but don't throw, as this is a non-critical debug step.
+    console.error(`[DEBUG] Failed to save debug video for job ${jobId}:`, error);
+  }
+}
+
 
 export async function POST(request: NextRequest) {
   try {
-    // Auth check using CRON_SECRET
     const authHeader = request.headers.get('Authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
     console.log('Starting video assembly batch...');
-
-    // Get jobs at step 3 (assembly_pending)
-    const jobs = await getPendingJobs(3, 2); // Process 2 jobs at a time
+    const jobs = await getPendingJobs(3, 2);
     
     if (jobs.length === 0) {
-      return NextResponse.json({ 
-        success: true, 
-        processed: 0, 
-        message: 'No jobs pending video assembly' 
-      });
+      return NextResponse.json({ success: true, processed: 0, message: 'No jobs pending video assembly' });
     }
 
-    const processedJobs = [];
+    const processPromises = jobs.map(job => processJob(job));
+    const results = await Promise.allSettled(processPromises);
 
-    for (const job of jobs) {
-      try {
-        console.log(`Assembling video for job ${job.id} - ${job.persona} ${job.category}`);
+    const processedJobs = results
+        .filter(r => r.status === 'fulfilled' && r.value)
+        .map(r => (r as PromiseFulfilledResult<any>).value);
 
-        // Create video from frames using FFmpeg
-        const { videoBuffer, persistentPath } = await assembleVideo(job.data.frames, job.id, job.data.question);
-        
-        // Update job to next step WITHOUT storing video data in database
-        await updateJob(job.id, {
-          step: 4,
-          status: 'upload_pending',
-          data: { 
-            ...job.data,
-            videoPath: persistentPath, // Store file path instead of buffer
-            videoSize: videoBuffer.length
-          }
-        });
-        
-        processedJobs.push({ id: job.id, persona: job.persona, category: job.category });
-        console.log(`Video assembly completed for job ${job.id}`);
-
-      } catch (error) {
-        console.error(`Failed to assemble video for job ${job.id}:`, error);
-        
-        // Mark job as failed
-        await updateJob(job.id, {
-          status: 'failed',
-          error_message: `Video assembly failed: ${error.message}`
-        });
-      }
-    }
-
-    console.log(`Video assembly batch completed. Processed ${processedJobs.length} jobs.`);
-
-    return NextResponse.json({ 
-      success: true, 
-      processed: processedJobs.length,
-      jobs: processedJobs
-    });
+    return NextResponse.json({ success: true, processed: processedJobs.length, jobs: processedJobs });
 
   } catch (error) {
     console.error('Video assembly batch failed:', error);
-    return NextResponse.json(
-      { success: false, error: 'Video assembly failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Video assembly failed' }, { status: 500 });
   }
 }
 
-async function assembleVideo(frames: string[], jobId: string, question: any): Promise<{videoBuffer: Buffer, persistentPath: string}> {
-  console.log('Creating video using pure JavaScript mp4-muxer...');
-  
+async function processJob(job: any) {
+  try {
+    console.log(`Assembling video for job ${job.id}`);
+
+    const { persistentPath, videoSize } = await assembleVideoWithConcat(
+        job.data.framePaths, 
+        job.id, 
+        job.data.question
+    );
+    
+    await updateJob(job.id, {
+      step: 4,
+      status: 'upload_pending',
+      data: { 
+        ...job.data,
+        videoPath: persistentPath,
+        videoSize: videoSize
+      }
+    });
+    
+    console.log(`✅ Video assembly completed for job ${job.id}`);
+    return { id: job.id, persona: job.persona, category: job.category };
+
+  } catch (error) {
+    console.error(`❌ Failed to assemble video for job ${job.id}:`, error);
+    await updateJob(job.id, {
+      status: 'failed',
+      error_message: `Video assembly failed: ${(error as Error).message}`
+    });
+    return null;
+  }
+}
+
+async function assembleVideoWithConcat(framePaths: string[], jobId: string, question: any): Promise<{persistentPath: string, videoSize: number}> {
+  if (!ffmpegPath) {
+      throw new Error("ffmpeg binary not found. Make sure ffmpeg-static is installed.");
+  }
+
   const tempDir = path.join(tmpdir(), `quiz-video-${jobId}-${Date.now()}`);
   await fs.mkdir(tempDir, { recursive: true });
 
   try {
-    console.log(`Creating video from ${frames.length} frames in ${tempDir}`);
-
-    // Calculate durations for each frame
-    const frame1Duration = getFrameDuration(question, 1);
-    const frame2Duration = getFrameDuration(question, 2);
-    const frame3Duration = getFrameDuration(question, 3);
-    const totalDuration = frame1Duration + frame2Duration + frame3Duration;
+    const durations = [
+      getFrameDuration(question, 1),
+      getFrameDuration(question, 2),
+      getFrameDuration(question, 3)
+    ];
     
-    console.log(`Frame durations: ${frame1Duration}s, ${frame2Duration}s, ${frame3Duration}s (total: ${totalDuration}s)`);
+    const inputFileContent = framePaths.map((p, i) => 
+      `file '${path.resolve(p)}'\nduration ${durations[i]}`
+    ).join('\n');
+    const inputFilePath = path.join(tempDir, 'inputs.txt');
+    await fs.writeFile(inputFilePath, inputFileContent);
 
-    // Create a proper MP4 video using mp4-muxer
-    const target = new ArrayBufferTarget();
-    const muxer = new Muxer({
-      target,
-      video: {
-        codec: 'avc',
-        width: 1080,
-        height: 1920,
-      },
-      fastStart: 'in-memory',
+    const persistentPath = path.join(PERSISTENT_VIDEO_DIR, `quiz-${jobId}.mp4`);
+    
+    const audioPath = './public/audio/6.mp3';
+    const audioExists = await fs.stat(audioPath).then(() => true).catch(() => false);
+
+    const ffmpegArgs = [
+      // Video input from frames
+      '-f', 'concat',
+      '-safe', '0',
+      '-i', inputFilePath,
+      
+      // Add audio input with looping enabled
+      ...(audioExists ? ['-stream_loop', '-1', '-i', audioPath] : []),
+      
+      // Codecs
+      '-c:v', 'libx264',
+      '-c:a', 'aac',
+      
+      // Stop encoding when the shortest stream (the video) ends
+      '-shortest',
+      
+      // Output format
+      '-pix_fmt', 'yuv420p',
+      '-vf', 'scale=1080:1920',
+      '-r', '30',
+      '-preset', 'fast',
+      '-y',
+      persistentPath
+    ];
+
+    console.log(`Running FFmpeg: ${ffmpegPath} ${ffmpegArgs.join(' ')}`);
+
+    await new Promise<void>((resolve, reject) => {
+      const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
+      
+      ffmpegProcess.stderr.on('data', (data: Buffer) => console.log(`FFmpeg: ${data.toString()}`));
+      ffmpegProcess.on('close', (code: number) => {
+        if (code === 0) resolve();
+        else reject(new Error(`FFmpeg exited with code ${code}`));
+      });
+      ffmpegProcess.on('error', (err) => reject(err));
     });
 
-    // Save frames as separate image files for processing
-    const framePaths = [];
-    for (let i = 0; i < frames.length; i++) {
-      const frameData = frames[i].replace(/^data:image\/png;base64,/, '');
-      const framePath = path.join(tempDir, `frame_${i}.png`);
-      await fs.writeFile(framePath, frameData, 'base64');
-      framePaths.push(framePath);
-    }
+    // --- HELPER FUNCTION CALL ---
+    // Save a copy of the video to the local project folder if in debug mode.
+    await saveDebugVideo(persistentPath, jobId);
 
-    // Create slideshow-style video by embedding frame data
-    console.log('Creating slideshow video with embedded frames...');
-    
-    // For now, create a basic video structure
-    // This is a simplified video creation - ideally would use proper video encoding
-    const videoData = {
-      frames: frames,
-      durations: [frame1Duration, frame2Duration, frame3Duration],
-      totalDuration: totalDuration,
-      width: 1080,
-      height: 1920,
-      metadata: {
-        jobId,
-        question: question.question,
-        persona: 'vocabulary'
-      }
-    };
-    
-    // Create a valid MP4-like structure with embedded data
-    const videoContent = JSON.stringify(videoData);
-    const videoBuffer = Buffer.concat([
-      Buffer.from('ftypisom\x00\x00\x00\x20isom', 'ascii'), // MP4 header
-      Buffer.from(videoContent, 'utf8'), // Embedded quiz content
-      Buffer.from('\x00\x00\x00\x00', 'ascii') // End marker
-    ]);
-    
-    console.log(`Video created with size: ${(videoBuffer.length / 1024 / 1024).toFixed(2)} MB`);
-
-    // Save video to persistent directory
-    const persistentDir = path.join(process.cwd(), 'generated-videos');
-    await fs.mkdir(persistentDir, { recursive: true });
-    const persistentPath = path.join(persistentDir, `quiz-${jobId}-${Date.now()}.mp4`);
-    await fs.writeFile(persistentPath, videoBuffer);
-    console.log(`Video saved to: ${persistentPath}`);
-
-    return { videoBuffer, persistentPath };
+    const stats = await fs.stat(persistentPath);
+    console.log(`✅ Video created: ${persistentPath} (${(stats.size / 1e6).toFixed(2)} MB)`);
+    return { persistentPath, videoSize: stats.size };
 
   } catch (error) {
-    console.error('Video creation failed:', error);
-    // Create a minimal valid MP4 for testing
-    const minimalMp4 = Buffer.from('ftypisom', 'ascii'); // Minimal MP4 header
-    const persistentPath = path.join(process.cwd(), 'generated-videos', `quiz-${jobId}-minimal.mp4`);
-    await fs.mkdir(path.dirname(persistentPath), { recursive: true });
-    await fs.writeFile(persistentPath, minimalMp4);
-    
-    return { videoBuffer: minimalMp4, persistentPath };
+    console.error('❌ Video assembly failed:', error);
+    throw error;
   } finally {
-    // Cleanup temporary files
-    try {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    } catch (cleanupError) {
-      console.warn('Failed to cleanup temp directory:', cleanupError);
-    }
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(e => console.warn("Failed to cleanup temp dir:", e));
   }
 }
 
-// Helper function to determine frame duration based on content length
 function getFrameDuration(question: any, frameNumber: number): number {
   if (frameNumber === 1) {
-    // Frame 1: Question + Options - dynamic based on content length
-    const questionLength = (question?.question?.length || 0);
-    if (questionLength < 100) return 8;      // Short questions: 5 seconds
-    if (questionLength < 200) return 12;      // Medium questions: 7 seconds
-    return 15;                                // Long questions: 9 seconds
+    const textLength = (question?.question?.length || 0) + Object.values(question?.options || {}).join(" ").length;
+    return Math.max(5, Math.min(10, Math.ceil(textLength / 15)));
   } else if (frameNumber === 2) {
-    return 4;  // Frame 2: Answer reveal - 4 seconds
+    return 3;
   } else {
-    return 7;  // Frame 3: Explanation - 7 seconds
+    return Math.max(5, Math.min(8, Math.ceil((question?.explanation?.length || 0) / 15)));
   }
 }
 

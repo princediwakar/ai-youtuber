@@ -67,7 +67,6 @@ export async function createQuizJob(jobData: {
   step?: number;
   data?: any;
 }): Promise<string> {
-  const pool = getPool();
   const query = `
     INSERT INTO quiz_jobs (persona, category, question_format, difficulty, language, target_audience, tags, status, step, data)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
@@ -87,8 +86,22 @@ export async function createQuizJob(jobData: {
     JSON.stringify(jobData.data || {})
   ];
   
-  const result = await pool.query(query, values);
-  return result.rows[0].id;
+  // Use direct client connection for serverless environments to ensure consistency
+  if (process.env.NODE_ENV === 'production') {
+    const client = createClient();
+    try {
+      await client.connect();
+      const result = await client.query(query, values);
+      return result.rows[0].id;
+    } finally {
+      await client.end();
+    }
+  } else {
+    // Use pool for development
+    const pool = getPool();
+    const result = await pool.query(query, values);
+    return result.rows[0].id;
+  }
 }
 
 export async function getPendingJobs(step: number, limit: number = 10): Promise<QuizJob[]> {
@@ -232,15 +245,34 @@ export async function markJobCompleted(jobId: string, youtubeVideoId: string, me
 }
 
 export async function deleteAllJobs(): Promise<number> {
-  const pool = getPool();
-  
-  // Delete all uploaded videos first (due to foreign key constraint)
-  await pool.query('DELETE FROM uploaded_videos');
-  
-  // Delete all quiz jobs
-  const result = await pool.query('DELETE FROM quiz_jobs');
-  
-  return result.rowCount || 0;
+  // Use direct client connection for serverless environments to ensure consistency
+  if (process.env.NODE_ENV === 'production') {
+    const client = createClient();
+    try {
+      await client.connect();
+      
+      // Delete all uploaded videos first (due to foreign key constraint)
+      await client.query('DELETE FROM uploaded_videos');
+      
+      // Delete all quiz jobs
+      const result = await client.query('DELETE FROM quiz_jobs');
+      
+      return result.rowCount || 0;
+    } finally {
+      await client.end();
+    }
+  } else {
+    // Use pool for development
+    const pool = getPool();
+    
+    // Delete all uploaded videos first (due to foreign key constraint)
+    await pool.query('DELETE FROM uploaded_videos');
+    
+    // Delete all quiz jobs
+    const result = await pool.query('DELETE FROM quiz_jobs');
+    
+    return result.rowCount || 0;
+  }
 }
 
 export async function getJobStats(): Promise<{
@@ -249,7 +281,6 @@ export async function getJobStats(): Promise<{
   completed: number;
   failed: number;
 }> {
-  const pool = getPool();
   const query = `
     SELECT 
       COUNT(*) as total,
@@ -259,11 +290,30 @@ export async function getJobStats(): Promise<{
     FROM quiz_jobs
   `;
   
-  const result = await pool.query(query);
-  return {
-    total: parseInt(result.rows[0].total),
-    pending: parseInt(result.rows[0].pending),
-    completed: parseInt(result.rows[0].completed),
-    failed: parseInt(result.rows[0].failed)
-  };
+  // Use direct client connection for serverless environments to ensure consistency
+  if (process.env.NODE_ENV === 'production') {
+    const client = createClient();
+    try {
+      await client.connect();
+      const result = await client.query(query);
+      return {
+        total: parseInt(result.rows[0].total),
+        pending: parseInt(result.rows[0].pending),
+        completed: parseInt(result.rows[0].completed),
+        failed: parseInt(result.rows[0].failed)
+      };
+    } finally {
+      await client.end();
+    }
+  } else {
+    // Use pool for development
+    const pool = getPool();
+    const result = await pool.query(query);
+    return {
+      total: parseInt(result.rows[0].total),
+      pending: parseInt(result.rows[0].pending),
+      completed: parseInt(result.rows[0].completed),
+      failed: parseInt(result.rows[0].failed)
+    };
+  }
 }

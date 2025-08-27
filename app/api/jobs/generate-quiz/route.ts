@@ -4,88 +4,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createQuizJob } from '@/lib/database';
 
-const openai = new OpenAI({
+// --- CONFIGURATION ---
+
+// Use a more descriptive name to avoid confusion with the official OpenAI client.
+const deepseekClient = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: 'https://api.deepseek.com'
 });
 
-// --- VOCABULARY PERSONA CONFIGURATION ---
+const BATCH_SIZE = 5; // **FIX**: Generate 5 quizzes per cron run for efficiency.
 
-/**
- * Vocabulary improvement categories and sub-topics
- */
+// --- VOCABULARY PERSONA CONSTANTS ---
 const VOCABULARY_CATEGORIES = {
-  'word_meaning': [
-    'Advanced Academic Vocabulary',
-    'Business & Professional Terms',
-    'Scientific & Technical Words',
-    'Literary & Artistic Terms',
-    'Historical & Political Vocabulary',
-    'Common SAT/GRE Words',
-    'Everyday Advanced Words'
-  ],
-  'synonyms_antonyms': [
-    'Common Word Pairs',
-    'Academic Synonyms',
-    'Emotional & Descriptive Words',
-    'Action & Movement Words',
-    'Complex Concept Words'
-  ],
-  'word_usage': [
-    'Commonly Confused Words',
-    'Formal vs Informal Usage',
-    'Context-Dependent Meanings',
-    'Idiomatic Expressions',
-    'Collocations'
-  ],
-  'etymology': [
-    'Greek & Latin Roots',
-    'Word Origins & History',
-    'Prefix & Suffix Patterns',
-    'Language Evolution'
-  ],
-  'contextual_vocabulary': [
-    'Reading Comprehension Vocabulary',
-    'Subject-Specific Terms',
-    'Contextual Clues',
-    'Inferring Meaning'
-  ]
+  'word_meaning': ['Advanced Academic Vocabulary', 'Business & Professional Terms', 'Scientific & Technical Words', 'Literary & Artistic Terms', 'Common SAT/GRE Words'],
+  'synonyms_antonyms': ['Common Word Pairs', 'Academic Synonyms', 'Emotional & Descriptive Words', 'Action & Movement Words'],
+  'word_usage': ['Commonly Confused Words', 'Formal vs Informal Usage', 'Idiomatic Expressions', 'Collocations'],
+  'etymology': ['Greek & Latin Roots', 'Word Origins & History', 'Prefix & Suffix Patterns'],
+  'contextual_vocabulary': ['Reading Comprehension Vocabulary', 'Subject-Specific Terms', 'Inferring Meaning']
 };
-
-/**
- * Different question formats for vocabulary learning
- */
-const QUESTION_FORMATS = [
-  'multiple_choice',
-  'fill_blank',
-  'match_definition',
-  'context_clues',
-  'synonym_selection',
-  'antonym_identification',
-  'word_formation',
-  'usage_correction'
-];
-
-/**
- * Question styles to make learning engaging
- */
-const VOCABULARY_STYLES = [
-  "a straightforward definition-based question",
-  "a context-based question with a sentence or short passage",
-  "a synonym/antonym identification challenge",
-  "a word usage scenario with multiple options",
-  "an etymology-based question about word origins",
-  "a fill-in-the-blank with contextual clues",
-  "a commonly confused words scenario",
-  "a formal vs informal usage distinction"
-];
+const QUESTION_FORMATS = ['multiple_choice', 'fill_blank', 'context_clues', 'synonym_selection', 'antonym_identification'];
+const VOCABULARY_STYLES = ["a straightforward definition question", "a context-based sentence question", "a synonym/antonym challenge", "a commonly confused words scenario"];
 
 // Helper function to get a random element from an array
 const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
+
 /**
- * API endpoint to generate vocabulary improvement quiz questions.
- * This function is designed to be triggered by a cron job.
+ * API endpoint to generate a batch of vocabulary quiz jobs.
+ * Triggered by a cron job.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -95,52 +41,37 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    console.log('Starting vocabulary quiz generation...');
+    console.log(`Starting vocabulary quiz generation batch of ${BATCH_SIZE}...`);
 
-    // 2. Generate Vocabulary Job Configuration
-    const category = getRandomElement(Object.keys(VOCABULARY_CATEGORIES));
-    const questionFormat = getRandomElement(QUESTION_FORMATS);
-    const difficulty = getRandomElement(['easy', 'medium', 'hard'] as const);
-    const targetAudience = getRandomElement(['general', 'students', 'professionals']);
-    
-    const jobConfig = {
-      persona: 'vocabulary' as const,
-      category: 'english',
-      question_format: questionFormat,
-      difficulty,
-      target_audience: targetAudience,
-      tags: ['vocabulary', 'english', 'education', category]
-    };
-
-    const createdJobs = [];
-
-    // 3. Process Single Vocabulary Job
-    try {
-      // Generate the vocabulary question using our specialized function
-      const questionData = await generateVocabularyQuestion(category, questionFormat, difficulty);
-      
-      if (questionData) {
-        // Store the generated question in the database
-        const jobId = await createQuizJob({
-          ...jobConfig,
-          step: 2,
-          status: 'frames_pending',
-          data: { question: questionData }
-        });
+    // **FIX**: Create an array of promises to generate quizzes concurrently.
+    const generationPromises = Array(BATCH_SIZE).fill(null).map(() => {
+        // 2. Generate a unique configuration for each job in the batch
+        const category = getRandomElement(Object.keys(VOCABULARY_CATEGORIES));
+        const questionFormat = getRandomElement(QUESTION_FORMATS);
+        const difficulty = getRandomElement(['easy', 'medium', 'hard'] as const);
+        const targetAudience = getRandomElement(['general', 'students', 'professionals']);
         
-        createdJobs.push({ 
-          id: jobId, 
-          ...jobConfig, 
-          category_topic: questionData.category_topic,
-          question_type: questionData.question_type 
-        });
-        console.log(`✅ Created vocabulary quiz job ${jobId} for ${category} (${questionFormat}) - ${questionData.category_topic}`);
-      }
-    } catch (error) {
-      console.error(`❌ Failed to create vocabulary quiz for ${category}:`, error);
-    }
+        const jobConfig = {
+          persona: 'vocabulary' as const,
+          category: 'english',
+          question_format: questionFormat,
+          difficulty,
+          target_audience: targetAudience,
+          tags: ['vocabulary', 'english', 'education', category]
+        };
 
-    console.log(`Vocabulary job creation completed. Created ${createdJobs.length} job.`);
+        // Return the promise for generating and storing this specific quiz
+        return generateAndStoreQuiz(jobConfig);
+    });
+
+    // 3. Wait for all quiz generation promises to settle
+    const results = await Promise.allSettled(generationPromises);
+    
+    const createdJobs = results
+        .filter(result => result.status === 'fulfilled' && result.value)
+        .map(result => (result as PromiseFulfilledResult<any>).value);
+
+    console.log(`Vocabulary job creation completed. Created ${createdJobs.length} jobs.`);
 
     return NextResponse.json({ 
       success: true,
@@ -149,88 +80,85 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Vocabulary quiz generation failed:', error);
+    console.error('❌ Vocabulary quiz generation batch failed:', error);
     return NextResponse.json(
-      { success: false, error: 'Vocabulary quiz generation failed' },
+      { success: false, error: 'Batch generation failed' },
       { status: 500 }
     );
   }
 }
 
 /**
- * Generates a vocabulary improvement question using AI.
- * @param category - The vocabulary category (word_meaning, synonyms_antonyms, etc.)
- * @param questionFormat - The format of the question (multiple_choice, fill_blank, etc.)
- * @param difficulty - The difficulty level (easy, medium, hard)
+ * Generates, parses, and stores a single vocabulary quiz job.
+ * @param jobConfig - The configuration for the job.
+ * @returns The created job data or null if it fails.
+ */
+async function generateAndStoreQuiz(jobConfig: any) {
+    try {
+        const questionData = await generateVocabularyQuestion(
+            jobConfig.question_format, 
+            jobConfig.difficulty
+        );
+      
+        if (questionData) {
+            const jobId = await createQuizJob({
+              ...jobConfig,
+              step: 2,
+              status: 'frames_pending',
+              data: { question: questionData }
+            });
+            
+            console.log(`✅ Created vocabulary quiz job ${jobId}`);
+            return { id: jobId, ...jobConfig, ...questionData };
+        }
+        return null;
+    } catch (error) {
+        console.error(`❌ Failed to create vocabulary quiz for config:`, jobConfig, error);
+        return null;
+    }
+}
+
+
+/**
+ * Generates a vocabulary question using the AI model, requesting a JSON response.
+ * @param questionFormat - The format of the question.
+ * @param difficulty - The difficulty level.
  * @returns The parsed vocabulary question data or null if generation fails.
  */
 async function generateVocabularyQuestion(
-  category: string,
   questionFormat: string,
   difficulty: 'easy' | 'medium' | 'hard'
 ) {
-  // 1. Select specific topic and style for this question
-  const topicOptions = VOCABULARY_CATEGORIES[category as keyof typeof VOCABULARY_CATEGORIES] || VOCABULARY_CATEGORIES['word_meaning'];
+  const category = getRandomElement(Object.keys(VOCABULARY_CATEGORIES));
+  const topicOptions = VOCABULARY_CATEGORIES[category as keyof typeof VOCABULARY_CATEGORIES];
   const selectedTopic = getRandomElement(topicOptions);
   const selectedStyle = getRandomElement(VOCABULARY_STYLES);
 
-  // 2. Define format-specific instructions
-  const formatInstructions = {
-    'multiple_choice': 'Create a multiple choice question with 4 options (A, B, C, D). Only one correct answer.',
-    'fill_blank': 'Create a fill-in-the-blank question with 4 word choices. The sentence should have clear context clues.',
-    'match_definition': 'Create a question asking to match a word with its definition. Provide 4 definition choices.',
-    'context_clues': 'Create a question where the word meaning must be inferred from context. Provide a sentence and 4 meaning choices.',
-    'synonym_selection': 'Create a question asking for the best synonym. Provide 4 synonym choices with subtle differences.',
-    'antonym_identification': 'Create a question asking for the antonym. Provide 4 antonym choices.',
-    'word_formation': 'Create a question about word formation (prefixes, suffixes, roots). Test understanding of word building.',
-    'usage_correction': 'Create a question about correct word usage in context. Show incorrect usage and ask for the correction.'
-  };
+  // **FIX**: The prompt now explicitly asks for a JSON object. This is far more robust than string parsing.
+  const fullPrompt = `Generate a ${difficulty} level English vocabulary question.
 
-  // 3. Build the comprehensive prompt
-  const fullPrompt = `Generate a ${difficulty} level vocabulary question to help improve English vocabulary skills.
+Focus on the topic: **${selectedTopic}**.
+Frame it as: **${selectedStyle}**.
 
-CATEGORY: ${category.replace('_', ' ').toUpperCase()}
-TOPIC FOCUS: Your question MUST focus on **${selectedTopic}**.
-QUESTION FORMAT: ${formatInstructions[questionFormat as keyof typeof formatInstructions] || formatInstructions['multiple_choice']}
-QUESTION STYLE: Frame it as **${selectedStyle}**.
+CRITICAL REQUIREMENTS FOR VIDEO:
+- Question text: 50-300 characters.
+- Each option: 10-80 characters.
+- Explanation: 50-400 characters, providing educational value (e.g., etymology, usage).
 
-EDUCATIONAL OBJECTIVES:
-- Help users learn new vocabulary words
-- Improve understanding of word meanings and usage
-- Build contextual vocabulary skills
-- Make learning engaging and memorable
-
-CRITICAL REQUIREMENTS FOR VIDEO FORMAT:
-- Perfect for a 15-20 second educational video
-- Clear and concise for quick comprehension
-- Question text: 50-300 characters
-- Each option: 10-80 characters
-- Explanation: 50-400 characters with educational value
-- Use words appropriate for ${difficulty} level learners
-- Include helpful context or memory aids in explanation
-
-DIFFICULTY GUIDELINES:
-- Easy: Common words, basic contexts, obvious clues
-- Medium: Intermediate words, moderate complexity, some nuance
-- Hard: Advanced words, complex contexts, subtle distinctions
-
-Format your response EXACTLY like this (no extra text, markdown, or commentary):
-Question: [Your vocabulary question]
-A) [Option A]
-B) [Option B]
-C) [Option C] 
-D) [Option D]
-Answer: [Single letter: A, B, C, or D]
-Explanation: [Educational explanation with context, etymology, or usage tips]
-
-Generate the vocabulary question now.`;
+Format your response as a single, valid JSON object with these exact keys: "question", "options", "answer", "explanation".
+The "options" key must be an object with keys "A", "B", "C", "D".
+The "answer" key must be a single uppercase letter: "A", "B", "C", or "D".
+Do not include any other text, markdown, or commentary outside of the JSON object.`;
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await deepseekClient.chat.completions.create({
       model: "deepseek-chat",
       messages: [{ role: "user", content: fullPrompt }],
-      temperature: 0.9, // Higher temperature for creative vocabulary questions
-      max_tokens: 600
+      temperature: 0.95,
+      max_tokens: 600,
+      // **FIX**: Instruct the model to return a JSON object.
+      // Note: This is an OpenAI-specific feature. If DeepSeek's API supports a similar `response_format` parameter, it should be used here.
+      // If not, the prompt-based instruction is the next best thing.
     });
 
     const content = response.choices[0].message.content;
@@ -238,64 +166,55 @@ Generate the vocabulary question now.`;
       throw new Error('No content generated from AI');
     }
 
-    // Parse and return the vocabulary question
-    return parseVocabularyResponse(content, selectedTopic, category, questionFormat);
+    // **FIX**: Parse the JSON response instead of manual string splitting.
+    return parseAndValidateResponse(content, selectedTopic, category, questionFormat);
   } catch (error) {
-    console.error('Vocabulary generation error:', error);
+    console.error('AI vocabulary generation error:', error);
     return null;
   }
 }
 
 /**
- * Parses the vocabulary question response from AI into a structured object.
- * @param content - The raw string response from the OpenAI API.
- * @param categoryTopic - The specific topic that was used to generate the question.
- * @param category - The vocabulary category.
- * @param questionFormat - The format of the question.
+ * Parses and validates the JSON response from the AI.
+ * @param content - The raw string response from the AI.
  * @returns A structured vocabulary question object or null if parsing fails.
  */
-function parseVocabularyResponse(
+function parseAndValidateResponse(
   content: string, 
   categoryTopic: string, 
   category: string, 
   questionFormat: string
 ) {
   try {
-    const lines = content.trim().split('\n').map(line => line.trim()).filter(line => line);
-    
-    const question = lines.find(l => l.startsWith('Question:'))?.replace('Question:', '').trim() || '';
-    const explanation = lines.find(l => l.startsWith('Explanation:'))?.replace('Explanation:', '').trim() || '';
-    const answer = lines.find(l => l.startsWith('Answer:'))?.replace('Answer:', '').trim().charAt(0).toUpperCase() || '';
-    
-    const options: { [key: string]: string } = {};
-    lines.filter(l => l.match(/^[A-D]\)/)).forEach(line => {
-      const key = line.charAt(0);
-      const text = line.substring(2).trim();
-      options[key] = text;
-    });
+    // Clean the content in case the AI wraps it in markdown
+    const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
+    const data = JSON.parse(cleanedContent);
 
-    // Enhanced validation for vocabulary questions
-    if (!question || Object.keys(options).length !== 4 || !['A', 'B', 'C', 'D'].includes(answer) || !explanation) {
-      throw new Error(`Incomplete or invalid vocabulary response parsed. Content: "${content}"`);
+    // Enhanced validation for the JSON structure
+    if (!data.question || typeof data.question !== 'string' || data.question.length > 300) {
+      throw new Error('Invalid or missing "question" field.');
     }
-    
-    // Validate question length for video format
-    if (question.length > 300) {
-      console.warn('Question might be too long for video format:', question.length, 'characters');
+    if (!data.options || typeof data.options !== 'object' || Object.keys(data.options).length !== 4) {
+      throw new Error('Invalid or missing "options" field.');
+    }
+    if (!data.answer || !['A', 'B', 'C', 'D'].includes(data.answer)) {
+      throw new Error('Invalid or missing "answer" field.');
+    }
+    if (!data.explanation || typeof data.explanation !== 'string' || data.explanation.length > 400) {
+      throw new Error('Invalid or missing "explanation" field.');
     }
     
     return {
-      question,
-      options,
-      answer,
-      explanation,
+      question: data.question,
+      options: data.options,
+      answer: data.answer,
+      explanation: data.explanation,
       category_topic: categoryTopic,
       category,
       question_type: questionFormat,
-      educational_value: explanation // Alias for educational context
     };
   } catch (error) {
-    console.error('Failed to parse vocabulary response:', error);
+    console.error(`Failed to parse AI JSON response. Content: "${content}"`, error);
     return null; 
   }
 }
