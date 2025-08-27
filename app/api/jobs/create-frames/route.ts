@@ -131,24 +131,127 @@ async function createOptimizedFrames(question: any, persona: string, category: s
     // Configure for serverless environment
     const isProduction = process.env.NODE_ENV === 'production';
     
-    // For testing purposes - create mock frames without Puppeteer
-    console.log('Creating mock frames for testing (bypassing Puppeteer)...');
+    // Configure browser for production vs development
+    if (isProduction) {
+      // Force Chromium to use /tmp directory in Vercel
+      process.env.PUPPETEER_CACHE_DIR = '/tmp/.cache/puppeteer';
+      process.env.XDG_CACHE_HOME = '/tmp';
+      
+      browser = await puppeteer.launch({
+        headless: true,
+        args: chromium.args,
+        executablePath: await chromium.executablePath(),
+      });
+    } else {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-web-security'
+        ]
+      });
+    }
+
+    // Helper function to escape HTML special characters
+    const escapeHtml = (text: string | undefined | null) => {
+        if (text === null || typeof text === 'undefined') return '';
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;").replace(/`/g, "&#96;");
+    };
+
+    // Normalize and escape data
+    let options = question?.options || {};
+    if (Array.isArray(options)) {
+      options = { A: options[0], B: options[1], C: options[2], D: options[3] };
+    }
+    const correctAnswer = question?.answer || 'A';
+
+    const escapedQuestionText = escapeHtml(question?.question);
+    const escapedExplanationText = escapeHtml(question?.explanation);
+    const escapedOptions = {
+        A: escapeHtml(options.A), B: escapeHtml(options.B),
+        C: escapeHtml(options.C), D: escapeHtml(options.D),
+    };
+
+    // Common head with styling
+    const commonHead = `
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body {
+            width: ${width}px; height: ${height}px; font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #FF6FD8 0%, #3813C2 50%, #2E8BFD 100%);
+            color: white; display: flex; flex-direction: column; justify-content: center;
+            align-items: center; padding: 40px; text-align: center;
+          }
+          .question { font-size: 24px; margin-bottom: 30px; }
+          .options { font-size: 20px; margin: 20px 0; }
+          .option { margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.2); border-radius: 10px; }
+          .correct { background: linear-gradient(90deg, #38E54D, #1FAA59) !important; }
+          .explanation { font-size: 18px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px; }
+        </style>
+      </head>
+    `;
+
+    const frames = [];
+
+    // Frame 1: Question
+    const page1 = await browser.newPage();
+    await page1.setViewport({ width, height });
+    await page1.setContent(`<!DOCTYPE html><html>${commonHead}<body>
+      <div class="question">${escapedQuestionText || 'Sample Question'}</div>
+      <div class="options">
+        <div class="option">A) ${escapedOptions.A || 'Option A'}</div>
+        <div class="option">B) ${escapedOptions.B || 'Option B'}</div>
+        <div class="option">C) ${escapedOptions.C || 'Option C'}</div>
+        <div class="option">D) ${escapedOptions.D || 'Option D'}</div>
+      </div>
+    </body></html>`);
     
-    // Mock frame creation - create base64 encoded placeholder images
-    const mockFrameBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChAFAcEuOD9AAAAAASUVORK5CYII=';
+    const frame1 = await page1.screenshot({ type: 'png', encoding: 'base64' });
+    frames.push(`data:image/png;base64,${frame1}`);
+    await page1.close();
+
+    // Frame 2: Answer
+    const page2 = await browser.newPage();
+    await page2.setViewport({ width, height });
+    await page2.setContent(`<!DOCTYPE html><html>${commonHead}<body>
+      <div class="question">${escapedQuestionText || 'Sample Question'}</div>
+      <div class="options">
+        <div class="option ${correctAnswer === 'A' ? 'correct' : ''}">A) ${escapedOptions.A || 'Option A'}</div>
+        <div class="option ${correctAnswer === 'B' ? 'correct' : ''}">B) ${escapedOptions.B || 'Option B'}</div>
+        <div class="option ${correctAnswer === 'C' ? 'correct' : ''}">C) ${escapedOptions.C || 'Option C'}</div>
+        <div class="option ${correctAnswer === 'D' ? 'correct' : ''}">D) ${escapedOptions.D || 'Option D'}</div>
+      </div>
+    </body></html>`);
     
-    const frames = [
-      mockFrameBase64, // Question frame
-      mockFrameBase64, // Answer frame  
-      mockFrameBase64  // Explanation frame
-    ];
+    const frame2 = await page2.screenshot({ type: 'png', encoding: 'base64' });
+    frames.push(`data:image/png;base64,${frame2}`);
+    await page2.close();
+
+    // Frame 3: Explanation
+    const page3 = await browser.newPage();
+    await page3.setViewport({ width, height });
+    await page3.setContent(`<!DOCTYPE html><html>${commonHead}<body>
+      <div class="explanation">${escapedExplanationText || 'Sample explanation text.'}</div>
+    </body></html>`);
     
-    console.log(`Successfully created ${frames.length} mock frames.`);
+    const frame3 = await page3.screenshot({ type: 'png', encoding: 'base64' });
+    frames.push(`data:image/png;base64,${frame3}`);
+    await page3.close();
+
+    console.log(`Successfully created ${frames.length} frames.`);
     return frames;
 
   } catch (error) {
-    console.error('Mock frame creation failed:', error);
-    throw new Error(`Frame creation failed: ${error.message}`);
+    console.error('Puppeteer frame creation failed:', error);
+    throw new Error(`Puppeteer generation failed: ${error.message}`);
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 }
 
