@@ -5,8 +5,52 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 
-// Don't set FFmpeg path - let fluent-ffmpeg auto-detect in serverless
-console.log('Using auto-detection for FFmpeg binary in serverless environment');
+// Set FFmpeg path for production
+async function setupFFmpeg() {
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Setting up FFmpeg for Vercel production environment...');
+    
+    // In Vercel, the ffmpeg binary should be in node_modules
+    const ffmpegPath = '/var/task/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg';
+    
+    try {
+      // Check if the binary exists
+      await fs.access(ffmpegPath);
+      ffmpeg.setFfmpegPath(ffmpegPath);
+      console.log('FFmpeg path set to:', ffmpegPath);
+    } catch (error) {
+      console.log('Standard path failed, trying alternative paths...');
+      
+      // Try alternative paths
+      const alternativePaths = [
+        '/opt/nodejs/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+        '/var/runtime/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+        '/var/task/node_modules/ffmpeg-static/ffmpeg'
+      ];
+      
+      for (const altPath of alternativePaths) {
+        try {
+          await fs.access(altPath);
+          ffmpeg.setFfmpegPath(altPath);
+          console.log('Alternative FFmpeg path set to:', altPath);
+          return;
+        } catch (e) {
+          console.log(`Path ${altPath} not found`);
+        }
+      }
+      
+      throw new Error('No valid FFmpeg binary found in production environment');
+    }
+  } else {
+    // Development environment
+    const ffmpegStatic = require('ffmpeg-static');
+    ffmpeg.setFfmpegPath(ffmpegStatic);
+    console.log('Development FFmpeg path set to:', ffmpegStatic);
+  }
+}
+
+// Initialize FFmpeg setup
+setupFFmpeg().catch(console.error);
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,19 +79,8 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`Assembling video for job ${job.id} - ${job.persona} ${job.category}`);
 
-        // Create video from frames using FFmpeg (with fallback for testing)
-        let videoBuffer, persistentPath;
-        
-        try {
-          const result = await assembleVideo(job.data.frames, job.id, job.data.question);
-          videoBuffer = result.videoBuffer;
-          persistentPath = result.persistentPath;
-        } catch (error) {
-          console.log('FFmpeg failed, creating mock video for testing:', error.message);
-          // Create a minimal mock video buffer for testing pipeline flow
-          videoBuffer = Buffer.from('mock-video-data');
-          persistentPath = `/tmp/mock-video-${job.id}.mp4`;
-        }
+        // Create video from frames using FFmpeg
+        const { videoBuffer, persistentPath } = await assembleVideo(job.data.frames, job.id, job.data.question);
         
         // Update job to next step WITHOUT storing video data in database
         await updateJob(job.id, {
@@ -92,6 +125,60 @@ export async function POST(request: NextRequest) {
 }
 
 async function assembleVideo(frames: string[], jobId: string, question: any): Promise<{videoBuffer: Buffer, persistentPath: string}> {
+  // Set FFmpeg path at runtime for production
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Production environment detected, searching for FFmpeg...');
+    
+    // First, let's see what's actually available
+    try {
+      console.log('Current working directory:', process.cwd());
+      console.log('Contents of /var/task:', await fs.readdir('/var/task').catch(() => 'Cannot read /var/task'));
+      console.log('Contents of /var/task/node_modules:', await fs.readdir('/var/task/node_modules').catch(() => 'Cannot read /var/task/node_modules'));
+      
+      const ffmpegStaticDir = '/var/task/node_modules/ffmpeg-static';
+      try {
+        const ffmpegContents = await fs.readdir(ffmpegStaticDir);
+        console.log('Contents of ffmpeg-static directory:', ffmpegContents);
+        
+        // Check for bin directory
+        const binDir = path.join(ffmpegStaticDir, 'bin');
+        if (ffmpegContents.includes('bin')) {
+          const binContents = await fs.readdir(binDir);
+          console.log('Contents of bin directory:', binContents);
+        }
+      } catch (e) {
+        console.log('Cannot read ffmpeg-static directory:', e.message);
+      }
+    } catch (e) {
+      console.log('Error exploring directories:', e.message);
+    }
+    
+    const possiblePaths = [
+      '/var/task/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+      '/opt/nodejs/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+      '/var/runtime/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+      '/var/task/node_modules/ffmpeg-static/ffmpeg'
+    ];
+    
+    let ffmpegFound = false;
+    for (const testPath of possiblePaths) {
+      try {
+        await fs.access(testPath);
+        ffmpeg.setFfmpegPath(testPath);
+        console.log(`✅ Runtime FFmpeg path set to: ${testPath}`);
+        ffmpegFound = true;
+        break;
+      } catch (e) {
+        console.log(`❌ Runtime path check failed: ${testPath}`);
+        continue;
+      }
+    }
+    
+    if (!ffmpegFound) {
+      console.log('⚠️ No FFmpeg binary found, attempting to use system default');
+    }
+  }
+
   const tempDir = path.join(tmpdir(), `quiz-video-${jobId}-${Date.now()}`);
   await fs.mkdir(tempDir, { recursive: true });
 
