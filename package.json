@@ -20,6 +20,7 @@
     "googleapis": "^128.0.0",
     "jimp": "^1.6.0",
     "lucide-react": "^0.292.0",
+    "mp4-muxer": "^5.2.2",
     "next": "^14.0.0",
     "next-auth": "^4.24.5",
     "openai": "^5.12.2",
