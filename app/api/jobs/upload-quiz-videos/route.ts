@@ -789,3 +789,7 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// Configure for Vercel deployment  
+export const runtime = 'nodejs';
+export const maxDuration = 300;

@@ -2,6 +2,18 @@
   "functions": {
     "app/api/youtube/upload/route.ts": {
       "maxDuration": 300
+    },
+    "app/api/jobs/create-frames/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/jobs/assemble-video/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/jobs/upload-quiz-videos/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/jobs/generate-quiz/route.ts": {
+      "maxDuration": 120
     }
   }
 }

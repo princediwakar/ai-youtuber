@@ -3,6 +3,8 @@ import { getPendingJobs, updateJob } from '@/lib/database';
 import puppeteer, { Page } from 'puppeteer';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { tmpdir } from 'os';
+import chromium from '@sparticuz/chromium';
 
 export async function POST(request: NextRequest) {
   try {
@@ -115,12 +117,30 @@ async function createOptimizedFrames(question: any, persona: string, category: s
   try {
     console.log('Launching Puppeteer for frame generation...');
     
-    const debugDir = path.join(process.cwd(), 'debug-frames');
+    // Use temp directory for serverless environments  
+    const debugDir = process.env.NODE_ENV === 'production' 
+      ? path.join('/tmp', 'debug-frames') 
+      : path.join(process.cwd(), 'debug-frames');
     await fs.mkdir(debugDir, { recursive: true });
+    
+    // Configure for serverless environment
+    const isProduction = process.env.NODE_ENV === 'production';
     
     browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security'],
+      args: isProduction 
+        ? chromium.args.concat([
+            '--no-sandbox',
+            '--disable-setuid-sandbox', 
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor'
+          ])
+        : [
+            '--no-sandbox',
+            '--disable-setuid-sandbox', 
+            '--disable-web-security'
+          ],
+      executablePath: isProduction ? await chromium.executablePath() : undefined,
     });
 
     // Helper function to escape HTML special characters
@@ -312,3 +332,7 @@ async function createOptimizedFrames(question: any, persona: string, category: s
     }
   }
 }
+
+// Configure for Vercel deployment
+export const runtime = 'nodejs';
+export const maxDuration = 300;
