@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { Pool, Client } from 'pg';
 
 // Database connection pool
 let pool: Pool | null = null;
@@ -8,10 +8,21 @@ export function getPool(): Pool {
     pool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      max: 1, // Limit connections for serverless
+      idleTimeoutMillis: 0, // No idle timeout
+      connectionTimeoutMillis: 10000, // 10 second timeout
     });
   }
   return pool;
+}
 
+// Alternative: Direct client connection for serverless environments
+export function createClient(): Client {
+  return new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    connectionTimeoutMillis: 10000,
+  });
 }
 
 // Quiz job types
@@ -81,20 +92,44 @@ export async function createQuizJob(jobData: {
 }
 
 export async function getPendingJobs(step: number, limit: number = 10): Promise<QuizJob[]> {
-  const pool = getPool();
-  const query = `
-    SELECT * FROM quiz_jobs 
-    WHERE step = $1 AND status LIKE '%pending%'
-    ORDER BY created_at ASC 
-    LIMIT $2
-  `;
-  
-  const result = await pool.query(query, [step, limit]);
-  return result.rows.map(row => ({
-    ...row,
-    data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags
-  }));
+  // Use direct client connection for serverless environments
+  if (process.env.NODE_ENV === 'production') {
+    const client = createClient();
+    try {
+      await client.connect();
+      const query = `
+        SELECT * FROM quiz_jobs 
+        WHERE step = $1 AND status LIKE '%pending%'
+        ORDER BY created_at ASC 
+        LIMIT $2
+      `;
+      
+      const result = await client.query(query, [step, limit]);
+      return result.rows.map(row => ({
+        ...row,
+        data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
+        tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags
+      }));
+    } finally {
+      await client.end();
+    }
+  } else {
+    // Use pool for development
+    const pool = getPool();
+    const query = `
+      SELECT * FROM quiz_jobs 
+      WHERE step = $1 AND status LIKE '%pending%'
+      ORDER BY created_at ASC 
+      LIMIT $2
+    `;
+    
+    const result = await pool.query(query, [step, limit]);
+    return result.rows.map(row => ({
+      ...row,
+      data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
+      tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags
+    }));
+  }
 }
 
 export async function updateJob(
