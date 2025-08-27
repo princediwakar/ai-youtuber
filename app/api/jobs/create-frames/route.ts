@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
         const frames = await createOptimizedFrames(job.data.question, job.persona, job.category);
         
         // Update the job to the next step (assembly_pending)
+        console.log(`Updating job ${job.id} to step 3 with assembly_pending status`);
         await updateJob(job.id, {
           step: 3,
           status: 'assembly_pending',
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
             frames: frames 
           }
         });
+        console.log(`Successfully updated job ${job.id} to step 3`);
         
         processedJobs.push({ id: job.id, persona: job.persona, category: job.category });
         console.log(`Frame creation completed for job ${job.id}`);
