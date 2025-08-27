@@ -131,26 +131,24 @@ async function createOptimizedFrames(question: any, persona: string, category: s
     // Configure for serverless environment
     const isProduction = process.env.NODE_ENV === 'production';
     
-    browser = await puppeteer.launch({
-      headless: true,
-      args: isProduction 
-        ? [
-            ...chromium.args,
-            '--no-sandbox',
-            '--disable-setuid-sandbox', 
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding'
-          ]
-        : [
-            '--no-sandbox',
-            '--disable-setuid-sandbox', 
-            '--disable-web-security'
-          ],
-      executablePath: isProduction ? await chromium.executablePath() : undefined,
-    });
+    if (isProduction) {
+      // Vercel serverless with Chromium
+      browser = await puppeteer.launch({
+        headless: true,
+        args: chromium.args,
+        executablePath: await chromium.executablePath(),
+      });
+    } else {
+      // Local development
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox', 
+          '--disable-web-security'
+        ]
+      });
+    }
 
     // Helper function to escape HTML special characters
     const escapeHtml = (text: string | undefined | null) => {
