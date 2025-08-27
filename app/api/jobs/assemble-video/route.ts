@@ -5,70 +5,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 
-// Set FFmpeg path for serverless environment
-const isProduction = process.env.NODE_ENV === 'production';
-let ffmpegPath;
-
-if (isProduction) {
-  // For Vercel serverless, try multiple approaches to find FFmpeg
-  const possiblePaths = [
-    '/var/task/node_modules/ffmpeg-static/ffmpeg',
-    '/var/runtime/node_modules/ffmpeg-static/ffmpeg', 
-    path.join('/var/task', 'node_modules', 'ffmpeg-static', 'ffmpeg'),
-    path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
-  ];
-  
-  // Also try to get the path from the package
-  try {
-    const packagePath = require('ffmpeg-static');
-    if (packagePath && typeof packagePath === 'string') {
-      possiblePaths.unshift(packagePath);
-    }
-  } catch (e) {
-    console.log('Could not require ffmpeg-static:', e.message);
-  }
-  
-  console.log('Searching for FFmpeg binary in production...');
-  ffmpegPath = possiblePaths.find(p => {
-    try {
-      const exists = require('fs').existsSync(p);
-      console.log(`Checking path ${p}: ${exists}`);
-      return exists;
-    } catch (error) {
-      console.log(`Error checking path ${p}:`, error.message);
-      return false;
-    }
-  });
-  
-  if (!ffmpegPath) {
-    // List available files to debug
-    try {
-      const taskDir = '/var/task';
-      if (require('fs').existsSync(taskDir)) {
-        console.log('Contents of /var/task:', require('fs').readdirSync(taskDir));
-        
-        const nodeModulesDir = '/var/task/node_modules';
-        if (require('fs').existsSync(nodeModulesDir)) {
-          console.log('Contents of /var/task/node_modules:', require('fs').readdirSync(nodeModulesDir).slice(0, 10));
-          
-          const ffmpegDir = '/var/task/node_modules/ffmpeg-static';
-          if (require('fs').existsSync(ffmpegDir)) {
-            console.log('Contents of ffmpeg-static dir:', require('fs').readdirSync(ffmpegDir));
-          }
-        }
-      }
-    } catch (e) {
-      console.log('Error listing directories:', e.message);
-    }
-    
-    throw new Error('No valid FFmpeg path found in serverless environment');
-  }
-} else {
-  ffmpegPath = require('ffmpeg-static');
-}
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-console.log('FFmpeg path set to:', ffmpegPath);
+// Don't set FFmpeg path - let fluent-ffmpeg auto-detect in serverless
+console.log('Using auto-detection for FFmpeg binary in serverless environment');
 
 export async function POST(request: NextRequest) {
   try {
