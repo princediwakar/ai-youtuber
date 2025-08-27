@@ -5,10 +5,31 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 
-// Set FFmpeg path for production
-const correctPath = path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg');
-ffmpeg.setFfmpegPath(correctPath);
-console.log('FFmpeg path set to:', correctPath);
+// Set FFmpeg path for serverless environment
+const isProduction = process.env.NODE_ENV === 'production';
+let ffmpegPath;
+
+if (isProduction) {
+  // Try multiple possible paths for Vercel serverless
+  const possiblePaths = [
+    '/var/task/node_modules/ffmpeg-static/ffmpeg',
+    path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+    require('ffmpeg-static')
+  ];
+  
+  ffmpegPath = possiblePaths.find(p => {
+    try {
+      return require('fs').existsSync(p);
+    } catch {
+      return false;
+    }
+  }) || require('ffmpeg-static');
+} else {
+  ffmpegPath = require('ffmpeg-static');
+}
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+console.log('FFmpeg path set to:', ffmpegPath);
 
 export async function POST(request: NextRequest) {
   try {
