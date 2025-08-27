@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/database';
+import { createClient, getPendingJobs } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
     
     await client.end();
     
+    // Test getPendingJobs function
+    const pendingJobsFunction = await getPendingJobs(2, 1);
+    
     return NextResponse.json({
       success: true,
       environment: {
@@ -31,9 +34,13 @@ export async function GET(request: NextRequest) {
         DATABASE_URL_prefix: dbUrl?.substring(0, 30) + '...',
       },
       connection: timeResult.rows[0],
-      pendingJobs: {
+      directQuery: {
         count: jobsResult.rows.length,
         jobs: jobsResult.rows
+      },
+      getPendingJobsFunction: {
+        count: pendingJobsFunction.length,
+        jobs: pendingJobsFunction
       }
     });
     
