@@ -16,14 +16,38 @@ export async function POST(request: NextRequest) {
 
     console.log('Starting optimized video frame creation...');
 
+    // Debug: Test database connection and query
+    const { getPool } = await import('@/lib/database');
+    const pool = getPool();
+    
+    // Test basic connection
+    const connectionTest = await pool.query('SELECT NOW() as current_time, current_database() as db_name');
+    console.log('DB Connection test:', connectionTest.rows[0]);
+    
+    // Test raw query
+    const rawQuery = await pool.query(`
+      SELECT id, step, status, persona, category, created_at 
+      FROM quiz_jobs 
+      WHERE step = 2 AND status LIKE '%pending%'
+      ORDER BY created_at ASC 
+      LIMIT 5
+    `);
+    console.log('Raw query results:', rawQuery.rows);
+
     // Fetch pending jobs for frame creation (step 2)
     const jobs = await getPendingJobs(2, 1);
+    console.log('getPendingJobs results:', jobs);
     
     if (jobs.length === 0) {
       return NextResponse.json({ 
         success: true, 
         processed: 0, 
-        message: 'No jobs pending frame creation.' 
+        message: 'No jobs pending frame creation.',
+        debug: {
+          connectionTest: connectionTest.rows[0],
+          rawQueryCount: rawQuery.rows.length,
+          rawQueryResults: rawQuery.rows
+        }
       });
     }
 
