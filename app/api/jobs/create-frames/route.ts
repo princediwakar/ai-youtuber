@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPendingJobs, updateJob } from '@/lib/database';
-import puppeteer, { Page } from 'puppeteer';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { tmpdir } from 'os';
-import chromium from '@sparticuz/chromium';
+import { createCanvas } from 'canvas';
 
 // Runtime configuration exports for Vercel
 export const runtime = 'nodejs';
@@ -38,7 +34,7 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`Creating frames for job ${job.id} - ${job.persona} ${job.category}`);
 
-        // Generate frames using the improved Puppeteer and HTML/CSS logic
+        // Generate frames using the Canvas API
         const frames = await createOptimizedFrames(job.data.question, job.persona, job.category);
         
         // Update the job to the next step (assembly_pending)
@@ -79,85 +75,18 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * A robust helper function to generate a single frame.
- * It sets content, adjusts fonts, takes a screenshot, and saves a debug file.
- * @param page - The Puppeteer Page object.
- * @param htmlContent - The full HTML string for the frame.
- * @param frameName - A descriptive name for the frame (e.g., 'question').
- * @param debugDir - The directory to save debug images.
- * @returns {Promise<string>} A promise that resolves to the base64 encoded PNG image string.
- */
-async function generateFrame(page: Page, htmlContent: string, frameName: string, debugDir: string): Promise<string> {
-    console.log(`Generating frame: ${frameName}...`);
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-    await page.evaluate('adjustFontSizes()');
-    
-    // Directly get the base64 encoded string from Puppeteer
-    const screenshotBase64 = await page.screenshot({ type: 'png', encoding: 'base64' });
-    
-    const framePath = path.join(debugDir, `${Date.now()}-frame-${frameName}.png`);
-    // Save the base64 string as an image file
-    await fs.writeFile(framePath, screenshotBase64, 'base64');
-    console.log(`Successfully saved frame to: ${framePath}`);
-    
-    return `data:image/png;base64,${screenshotBase64}`;
-}
-
-
-/**
- * Creates video frames using Puppeteer by rendering dynamic HTML.
- * This version uses a new browser page for each frame to ensure reliability.
+ * Creates video frames using Canvas API.
  * @param {object} question - The question data object.
- * @param {string} testType - The type of test (e.g., 'GRE').
+ * @param {string} persona - The type of quiz (e.g., 'vocabulary').
  * @param {string} category - The category of the quiz (e.g., 'english').
  * @returns {Promise<string[]>} A promise that resolves to an array of base64 encoded PNG image strings.
  */
 async function createOptimizedFrames(question: any, persona: string, category: string): Promise<string[]> {
-  const frames: string[] = [];
   const width = 1080;
   const height = 1920;
 
-  let browser;
-  
   try {
-    console.log('Launching Puppeteer for frame generation...');
-    
-    // Use temp directory for serverless environments  
-    const debugDir = process.env.NODE_ENV === 'production' 
-      ? path.join('/tmp', 'debug-frames') 
-      : path.join(process.cwd(), 'debug-frames');
-    await fs.mkdir(debugDir, { recursive: true });
-    
-    // Configure for serverless environment
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    // Configure browser for production vs development
-    if (isProduction) {
-      // Force Chromium to use /tmp directory in Vercel
-      process.env.PUPPETEER_CACHE_DIR = '/tmp/.cache/puppeteer';
-      process.env.XDG_CACHE_HOME = '/tmp';
-      
-      browser = await puppeteer.launch({
-        headless: true,
-        args: chromium.args,
-        executablePath: await chromium.executablePath(),
-      });
-    } else {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-web-security'
-        ]
-      });
-    }
-
-    // Helper function to escape HTML special characters
-    const escapeHtml = (text: string | undefined | null) => {
-        if (text === null || typeof text === 'undefined') return '';
-        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;").replace(/`/g, "&#96;");
-    };
+    console.log('Creating frames using Canvas API...');
 
     // Normalize and escape data
     let options = question?.options || {};
@@ -166,92 +95,142 @@ async function createOptimizedFrames(question: any, persona: string, category: s
     }
     const correctAnswer = question?.answer || 'A';
 
-    const escapedQuestionText = escapeHtml(question?.question);
-    const escapedExplanationText = escapeHtml(question?.explanation);
-    const escapedOptions = {
-        A: escapeHtml(options.A), B: escapeHtml(options.B),
-        C: escapeHtml(options.C), D: escapeHtml(options.D),
+    const questionText = question?.question || 'Sample Question';
+    const explanationText = question?.explanation || 'Sample explanation text.';
+    const optionTexts = {
+        A: options.A || 'Option A',
+        B: options.B || 'Option B', 
+        C: options.C || 'Option C',
+        D: options.D || 'Option D',
     };
-
-    // Common head with styling
-    const commonHead = `
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body {
-            width: ${width}px; height: ${height}px; font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #FF6FD8 0%, #3813C2 50%, #2E8BFD 100%);
-            color: white; display: flex; flex-direction: column; justify-content: center;
-            align-items: center; padding: 40px; text-align: center;
-          }
-          .question { font-size: 24px; margin-bottom: 30px; }
-          .options { font-size: 20px; margin: 20px 0; }
-          .option { margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.2); border-radius: 10px; }
-          .correct { background: linear-gradient(90deg, #38E54D, #1FAA59) !important; }
-          .explanation { font-size: 18px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px; }
-        </style>
-      </head>
-    `;
 
     const frames = [];
 
-    // Frame 1: Question
-    const page1 = await browser.newPage();
-    await page1.setViewport({ width, height });
-    await page1.setContent(`<!DOCTYPE html><html>${commonHead}<body>
-      <div class="question">${escapedQuestionText || 'Sample Question'}</div>
-      <div class="options">
-        <div class="option">A) ${escapedOptions.A || 'Option A'}</div>
-        <div class="option">B) ${escapedOptions.B || 'Option B'}</div>
-        <div class="option">C) ${escapedOptions.C || 'Option C'}</div>
-        <div class="option">D) ${escapedOptions.D || 'Option D'}</div>
-      </div>
-    </body></html>`);
-    
-    const frame1 = await page1.screenshot({ type: 'png', encoding: 'base64' });
-    frames.push(`data:image/png;base64,${frame1}`);
-    await page1.close();
+    // Helper to create canvas with gradient background
+    const createBaseCanvas = () => {
+      const canvas = createCanvas(width, height);
+      const ctx = canvas.getContext('2d');
+      
+      // Create gradient background
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#FF6FD8');
+      gradient.addColorStop(0.5, '#3813C2');
+      gradient.addColorStop(1, '#2E8BFD');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      return { canvas, ctx };
+    };
 
-    // Frame 2: Answer
-    const page2 = await browser.newPage();
-    await page2.setViewport({ width, height });
-    await page2.setContent(`<!DOCTYPE html><html>${commonHead}<body>
-      <div class="question">${escapedQuestionText || 'Sample Question'}</div>
-      <div class="options">
-        <div class="option ${correctAnswer === 'A' ? 'correct' : ''}">A) ${escapedOptions.A || 'Option A'}</div>
-        <div class="option ${correctAnswer === 'B' ? 'correct' : ''}">B) ${escapedOptions.B || 'Option B'}</div>
-        <div class="option ${correctAnswer === 'C' ? 'correct' : ''}">C) ${escapedOptions.C || 'Option C'}</div>
-        <div class="option ${correctAnswer === 'D' ? 'correct' : ''}">D) ${escapedOptions.D || 'Option D'}</div>
-      </div>
-    </body></html>`);
+    // Helper to wrap text
+    const wrapText = (ctx: any, text: string, maxWidth: number) => {
+      const words = text.split(' ');
+      const lines = [];
+      let currentLine = words[0];
+
+      for (let i = 1; i < words.length; i++) {
+        const word = words[i];
+        const width = ctx.measureText(currentLine + " " + word).width;
+        if (width < maxWidth) {
+          currentLine += " " + word;
+        } else {
+          lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+      lines.push(currentLine);
+      return lines;
+    };
+
+    // Frame 1: Question
+    const frame1 = createBaseCanvas();
+    frame1.ctx.fillStyle = 'white';
+    frame1.ctx.font = 'bold 24px Arial';
+    frame1.ctx.textAlign = 'center';
     
-    const frame2 = await page2.screenshot({ type: 'png', encoding: 'base64' });
-    frames.push(`data:image/png;base64,${frame2}`);
-    await page2.close();
+    // Question text
+    const questionLines = wrapText(frame1.ctx, questionText, width - 80);
+    let y = height / 3;
+    questionLines.forEach((line: string) => {
+      frame1.ctx.fillText(line, width / 2, y);
+      y += 30;
+    });
+    
+    // Options
+    y += 20;
+    frame1.ctx.font = '20px Arial';
+    Object.entries(optionTexts).forEach(([key, value]) => {
+      const optionText = `${key}) ${value}`;
+      const optionLines = wrapText(frame1.ctx, optionText, width - 100);
+      optionLines.forEach((line: string) => {
+        frame1.ctx.fillText(line, width / 2, y);
+        y += 25;
+      });
+      y += 10;
+    });
+    
+    frames.push(`data:image/png;base64,${frame1.canvas.toBuffer().toString('base64')}`);
+
+    // Frame 2: Answer (with correct option highlighted)
+    const frame2 = createBaseCanvas();
+    frame2.ctx.fillStyle = 'white';
+    frame2.ctx.font = 'bold 24px Arial';
+    frame2.ctx.textAlign = 'center';
+    
+    // Question text (same as frame 1)
+    const questionLines2 = wrapText(frame2.ctx, questionText, width - 80);
+    let y2 = height / 3;
+    questionLines2.forEach((line: string) => {
+      frame2.ctx.fillText(line, width / 2, y2);
+      y2 += 30;
+    });
+    
+    // Options with correct answer highlighted
+    y2 += 20;
+    frame2.ctx.font = '20px Arial';
+    Object.entries(optionTexts).forEach(([key, value]) => {
+      if (key === correctAnswer) {
+        // Highlight correct answer
+        frame2.ctx.fillStyle = '#38E54D';
+        frame2.ctx.fillRect(50, y2 - 20, width - 100, 30);
+        frame2.ctx.fillStyle = 'white';
+      } else {
+        frame2.ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      }
+      
+      const optionText = `${key}) ${value}`;
+      const optionLines = wrapText(frame2.ctx, optionText, width - 100);
+      optionLines.forEach((line: string) => {
+        frame2.ctx.fillText(line, width / 2, y2);
+        y2 += 25;
+      });
+      y2 += 10;
+    });
+    
+    frames.push(`data:image/png;base64,${frame2.canvas.toBuffer().toString('base64')}`);
 
     // Frame 3: Explanation
-    const page3 = await browser.newPage();
-    await page3.setViewport({ width, height });
-    await page3.setContent(`<!DOCTYPE html><html>${commonHead}<body>
-      <div class="explanation">${escapedExplanationText || 'Sample explanation text.'}</div>
-    </body></html>`);
+    const frame3 = createBaseCanvas();
+    frame3.ctx.fillStyle = 'white';
+    frame3.ctx.font = 'bold 28px Arial';
+    frame3.ctx.textAlign = 'center';
+    frame3.ctx.fillText('Explanation', width / 2, 100);
     
-    const frame3 = await page3.screenshot({ type: 'png', encoding: 'base64' });
-    frames.push(`data:image/png;base64,${frame3}`);
-    await page3.close();
+    frame3.ctx.font = '18px Arial';
+    const explanationLines = wrapText(frame3.ctx, explanationText, width - 80);
+    let y3 = 150;
+    explanationLines.forEach((line: string) => {
+      frame3.ctx.fillText(line, width / 2, y3);
+      y3 += 22;
+    });
+    
+    frames.push(`data:image/png;base64,${frame3.canvas.toBuffer().toString('base64')}`);
 
-    console.log(`Successfully created ${frames.length} frames.`);
+    console.log(`Successfully created ${frames.length} frames using Canvas API.`);
     return frames;
 
   } catch (error) {
-    console.error('Puppeteer frame creation failed:', error);
-    throw new Error(`Puppeteer generation failed: ${error.message}`);
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
+    console.error('Canvas frame creation failed:', error);
+    throw new Error(`Frame creation failed: ${error.message}`);
   }
 }
-
