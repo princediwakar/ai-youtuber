@@ -7,8 +7,7 @@ import path from 'path';
 import { 
   uploadImageToCloudinary, 
   generateFramePublicIds, 
-  cleanupJobFrames,
-  CloudinaryUploadResult 
+  cleanupJobFrames
 } from '@/lib/cloudinary';
 
 // --- FONT REGISTRATION ---
@@ -21,19 +20,6 @@ try {
 }
 
 // --- THEME CONFIGURATION ---
-interface Theme {
-  name: string;
-  FONT_FAMILY: string;
-  COLOR_BG_DARK: string;
-  COLOR_BG_LIGHT: string;
-  COLOR_TEXT_PRIMARY: string;
-  COLOR_BUTTON_BG: string;
-  COLOR_CORRECT_BG: string;
-  COLOR_CORRECT_TEXT: string;
-  MUTED_TEXT_COLOR: string;
-}
-
-// First, ensure your Theme interface includes the 'name' property
 interface Theme {
   name: string;
   FONT_FAMILY: string;
@@ -151,18 +137,6 @@ const themes: Theme[] = [
 ];
 
 
-// --- CONFIGURATION & SETUP ---
-const FRAMES_STORAGE_DIR = path.join('/tmp', 'generated-frames');
-
-async function setupStorage() {
-  try {
-    await fs.mkdir(FRAMES_STORAGE_DIR, { recursive: true });
-  } catch (error) {
-    console.error("Failed to create frames storage directory:", error);
-  }
-}
-setupStorage();
-
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
@@ -205,7 +179,7 @@ async function processJob(job: any, theme: Theme) {
       status: 'assembly_pending',
       data: { ...job.data, frameUrls: frameUrls }
     });
-    console.log(`✅ Frame creation completed for job ${job.id}: ${frameUrls.length} frames uploaded`);
+    console.log(`✅ Frame creation completed for job ${job.id}: ${frameUrls.length} frames uploaded to Cloudinary`);
     return { id: job.id, persona: job.persona, category: job.category };
   } catch (error) {
     console.error(`❌ Failed to create frames for job ${job.id}:`, error);
@@ -232,9 +206,9 @@ async function saveDebugFrame(canvas: Canvas, filename: string) {
 
 /**
  * Creates and stores video frames using a dynamic theme.
- * Now uploads to Cloudinary instead of local storage.
+ * Uploads frames to Cloudinary for persistent storage.
  */
-async function createAndStoreFrames(jobId: string, question: any, persona: string, category: string, theme: Theme): Promise<string[]> {
+async function createAndStoreFrames(jobId: string, question: any, persona: string, _category: string, theme: Theme): Promise<string[]> {
   const width = 1080;
   const height = 1920;
 

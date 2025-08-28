@@ -10,39 +10,12 @@ const ffmpegPath = require('ffmpeg-static');
 
 // --- CONFIGURATION ---
 const PERSISTENT_VIDEO_DIR = path.join('/tmp', 'generated-videos');
-// Set to true in your .env.local for local debugging
-const isDebug = process.env.DEBUG_MODE === 'true';
 
-// --- SETUP ---
-async function setupStorage() {
+async function ensureVideoDirectory() {
   try {
     await fs.mkdir(PERSISTENT_VIDEO_DIR, { recursive: true });
   } catch (error) {
-    console.error("Failed to create persistent video directory:", error);
-  }
-}
-setupStorage();
-
-/**
- * Saves a copy of the generated video to a local 'generated-videos' folder for debugging.
- * This function only runs if the DEBUG_MODE environment variable is set to 'true'.
- * @param {string} sourcePath - The path of the generated video file in the temporary directory.
- * @param {string} jobId - The ID of the job, used for naming the debug file.
- */
-async function saveDebugVideo(sourcePath: string, jobId: string) {
-  if (!isDebug) {
-    return;
-  }
-
-  try {
-    const debugDir = path.join(process.cwd(), 'generated-videos');
-    await fs.mkdir(debugDir, { recursive: true });
-    const destinationPath = path.join(debugDir, path.basename(sourcePath));
-    await fs.copyFile(sourcePath, destinationPath);
-    console.log(`[DEBUG] Video for job ${jobId} saved to: ${destinationPath}`);
-  } catch (error) {
-    // Log an error but don't throw, as this is a non-critical debug step.
-    console.error(`[DEBUG] Failed to save debug video for job ${jobId}:`, error);
+    console.error("Failed to create video directory:", error);
   }
 }
 
@@ -80,8 +53,8 @@ async function processJob(job: any) {
   try {
     console.log(`Assembling video for job ${job.id}`);
 
-    // Use frameUrls instead of framePaths
-    const frameUrls = job.data.frameUrls || job.data.framePaths; // Fallback for existing jobs
+    // Use frameUrls from Cloudinary
+    const frameUrls = job.data.frameUrls;
     if (!frameUrls || frameUrls.length === 0) {
       throw new Error('No frame URLs found for video assembly');
     }
@@ -150,6 +123,8 @@ async function assembleVideoWithConcat(frameUrls: string[], jobId: string, quest
     const inputFilePath = path.join(tempDir, 'inputs.txt');
     await fs.writeFile(inputFilePath, inputFileContent);
 
+    // Ensure video directory exists and create final video path
+    await ensureVideoDirectory();
     const persistentPath = path.join(PERSISTENT_VIDEO_DIR, `quiz-${jobId}.mp4`);
     
     // Try multiple audio files
@@ -211,10 +186,6 @@ async function assembleVideoWithConcat(frameUrls: string[], jobId: string, quest
       });
       ffmpegProcess.on('error', (err) => reject(err));
     });
-
-    // --- HELPER FUNCTION CALL ---
-    // Save a copy of the video to the local project folder if in debug mode.
-    await saveDebugVideo(persistentPath, jobId);
 
     const stats = await fs.stat(persistentPath);
     console.log(`✅ Video created: ${persistentPath} (${(stats.size / 1e6).toFixed(2)} MB)`);
