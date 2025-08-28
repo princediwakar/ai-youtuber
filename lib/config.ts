@@ -4,12 +4,12 @@
  */
 export const config = {
   // Job Processing Configuration
-  GENERATE_BATCH_SIZE: 3,
+  GENERATE_BATCH_SIZE: 5,
   CREATE_FRAMES_CONCURRENCY: 2,
   ASSEMBLY_CONCURRENCY: 1,
   UPLOAD_CONCURRENCY: 2,
   // 💡 FIX: Increased the daily upload limit to accommodate the generation schedule.
-  MAX_DAILY_UPLOADS: 25,
+  MAX_DAILY_UPLOADS: 20,
 
   // Video & Frame Dimensions
   VIDEO_WIDTH: 1080,
