@@ -1,6 +1,5 @@
 import { Canvas, CanvasRenderingContext2D } from 'canvas';
-import { Theme } from '@/lib/types';
-import { QuizJob } from '@/lib/types';
+import { Theme, QuizJob } from '@/lib/types';
 import { drawHeader, drawFooter, wrapText, drawRoundRect } from '../drawingUtils';
 
 const drawBackground = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
@@ -57,12 +56,14 @@ export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Them
   ctx.font = `bold 70px ${theme.FONT_FAMILY}`;
   ctx.fillText('Explanation', canvas.width / 2, 250);
 
+  const textMaxWidth = canvas.width - 160;
+  const textStartX = (canvas.width - textMaxWidth) / 2;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  const textMaxWidth = canvas.width - 160;
+
   let fontSize = 55;
   let lines: string[];
-  // Dynamically adjust font size to fit text in the available space
+  
   do {
       ctx.font = `bold ${fontSize}px ${theme.FONT_FAMILY}`;
       lines = wrapText(ctx, explanation, textMaxWidth);
@@ -74,41 +75,59 @@ export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Them
   const lineHeight = fontSize * 1.5;
   const startY = 400;
   lines.forEach((line, index) => {
-      ctx.fillText(line, 80, startY + index * lineHeight);
+      ctx.fillText(line, textStartX, startY + index * lineHeight);
   });
 
   drawFooter(ctx, canvas.width, canvas.height, theme, job.persona);
 }
 
+// ✨ CORRECTED FUNCTION
 function renderOptions(ctx: CanvasRenderingContext2D, width: number, startY: number, job: QuizJob, theme: Theme, isAnswerFrame: boolean) {
   const { options, answer } = job.data.question;
-  ctx.font = `bold 50px ${theme.FONT_FAMILY}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  
+
   const buttonWidth = width * 0.85;
-  const buttonHeight = 140;
   const buttonX = (width - buttonWidth) / 2;
   let optionY = startY;
 
-  Object.entries(options).forEach(([key, value]) => {
-      const optionText = `${key}. ${value}`;
+  // Layout constants
+  const PADDING = 40;
+  const FONT_SIZE = 45;
+  const LINE_HEIGHT = FONT_SIZE * 1.4;
+  const OPTION_SPACING = 40;
+
+  // Convert options object to array for iteration
+  Object.entries(options).forEach(([optionKey, optionText]) => {
+      const fullOptionText = `${optionKey}. ${optionText}`;
+      
+      ctx.font = `bold ${FONT_SIZE}px ${theme.FONT_FAMILY}`;
+
+      const maxWidth = buttonWidth - (PADDING * 2);
+      const lines = wrapText(ctx, fullOptionText, maxWidth);
+
+      const textBlockHeight = lines.length * LINE_HEIGHT;
+      const dynamicButtonHeight = textBlockHeight + (PADDING * 2);
+
+      // Determine colors - compare with correct answer key
+      const isCorrect = optionKey === answer;
       if (isAnswerFrame) {
-          const isCorrect = key === answer;
           ctx.fillStyle = isCorrect ? theme.COLOR_CORRECT_BG : theme.COLOR_BUTTON_BG;
-          drawRoundRect(ctx, buttonX, optionY, buttonWidth, buttonHeight, 30);
-          ctx.fillStyle = isCorrect ? theme.COLOR_CORRECT_TEXT : theme.MUTED_TEXT_COLOR;
       } else {
           ctx.fillStyle = theme.COLOR_BUTTON_BG;
-          drawRoundRect(ctx, buttonX, optionY, buttonWidth, buttonHeight, 30);
-          ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
       }
-      // Wrap option text if it's too long
-      const textLines = wrapText(ctx, optionText, buttonWidth - 80);
-      const textY = optionY + buttonHeight / 2 - (textLines.length -1) * 30;
-      textLines.forEach((line, index) => {
-        ctx.fillText(line, width / 2, textY + index * 60);
-      })
-      optionY += buttonHeight + 40;
+      
+      drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
+      
+      ctx.fillStyle = isAnswerFrame && !isCorrect ? theme.MUTED_TEXT_COLOR : theme.COLOR_TEXT_PRIMARY;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+
+      const textStartY = optionY + PADDING;
+      lines.forEach((line, lineIndex) => {
+        const textX = buttonX + PADDING;
+        const textY = textStartY + (lineIndex * LINE_HEIGHT);
+        ctx.fillText(line, textX, textY);
+      });
+
+      optionY += dynamicButtonHeight + OPTION_SPACING;
   });
 }

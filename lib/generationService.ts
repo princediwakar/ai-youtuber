@@ -17,15 +17,6 @@ async function generatePrompt(jobConfig: any): Promise<string> {
 
   let prompt = '';
   switch (persona) {
-    case 'upsc_prep':
-      prompt = `Generate a UPSC Civil Services Prelims-style MCQ. The question must have 4 nuanced, distinct options and be on the topic of "${topic.displayName}" from the subject "${category.displayName}". The explanation should be detailed and provide deep historical, geographical, or constitutional context suitable for a serious aspirant.`;
-      break;
-    
-    case 'current_affairs':
-      prompt = `Based *only* on the following news context, create one insightful MCQ suitable for competitive exams like SSC or UPSC.
-      Context: "${context}"
-      The question must test analytical skills, not just rote memorization. The options should be plausible distractors. The explanation must reference key details from the provided context and explain their broader significance.`;
-      break;
 
     case 'english_learning':
     default:

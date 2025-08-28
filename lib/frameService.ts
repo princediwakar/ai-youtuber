@@ -1,3 +1,4 @@
+//lib/frameService.ts
 import { createCanvas, Canvas, registerFont } from 'canvas';
 import path from 'path';
 import { promises as fs } from 'fs';

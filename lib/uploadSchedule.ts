@@ -17,20 +17,10 @@ type DailySchedule = Record<number, HourlySchedule>;
 // This pattern creates 15 upload slots per day, 5 for each persona.
 const dailyPattern: HourlySchedule = {
     8: ['english_learning'],  // 8 AM
-    9: ['upsc_prep'],         // 9 AM
-    10: ['current_affairs'],   // 10 AM
     11: ['english_learning'],  // 11 AM
-    12: ['upsc_prep'],         // 12 PM
-    13: ['current_affairs'],   // 1 PM
     14: ['english_learning'],  // 2 PM
-    15: ['upsc_prep'],         // 3 PM
-    16: ['current_affairs'],   // 4 PM
     17: ['english_learning'],  // 5 PM
-    18: ['upsc_prep'],         // 6 PM
-    19: ['current_affairs'],   // 7 PM
     20: ['english_learning'],  // 8 PM
-    21: ['upsc_prep'],         // 9 PM
-    22: ['current_affairs'],   // 10 PM
 };
 
 export const UploadSchedule: DailySchedule = {

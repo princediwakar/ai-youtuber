@@ -1,3 +1,4 @@
+//app/api/jobs/create-frames/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getPendingJobs, updateJob } from '@/lib/database';
 import { createFramesForJob } from '@/lib/frameService';

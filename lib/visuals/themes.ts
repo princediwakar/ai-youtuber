@@ -5,16 +5,16 @@ import { Theme } from '@/lib/types';
  * Each theme provides a distinct and consistent color palette and font.
  */
 export const themes: Record<string, Theme> = {
-  slateGold: {
-    name: 'slateGold',
+  lightCoffee: {
+    name: 'lightCoffee',
     FONT_FAMILY: 'Poppins',
-    COLOR_BG_DARK: '#3D405B',
-    COLOR_BG_LIGHT: '#494c6f',
-    COLOR_TEXT_PRIMARY: '#F2CC8F',
-    COLOR_BUTTON_BG: 'rgba(244, 241, 222, 0.1)',
-    COLOR_CORRECT_BG: '#81B29A',
-    COLOR_CORRECT_TEXT: '#3D405B',
-    MUTED_TEXT_COLOR: 'rgba(242, 204, 143, 0.6)',
+    COLOR_BG_DARK: '#fff4e6',
+    COLOR_BG_LIGHT: '#fff4e6',
+    COLOR_TEXT_PRIMARY: '#3c2f2f',
+    COLOR_BUTTON_BG: '#be9b7b',
+    COLOR_CORRECT_BG: '#854442',
+    COLOR_CORRECT_TEXT: '#fff4e6',
+    MUTED_TEXT_COLOR: 'rgba(60, 47, 47, 0.5)',
   },
   charcoalOrange: {
     name: 'charcoalOrange',
