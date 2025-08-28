@@ -28,6 +28,9 @@ npm run dev
 - `NEXTAUTH_SECRET` - Token hashing secret
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET` - Google OAuth secret
+- `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for frame storage
+- `CLOUDINARY_API_KEY` - Cloudinary API key
+- `CLOUDINARY_API_SECRET` - Cloudinary API secret
 
 ## Architecture
 

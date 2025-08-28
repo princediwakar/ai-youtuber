@@ -4,6 +4,12 @@ import { getPendingJobs, updateJob } from '@/lib/database';
 import { createCanvas, Canvas, CanvasRenderingContext2D, registerFont } from 'canvas';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { 
+  uploadImageToCloudinary, 
+  generateFramePublicIds, 
+  cleanupJobFrames,
+  CloudinaryUploadResult 
+} from '@/lib/cloudinary';
 
 // --- FONT REGISTRATION ---
 try {
@@ -192,14 +198,14 @@ export async function POST(request: NextRequest) {
 
 async function processJob(job: any, theme: Theme) {
   try {
-    console.log(`Creating frames for job ${job.id} with theme ${theme.name}`); // Use theme.name
-    const framePaths = await createAndStoreFrames(job.id, job.data.question, job.persona, job.category, theme);
+    console.log(`Creating frames for job ${job.id} with theme ${theme.name}`);
+    const frameUrls = await createAndStoreFrames(job.id, job.data.question, job.persona, job.category, theme);
     await updateJob(job.id, {
       step: 3,
       status: 'assembly_pending',
-      data: { ...job.data, framePaths: framePaths }
+      data: { ...job.data, frameUrls: frameUrls }
     });
-    console.log(`✅ Frame creation completed for job ${job.id}`);
+    console.log(`✅ Frame creation completed for job ${job.id}: ${frameUrls.length} frames uploaded`);
     return { id: job.id, persona: job.persona, category: job.category };
   } catch (error) {
     console.error(`❌ Failed to create frames for job ${job.id}:`, error);
@@ -226,6 +232,7 @@ async function saveDebugFrame(canvas: Canvas, filename: string) {
 
 /**
  * Creates and stores video frames using a dynamic theme.
+ * Now uploads to Cloudinary instead of local storage.
  */
 async function createAndStoreFrames(jobId: string, question: any, persona: string, category: string, theme: Theme): Promise<string[]> {
   const width = 1080;
@@ -428,13 +435,29 @@ finalLines.forEach(line => {
   await saveDebugFrame(frame3.canvas, `${theme.name}-job-${jobId}-frame-3-explanation.png`);
   frames.push(frame3.canvas);
 
-  // --- Save Canvases to Final Storage ---
-  const savePromises = frames.map(async (canvas, index) => {
-    const buffer = canvas.toBuffer('image/png');
-    const filePath = path.join(FRAMES_STORAGE_DIR, `{theme.name}-job-${jobId}-frame-${index + 1}.png`);
-    await fs.writeFile(filePath, buffer);
-    return filePath;
-  });
+  // --- Upload Canvases to Cloudinary ---
+  const publicIds = generateFramePublicIds(jobId, theme.name, frames.length);
+  
+  try {
+    const uploadPromises = frames.map(async (canvas, index) => {
+      const buffer = canvas.toBuffer('image/png');
+      const result = await uploadImageToCloudinary(buffer, {
+        folder: 'quiz-frames',
+        public_id: publicIds[index],
+        resource_type: 'image',
+        format: 'png'
+      });
+      console.log(`✅ Uploaded frame ${index + 1} for job ${jobId}: ${result.secure_url}`);
+      return result.secure_url;
+    });
 
-  return Promise.all(savePromises);
+    const frameUrls = await Promise.all(uploadPromises);
+    return frameUrls;
+    
+  } catch (error) {
+    console.error(`Failed to upload frames for job ${jobId}:`, error);
+    // Cleanup any successfully uploaded frames
+    await cleanupJobFrames(publicIds);
+    throw error;
+  }
 }

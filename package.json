@@ -13,6 +13,7 @@
     "@sparticuz/chromium": "^138.0.2",
     "@tailwindcss/forms": "^0.5.7",
     "canvas": "^3.2.0",
+    "cloudinary": "^2.7.0",
     "dotenv": "^17.2.1",
     "ffmpeg-static": "^5.2.0",
     "fluent-ffmpeg": "^2.1.3",

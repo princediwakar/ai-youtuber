@@ -5,6 +5,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 import { spawn } from 'child_process';
+import { downloadImageFromCloudinary } from '@/lib/cloudinary';
 const ffmpegPath = require('ffmpeg-static');
 
 // --- CONFIGURATION ---
@@ -79,8 +80,14 @@ async function processJob(job: any) {
   try {
     console.log(`Assembling video for job ${job.id}`);
 
+    // Use frameUrls instead of framePaths
+    const frameUrls = job.data.frameUrls || job.data.framePaths; // Fallback for existing jobs
+    if (!frameUrls || frameUrls.length === 0) {
+      throw new Error('No frame URLs found for video assembly');
+    }
+
     const { persistentPath, videoSize } = await assembleVideoWithConcat(
-        job.data.framePaths, 
+        frameUrls, 
         job.id, 
         job.data.question
     );
@@ -108,7 +115,7 @@ async function processJob(job: any) {
   }
 }
 
-async function assembleVideoWithConcat(framePaths: string[], jobId: string, question: any): Promise<{persistentPath: string, videoSize: number}> {
+async function assembleVideoWithConcat(frameUrls: string[], jobId: string, question: any): Promise<{persistentPath: string, videoSize: number}> {
   if (!ffmpegPath) {
       throw new Error("ffmpeg binary not found. Make sure ffmpeg-static is installed.");
   }
@@ -117,6 +124,20 @@ async function assembleVideoWithConcat(framePaths: string[], jobId: string, ques
   await fs.mkdir(tempDir, { recursive: true });
 
   try {
+    // Download frames from Cloudinary to temp directory
+    console.log(`Downloading ${frameUrls.length} frames from Cloudinary...`);
+    const downloadPromises = frameUrls.map(async (url, index) => {
+      const frameBuffer = await downloadImageFromCloudinary(url);
+      const framePath = path.join(tempDir, `frame-${index + 1}.png`);
+      await fs.writeFile(framePath, frameBuffer);
+      console.log(`Downloaded frame ${index + 1}: ${framePath}`);
+      return framePath;
+    });
+
+    const framePaths = await Promise.all(downloadPromises);
+    console.log(`✅ All frames downloaded to temp directory`);
+    
+    // Continue with existing video assembly logic...
     const durations = [
       getFrameDuration(question, 1),
       getFrameDuration(question, 2),
@@ -131,8 +152,27 @@ async function assembleVideoWithConcat(framePaths: string[], jobId: string, ques
 
     const persistentPath = path.join(PERSISTENT_VIDEO_DIR, `quiz-${jobId}.mp4`);
     
-    const audioPath = path.join(process.cwd(), 'public', 'audio', '6.mp3'); 
-    const audioExists = await fs.stat(audioPath).then(() => true).catch(() => false);
+    // Try multiple audio files
+    const audioFiles = ['6.mp3', 'quiz-ambient.mp3', 'default.mp3'];
+    let audioPath = '';
+    let audioExists = false;
+    
+    for (const audioFile of audioFiles) {
+      const testPath = path.join(process.cwd(), 'public', 'audio', audioFile);
+      try {
+        await fs.stat(testPath);
+        audioPath = testPath;
+        audioExists = true;
+        console.log(`Using audio file: ${audioFile}`);
+        break;
+      } catch {
+        continue;
+      }
+    }
+    
+    if (!audioExists) {
+      console.warn('No audio file found, creating silent video');
+    }
 
     const ffmpegArgs = [
       // Video input from frames
