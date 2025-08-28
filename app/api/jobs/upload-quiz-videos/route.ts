@@ -1,45 +1,36 @@
-// app/api/jobs/upload-quiz-videos/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getPendingJobs, markJobCompleted, updateJob } from '@/lib/database';
 import { google } from 'googleapis';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { downloadVideoFromCloudinary } from '@/lib/cloudinary';
+import { downloadVideoFromCloudinary, deleteVideoFromCloudinary, deleteImageFromCloudinary } from '@/lib/cloudinary';
+// Import the new playlist manager
+import { findManagedPlaylists, getOrCreatePlaylist } from '@/lib/playlistManager';
 
 // --- RATE LIMITING & CACHING CONFIGURATION ---
-
 const MAX_DAILY_UPLOADS = 20;
 const MAX_CONCURRENT_UPLOADS = 3;
 
-// Simple in-memory cache for a single serverless invocation
-// Note: This won't persist across invocations, but that's acceptable for this use case
+// Cache is now more powerful, storing the playlist map for the entire batch.
 interface Cache {
   dailyCount: number;
   lastResetDate: string;
-  playlistIds: Record<string, string>; // e.g., { "vocabulary-english": "PL..." }
+  // Use a Map for efficient lookups. Key is canonicalKey, value is playlistId.
+  playlistMap: Map<string, string> | null;
 }
 
-// In-memory cache (resets with each serverless invocation)
 let memoryCache: Cache = {
   dailyCount: 0,
   lastResetDate: new Date().toDateString(),
-  playlistIds: {}
+  playlistMap: null, // Start as null, fetch on first run.
 };
 
-/**
- * Gets the cache from memory.
- */
-async function getCache(): Promise<Cache> {
-  return memoryCache;
-}
+// getCache and setCache functions remain the same...
 
-/**
- * Updates the cache in memory.
- */
-async function setCache(cache: Cache): Promise<void> {
-  memoryCache = cache;
-}
+async function getCache(): Promise<Cache> { return memoryCache; }
+async function setCache(cache: Cache): Promise<void> { memoryCache = cache; }
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,11 +43,9 @@ export async function POST(request: NextRequest) {
     let cache = await getCache();
     const today = new Date().toDateString();
 
-    // Reset daily counter if it's a new day
     if (cache.lastResetDate !== today) {
-      cache.dailyCount = 0;
-      cache.lastResetDate = today;
-      console.log('Daily upload counter reset.');
+      cache = { dailyCount: 0, lastResetDate: today, playlistMap: null };
+      console.log('Daily counters and cache reset.');
     }
 
     const remainingUploads = MAX_DAILY_UPLOADS - cache.dailyCount;
@@ -69,15 +58,32 @@ export async function POST(request: NextRequest) {
     if (jobs.length === 0) {
       return NextResponse.json({ success: true, processed: 0, message: 'No jobs pending YouTube upload.' });
     }
+    
+    // --- KEY IMPROVEMENT: Initialize YouTube client and fetch playlist map ONCE per batch ---
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      `${process.env.NEXTAUTH_URL}/api/auth/callback/google`
+    );
+    oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+    // Note: Refreshing the token inside the loop is inefficient. 
+    // It's better to ensure it's valid before starting. A full implementation might check expiry.
+    // For simplicity here, we assume the token is valid for the batch duration.
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+    
+    // If the playlist map hasn't been fetched for this invocation, fetch it now.
+    if (!cache.playlistMap) {
+      cache.playlistMap = await findManagedPlaylists(youtube);
+    }
+    // -----------------------------------------------------------------------------------------
 
-    const processPromises = jobs.map(job => processUpload(job, cache));
+    const processPromises = jobs.map(job => processUpload(job, youtube, cache.playlistMap!));
     const results = await Promise.allSettled(processPromises);
     
     const processedJobs = results
-        .filter(r => r.status === 'fulfilled' && r.value)
-        .map(r => (r as PromiseFulfilledResult<any>).value);
+      .filter(r => r.status === 'fulfilled' && r.value)
+      .map(r => (r as PromiseFulfilledResult<any>).value);
     
-    // Update the daily count in the cache after the batch is done.
     cache.dailyCount += processedJobs.length;
     await setCache(cache);
 
@@ -90,36 +96,30 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Processes a single video upload.
- * @param job - The job to process.
- * @param cache - The shared cache object (passed by reference to update).
- */
-async function processUpload(job: any, cache: Cache) {
+async function processUpload(job: any, youtube: any, playlistMap: Map<string, string>) {
   let tempFile: string | null = null;
   try {
     console.log(`Uploading video for job ${job.id}`);
-
-    // Download video from Cloudinary
-    const videoUrl = job.data.videoUrl;
-    if (!videoUrl) {
-        throw new Error(`Video URL not found in job data`);
-    }
     
-    console.log(`Downloading video from Cloudinary: ${videoUrl}`);
+    const videoUrl = job.data.videoUrl;
+    if (!videoUrl) throw new Error(`Video URL not found in job data`);
+    
     const videoBuffer = await downloadVideoFromCloudinary(videoUrl);
-
-    // Write buffer to a temporary file for the Google API client
     tempFile = path.join('/tmp', `upload-${uuidv4()}.mp4`);
     await fs.writeFile(tempFile, videoBuffer);
 
-    const metadata = generateVideoMetadata(job.data.question, job.persona, job.category, job.id);
-    const youtubeVideoId = await uploadToYouTube(tempFile, metadata);
+    const metadata = generateVideoMetadata(job.data.question, job.persona, job.category);
+    const youtubeVideoId = await uploadToYouTube(tempFile, metadata, youtube);
     
-    await addVideoToPlaylists(youtubeVideoId, job.persona, job.category, cache);
+    // Pass the pre-fetched map to the playlist function
+    await addVideoToPlaylist(youtubeVideoId, job.persona, job.category, youtube, playlistMap);
+    
     await markJobCompleted(job.id, youtubeVideoId, metadata);
     
-    console.log(`✅ YouTube upload completed for job ${job.id}: https://youtube.com/watch?v=${youtubeVideoId}`);
+    // Cleanup Cloudinary assets after successful upload
+    await cleanupCloudinaryAssets(job.data);
+    
+    console.log(`✅ YouTube upload completed for job ${job.id}: https://youtu.be/${youtubeVideoId}`);
     return { id: job.id, youtube_video_id: youtubeVideoId };
 
   } catch (error) {
@@ -130,25 +130,14 @@ async function processUpload(job: any, cache: Cache) {
     });
     return null;
   } finally {
-    // **FIX**: Ensure temporary files are always cleaned up.
     if (tempFile) {
       await fs.unlink(tempFile).catch(e => console.warn(`Failed to delete temp file ${tempFile}:`, e));
     }
   }
 }
 
-async function uploadToYouTube(videoPath: string, metadata: any): Promise<string> {
-    const oauth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        `${process.env.NEXTAUTH_URL}/api/auth/callback/google`
-    );
-    oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
-    const { credentials } = await oauth2Client.refreshAccessToken();
-    oauth2Client.setCredentials(credentials);
-
-    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
-
+// Simplified function now takes an initialized client
+async function uploadToYouTube(videoPath: string, metadata: any, youtube: any): Promise<string> {
     const response = await youtube.videos.insert({
         part: ['snippet', 'status'],
         requestBody: {
@@ -169,25 +158,17 @@ async function uploadToYouTube(videoPath: string, metadata: any): Promise<string
     return response.data.id;
 }
 
-
-async function addVideoToPlaylists(videoId: string, persona: string, category: string, cache: Cache): Promise<void> {
-  const playlistKey = `${persona}-${category}`;
+// Updated function uses the new playlistManager
+async function addVideoToPlaylist(
+  videoId: string,
+  persona: string,
+  category: string,
+  youtube: any,
+  playlistMap: Map<string, string>
+): Promise<void> {
+  const canonicalKey = `${persona}-${category}`.toLowerCase();
   try {
-    // **FIX**: Use the cache to get the playlist ID.
-    let playlistId = cache.playlistIds[playlistKey];
-    
-    if (!playlistId) {
-      console.log(`Playlist ID for "${playlistKey}" not in cache. Fetching from YouTube...`);
-      playlistId = await getOrCreatePlaylist(persona, category);
-      cache.playlistIds[playlistKey] = playlistId; // Store in cache for next time
-      await setCache(cache); // Persist the updated cache
-    } else {
-      console.log(`Using cached playlist ID for "${playlistKey}": ${playlistId}`);
-    }
-
-    const oauth2Client = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
-    oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
-    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+    const playlistId = await getOrCreatePlaylist(youtube, persona, category, playlistMap);
 
     await youtube.playlistItems.insert({
       part: ['snippet'],
@@ -198,44 +179,14 @@ async function addVideoToPlaylists(videoId: string, persona: string, category: s
         },
       },
     });
-    console.log(`Added video ${videoId} to playlist ${playlistId}`);
+    console.log(`Added video ${videoId} to playlist ${playlistId} (${canonicalKey})`);
   } catch (error) {
-    console.error(`Failed to add video ${videoId} to playlist "${playlistKey}":`, error);
-    // Non-fatal error, so we don't throw.
+    console.error(`Failed to add video ${videoId} to playlist for key "${canonicalKey}":`, error);
   }
 }
 
-async function getOrCreatePlaylist(persona: string, category: string): Promise<string> {
-    const playlistTitle = `📚 ${persona.charAt(0).toUpperCase() + persona.slice(1)} Quizzes (${category})`;
-    const playlistDescription = `A collection of short quiz videos for ${persona} in the ${category} category.`;
-    
-    const oauth2Client = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
-    oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
-    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
-
-    const response = await youtube.playlists.list({ part: ['snippet'], mine: true, maxResults: 50 });
-    const existingPlaylist = response.data.items?.find(p => p.snippet?.title === playlistTitle);
-
-    if (existingPlaylist?.id) {
-        return existingPlaylist.id;
-    }
-
-    const newPlaylist = await youtube.playlists.insert({
-        part: ['snippet', 'status'],
-        requestBody: {
-            snippet: { title: playlistTitle, description: playlistDescription },
-            status: { privacyStatus: 'public' },
-        },
-    });
-
-    if (!newPlaylist.data.id) {
-        throw new Error("Failed to create a new playlist.");
-    }
-    return newPlaylist.data.id;
-}
-
-
-function generateVideoMetadata(question: any, persona: string, category: string, jobId: string) {
+// generateVideoMetadata function remains the same, but no longer needs jobId
+function generateVideoMetadata(question: any, persona: string, category: string) {
   const title = `📚 Vocabulary Quiz: ${question.category_topic || 'Word Power'} | #shorts`;
   const description = `Boost your English vocabulary with this quick challenge! Can you guess the right answer?
 
@@ -246,6 +197,56 @@ Perfect for students, professionals, and anyone preparing for exams like the SAT
 #Vocabulary #English #WordOfTheDay #LearnEnglish #Shorts #Quiz #Education #TestPrep`;
   const tags = ['vocabulary', 'english', 'quiz', 'shorts', 'education', persona, category, question.category_topic];
   return { title: title.slice(0, 100), description, tags };
+}
+
+async function cleanupCloudinaryAssets(jobData: any): Promise<void> {
+  try {
+    const cleanupPromises = [];
+    
+    // Cleanup video from Cloudinary
+    if (jobData.videoUrl) {
+      const videoPublicId = extractPublicIdFromUrl(jobData.videoUrl);
+      if (videoPublicId) {
+        cleanupPromises.push(
+          deleteVideoFromCloudinary(videoPublicId).catch(err => 
+            console.warn(`Failed to delete video ${videoPublicId}:`, err)
+          )
+        );
+      }
+    }
+    
+    // Cleanup frames from Cloudinary
+    if (jobData.frameUrls && Array.isArray(jobData.frameUrls)) {
+      jobData.frameUrls.forEach((frameUrl: string) => {
+        const framePublicId = extractPublicIdFromUrl(frameUrl);
+        if (framePublicId) {
+          cleanupPromises.push(
+            deleteImageFromCloudinary(framePublicId).catch(err => 
+              console.warn(`Failed to delete frame ${framePublicId}:`, err)
+            )
+          );
+        }
+      });
+    }
+    
+    await Promise.allSettled(cleanupPromises);
+    console.log(`🧹 Cleaned up Cloudinary assets for uploaded video`);
+  } catch (error) {
+    console.error('Error during Cloudinary cleanup:', error);
+  }
+}
+
+function extractPublicIdFromUrl(url: string): string | null {
+  try {
+    const match = url.match(/\/([^/]+)\/([^/]+)\/([^.]+)/);
+    if (match && match[1] && match[2] && match[3]) {
+      return `${match[1]}/${match[2]}/${match[3]}`;
+    }
+    return null;
+  } catch (error) {
+    console.warn(`Failed to extract public_id from URL: ${url}`, error);
+    return null;
+  }
 }
 
 export const runtime = 'nodejs';

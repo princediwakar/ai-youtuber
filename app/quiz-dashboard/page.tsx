@@ -68,7 +68,7 @@ export default function QuizDashboard() {
       const response = await fetch(endpoints[step], {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'test-secret'}`,
+          'Authorization': `Bearer ${process.env.CRON_SECRET || 'test-secret'}`,
           'Content-Type': 'application/json'
         }
       });
