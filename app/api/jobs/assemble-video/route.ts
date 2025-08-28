@@ -11,6 +11,7 @@ import {
   generateVideoPublicId 
 } from '@/lib/cloudinary';
 const ffmpegPath = require('ffmpeg-static');
+const ffprobePath = require('ffprobe-static');
 
 /**
  * Saves a copy of the generated video to a local 'generated-videos' folder for debugging.
@@ -140,8 +141,12 @@ async function assembleVideoWithConcat(frameUrls: string[], jobId: string, quest
     // Create video in temp directory first
     const tempVideoPath = path.join(tempDir, `quiz-${jobId}.mp4`);
     
+    // Calculate total video duration
+    const totalVideoDuration = durations.reduce((sum, duration) => sum + duration, 0);
+    console.log(`Total video duration: ${totalVideoDuration} seconds`);
+    
     // Try multiple audio files
-    const audioFiles = ['6.mp3', 'quiz-ambient.mp3', 'default.mp3'];
+    const audioFiles = ['1.mp3', '2.mp3', '3.mp3', '4.mp3'];
     let audioPath = '';
     let audioExists = false;
     
@@ -168,21 +173,24 @@ async function assembleVideoWithConcat(frameUrls: string[], jobId: string, quest
       '-safe', '0',
       '-i', inputFilePath,
       
-      // Add audio input with looping enabled
-      ...(audioExists ? ['-stream_loop', '-1', '-i', audioPath] : []),
+      // Add audio input with proper duration handling
+      ...(audioExists ? [
+        '-i', audioPath,
+        '-filter_complex', `[1:a]aloop=loop=-1:size=2e+09,atrim=duration=${totalVideoDuration}[audio]`,
+        '-map', '0:v',
+        '-map', '[audio]'
+      ] : []),
       
       // Codecs
       '-c:v', 'libx264',
-      '-c:a', 'aac',
-      
-      // Stop encoding when the shortest stream (the video) ends
-      '-shortest',
+      ...(audioExists ? ['-c:a', 'aac'] : []),
       
       // Output format
       '-pix_fmt', 'yuv420p',
       '-vf', 'scale=1080:1920',
       '-r', '30',
       '-preset', 'fast',
+      '-t', totalVideoDuration.toString(), // Explicitly set output duration
       '-y',
       tempVideoPath
     ];
