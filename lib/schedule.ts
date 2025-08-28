@@ -18,6 +18,9 @@ const dailyPattern: HourlySchedule = {
     5: ['english_learning'],  // 5 AM
     6: ['upsc_prep'],         // 6 AM
     7: ['current_affairs'],   // 7 AM
+    13: ['english_learning'],  // 5 AM
+    14: ['upsc_prep'],         // 6 AM
+    19: ['current_affairs'],   // 7 AM
 };
 
 export const GenerationSchedule: DailySchedule = {

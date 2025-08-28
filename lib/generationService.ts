@@ -75,7 +75,7 @@ export async function generateAndStoreQuiz(jobConfig: any): Promise<any | null> 
         topic: jobConfig.topic.key,
         topic_display_name: jobConfig.topic.displayName,
         step: 2, // Next step is frame creation
-        status: 'pending',
+        status: 'frames_pending',
         data: { question: finalQuestion }
     };
 

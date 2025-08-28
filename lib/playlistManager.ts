@@ -86,7 +86,7 @@ export async function getOrCreatePlaylist(
   let canonicalKey: string;
   let playlistTitle: string;
   const personaDisplayName = MasterCurriculum[persona]?.displayName || persona;
-  const effectiveDate = generation_date || created_at.toISOString();
+  const effectiveDate = generation_date || created_at;
 
   if (persona === 'current_affairs') {
     const date = new Date(effectiveDate);

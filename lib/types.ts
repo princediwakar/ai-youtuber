@@ -13,6 +13,7 @@ export interface Question {
   topic: string;
 }
 
+
 // Represents a node in the curriculum hierarchy.
 interface CurriculumNode {
   key: string;
@@ -31,29 +32,24 @@ export interface Curriculum {
 // Represents the structure of a job as stored in the quiz_jobs table.
 export interface QuizJob {
   id: string;
-  persona: 'vocabulary' | 'current_affairs' | 'test_prep' | 'general_knowledge' | 'language_learning';
+  persona: string;
   category: string;
+  topic: string;
+  // Add these two optional properties
+  category_display_name?: string;
+  topic_display_name?: string;
   question_format: string;
-  difficulty: 'beginner' | 'easy' | 'medium' | 'hard' | 'expert';
-  language: string;
-  target_audience: string;
+  difficulty: string;
+  generation_date: string;
   status: string;
   step: number;
-  tags: string[];
-  data: {
-    question: Question;
-    frameUrls?: string[];
-    videoUrl?: string;
-    videoSize?: number; // 💡 FIX: Added videoSize property
-    youtube_video_id?: string;
-    topic_display_name?: string;
-    category_display_name?: string;
-    generation_date?: string;
-  };
+  data: any;
   error_message?: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at: string;
+  updated_at: string;
 }
+
+
 
 // Represents a successfully uploaded video record.
 export interface UploadedVideo {

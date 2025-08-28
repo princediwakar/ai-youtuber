@@ -73,17 +73,18 @@ export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> 
     RETURNING id
   `;
   
+  // CORRECTED VALUES ARRAY
   const values = [
-    jobData.persona || 'general_knowledge',
+    jobData.persona,
     jobData.category,
-    jobData.data?.question?.topic,
-    jobData.data?.category_display_name,
-    jobData.data?.topic_display_name,
+    jobData.topic,                    // ✅ Corrected: Reads from top-level jobData
+    jobData.category_display_name,    // ✅ Corrected
+    jobData.topic_display_name,       // ✅ Corrected
     jobData.question_format || 'multiple_choice',
     jobData.difficulty || 'medium',
-    jobData.data?.generation_date,
-    'frames_pending',
-    2,
+    jobData.generation_date,          // ✅ Corrected
+    jobData.status,                   // ✅ Corrected: Uses status from service
+    jobData.step,                     // ✅ Corrected: Uses step from service
     JSON.stringify(jobData.data || {})
   ];
   

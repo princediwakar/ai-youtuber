@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`-- Starting generation batch for persona: "${personaConfig.displayName}"`);
-      const generationDate = new Date().toISOString();
+      const generationDate = new Date();
       
       const generationPromises = Array(config.GENERATE_BATCH_SIZE).fill(null).map(async () => {
           const category = getRandomElement(personaConfig.structure);
