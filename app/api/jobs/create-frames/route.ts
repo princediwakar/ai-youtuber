@@ -405,19 +405,24 @@ async function createAndStoreFrames(jobId: string, question: any, persona: strin
   const totalBlockHeight = titleHeight + spaceAfterTitle + bodyHeight;
   let y3 = contentYStart + (contentHeight - totalBlockHeight) / 2;
 
-  frame3.ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
-  frame3.ctx.textAlign = 'center';
-  frame3.ctx.font = `${titleHeight}px ${theme.FONT_FAMILY}`;
-  frame3.ctx.fillText('Explanation', width / 2, y3);
+// --- Draw Title (Centered) ---
+frame3.ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+frame3.ctx.textAlign = 'center'; // Set alignment to CENTER for the title
+frame3.ctx.font = `${titleHeight}px ${theme.FONT_FAMILY}`;
+frame3.ctx.fillText('Explanation', width / 2, y3);
 
   y3 += titleHeight + spaceAfterTitle;
 
-  frame3.ctx.textAlign = 'center';
-  frame3.ctx.font = `${finalFontSize}px ${theme.FONT_FAMILY}`;
-  finalLines.forEach(line => {
-    frame3.ctx.fillText(line, width / 2, y3);
-    y3 += finalLineHeight;
-  });
+// --- Draw Body Text (Left-aligned) ---
+frame3.ctx.textAlign = 'left'; // ✅ FIX: Set alignment to LEFT for the body
+frame3.ctx.font = `${finalFontSize}px ${theme.FONT_FAMILY}`;
+const textX = textPadding; // ✅ FIX: Define the starting X coordinate
+
+finalLines.forEach(line => {
+  frame3.ctx.fillText(line, textX, y3); // ✅ FIX: Use the new X coordinate
+  y3 += finalLineHeight;
+});
+
 
   drawFooter(frame3.ctx);
   await saveDebugFrame(frame3.canvas, `${theme.name}-job-${jobId}-frame-3-explanation.png`);
