@@ -99,10 +99,11 @@ export function generateFramePublicIds(jobId: string, themeName: string, frameCo
  */
 export async function uploadVideoToCloudinary(
   buffer: Buffer,
-  options: {
-    folder?: string;
-    public_id?: string;
-    format?: string;
+  options: { 
+    resource_type?: "video"; 
+    folder?: string; 
+    public_id?: string; 
+    format?: string; 
   } = {}
 ): Promise<CloudinaryUploadResult> {
   return new Promise((resolve, reject) => {
