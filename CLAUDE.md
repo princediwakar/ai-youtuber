@@ -31,6 +31,7 @@ npm run dev
 - `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for frame storage
 - `CLOUDINARY_API_KEY` - Cloudinary API key
 - `CLOUDINARY_API_SECRET` - Cloudinary API secret
+- `DEBUG_MODE` - Set to 'true' to save videos locally in generated-videos/ folder
 
 ## Architecture
 

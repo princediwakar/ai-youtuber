@@ -5,17 +5,31 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 import { spawn } from 'child_process';
-import { downloadImageFromCloudinary } from '@/lib/cloudinary';
+import { 
+  downloadImageFromCloudinary, 
+  uploadVideoToCloudinary, 
+  generateVideoPublicId 
+} from '@/lib/cloudinary';
 const ffmpegPath = require('ffmpeg-static');
 
-// --- CONFIGURATION ---
-const PERSISTENT_VIDEO_DIR = path.join('/tmp', 'generated-videos');
+/**
+ * Saves a copy of the generated video to a local 'generated-videos' folder for debugging.
+ * This function only runs if the DEBUG_MODE environment variable is set to 'true'.
+ */
+async function saveDebugVideo(videoBuffer: Buffer, jobId: string) {
+  if (process.env.DEBUG_MODE !== 'true') {
+    return;
+  }
 
-async function ensureVideoDirectory() {
   try {
-    await fs.mkdir(PERSISTENT_VIDEO_DIR, { recursive: true });
+    const debugDir = path.join(process.cwd(), 'generated-videos');
+    await fs.mkdir(debugDir, { recursive: true });
+    const destinationPath = path.join(debugDir, `quiz-${jobId}.mp4`);
+    await fs.writeFile(destinationPath, videoBuffer);
+    console.log(`[DEBUG] Video for job ${jobId} saved to: ${destinationPath}`);
   } catch (error) {
-    console.error("Failed to create video directory:", error);
+    // Log an error but don't throw, as this is a non-critical debug step.
+    console.error(`[DEBUG] Failed to save debug video for job ${jobId}:`, error);
   }
 }
 
@@ -59,7 +73,7 @@ async function processJob(job: any) {
       throw new Error('No frame URLs found for video assembly');
     }
 
-    const { persistentPath, videoSize } = await assembleVideoWithConcat(
+    const { videoUrl, videoSize } = await assembleVideoWithConcat(
         frameUrls, 
         job.id, 
         job.data.question
@@ -70,12 +84,12 @@ async function processJob(job: any) {
       status: 'upload_pending',
       data: { 
         ...job.data,
-        videoPath: persistentPath,
+        videoUrl: videoUrl,
         videoSize: videoSize
       }
     });
     
-    console.log(`✅ Video assembly completed for job ${job.id}`);
+    console.log(`✅ Video assembly completed for job ${job.id}: ${videoUrl}`);
     return { id: job.id, persona: job.persona, category: job.category };
 
   } catch (error) {
@@ -88,7 +102,7 @@ async function processJob(job: any) {
   }
 }
 
-async function assembleVideoWithConcat(frameUrls: string[], jobId: string, question: any): Promise<{persistentPath: string, videoSize: number}> {
+async function assembleVideoWithConcat(frameUrls: string[], jobId: string, question: any): Promise<{videoUrl: string, videoSize: number}> {
   if (!ffmpegPath) {
       throw new Error("ffmpeg binary not found. Make sure ffmpeg-static is installed.");
   }
@@ -123,9 +137,8 @@ async function assembleVideoWithConcat(frameUrls: string[], jobId: string, quest
     const inputFilePath = path.join(tempDir, 'inputs.txt');
     await fs.writeFile(inputFilePath, inputFileContent);
 
-    // Ensure video directory exists and create final video path
-    await ensureVideoDirectory();
-    const persistentPath = path.join(PERSISTENT_VIDEO_DIR, `quiz-${jobId}.mp4`);
+    // Create video in temp directory first
+    const tempVideoPath = path.join(tempDir, `quiz-${jobId}.mp4`);
     
     // Try multiple audio files
     const audioFiles = ['6.mp3', 'quiz-ambient.mp3', 'default.mp3'];
@@ -171,7 +184,7 @@ async function assembleVideoWithConcat(frameUrls: string[], jobId: string, quest
       '-r', '30',
       '-preset', 'fast',
       '-y',
-      persistentPath
+      tempVideoPath
     ];
 
     console.log(`Running FFmpeg: ${ffmpegPath} ${ffmpegArgs.join(' ')}`);
@@ -187,9 +200,22 @@ async function assembleVideoWithConcat(frameUrls: string[], jobId: string, quest
       ffmpegProcess.on('error', (err) => reject(err));
     });
 
-    const stats = await fs.stat(persistentPath);
-    console.log(`✅ Video created: ${persistentPath} (${(stats.size / 1e6).toFixed(2)} MB)`);
-    return { persistentPath, videoSize: stats.size };
+    // Upload video to Cloudinary
+    console.log(`Uploading video to Cloudinary...`);
+    const videoBuffer = await fs.readFile(tempVideoPath);
+    const publicId = generateVideoPublicId(jobId);
+    
+    // Save debug copy locally if DEBUG_MODE is enabled
+    await saveDebugVideo(videoBuffer, jobId);
+    
+    const result = await uploadVideoToCloudinary(videoBuffer, {
+      folder: 'quiz-videos',
+      public_id: publicId,
+      format: 'mp4'
+    });
+
+    console.log(`✅ Video uploaded to Cloudinary: ${result.secure_url} (${(videoBuffer.length / 1e6).toFixed(2)} MB)`);
+    return { videoUrl: result.secure_url, videoSize: videoBuffer.length };
 
   } catch (error) {
     console.error('❌ Video assembly failed:', error);

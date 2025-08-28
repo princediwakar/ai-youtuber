@@ -5,40 +5,40 @@ import { google } from 'googleapis';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { downloadVideoFromCloudinary } from '@/lib/cloudinary';
 
 // --- RATE LIMITING & CACHING CONFIGURATION ---
 
 const MAX_DAILY_UPLOADS = 20;
 const MAX_CONCURRENT_UPLOADS = 3;
 
-// **FIX**: Use a file-based cache to simulate a persistent store like Redis.
-// This is crucial for a serverless environment to share state across invocations.
-const CACHE_FILE_PATH = path.join('/tmp', 'youtube_upload_cache.json');
-
+// Simple in-memory cache for a single serverless invocation
+// Note: This won't persist across invocations, but that's acceptable for this use case
 interface Cache {
   dailyCount: number;
   lastResetDate: string;
   playlistIds: Record<string, string>; // e.g., { "vocabulary-english": "PL..." }
 }
 
+// In-memory cache (resets with each serverless invocation)
+let memoryCache: Cache = {
+  dailyCount: 0,
+  lastResetDate: new Date().toDateString(),
+  playlistIds: {}
+};
+
 /**
- * Reads the cache from the file system.
+ * Gets the cache from memory.
  */
 async function getCache(): Promise<Cache> {
-  try {
-    const data = await fs.readFile(CACHE_FILE_PATH, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    // If file doesn't exist or is invalid, return a default cache object.
-    return { dailyCount: 0, lastResetDate: new Date().toDateString(), playlistIds: {} };
-  }
+  return memoryCache;
 }
 
 /**
- * Writes the updated cache state to the file system.
+ * Updates the cache in memory.
  */
 async function setCache(cache: Cache): Promise<void> {
-  await fs.writeFile(CACHE_FILE_PATH, JSON.stringify(cache, null, 2));
+  memoryCache = cache;
 }
 
 export async function POST(request: NextRequest) {
@@ -100,11 +100,14 @@ async function processUpload(job: any, cache: Cache) {
   try {
     console.log(`Uploading video for job ${job.id}`);
 
-    // **FIX**: Use async file reading.
-    if (!job.data.videoPath || !(await fs.stat(job.data.videoPath).catch(() => false))) {
-        throw new Error(`Video file not found at path: ${job.data.videoPath}`);
+    // Download video from Cloudinary
+    const videoUrl = job.data.videoUrl;
+    if (!videoUrl) {
+        throw new Error(`Video URL not found in job data`);
     }
-    const videoBuffer = await fs.readFile(job.data.videoPath);
+    
+    console.log(`Downloading video from Cloudinary: ${videoUrl}`);
+    const videoBuffer = await downloadVideoFromCloudinary(videoUrl);
 
     // Write buffer to a temporary file for the Google API client
     tempFile = path.join('/tmp', `upload-${uuidv4()}.mp4`);
