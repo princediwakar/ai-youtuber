@@ -1,3 +1,4 @@
+// app/api/jobs/generate-quiz/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { MasterCurriculum } from '@/lib/curriculum';
 import { getDynamicContext } from '@/lib/contentSource';

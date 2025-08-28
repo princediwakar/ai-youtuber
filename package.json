@@ -32,7 +32,8 @@
     "react-dom": "^18.0.0",
     "react-dropzone": "^14.2.3",
     "sharp": "^0.34.3",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/fluent-ffmpeg": "^2.1.27",
