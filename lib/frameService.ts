@@ -50,7 +50,15 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
       renderedCanvases.push(canvas);
   }
 
-  return await uploadFrames(job.id, theme.name, renderedCanvases);
+  const frameUrls = await uploadFrames(job.id, theme.name, renderedCanvases);
+  
+  // Store theme name in job data for use in video assembly
+  const { updateJob } = await import('@/lib/database');
+  await updateJob(job.id, {
+    data: { ...job.data, frameUrls, themeName: theme.name }
+  });
+  
+  return frameUrls;
 }
 
 function selectThemeForPersona(persona: string): Theme {

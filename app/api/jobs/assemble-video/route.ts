@@ -14,12 +14,13 @@ import { config } from '@/lib/config';
 
 const ffmpegPath = require('ffmpeg-static');
 
-async function saveDebugVideo(videoBuffer: Buffer, jobId: string) {
+async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: string) {
   if (!config.DEBUG_MODE) return;
   try {
     const debugDir = path.join(process.cwd(), 'generated-videos');
     await fs.mkdir(debugDir, { recursive: true });
-    const destinationPath = path.join(debugDir, `quiz-${jobId}.mp4`);
+    const themePrefix = themeName ? `${themeName}-` : '';
+    const destinationPath = path.join(debugDir, `${themePrefix}quiz-${jobId}.mp4`);
     await fs.writeFile(destinationPath, videoBuffer);
     console.log(`[DEBUG] Video for job ${jobId} saved to: ${destinationPath}`);
   } catch (error) {
@@ -143,7 +144,8 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   });
 
   const videoBuffer = await fs.readFile(tempVideoPath);
-  await saveDebugVideo(videoBuffer, job.id);
+  const themeName = job.data.themeName;
+  await saveDebugVideo(videoBuffer, job.id, themeName);
   
   const publicId = generateVideoPublicId(job.id);
   const result = await uploadVideoToCloudinary(videoBuffer, {

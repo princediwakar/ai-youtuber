@@ -1,25 +1,24 @@
 import { CanvasRenderingContext2D } from 'canvas';
 import { Theme } from '@/lib/types';
-import { MasterCurriculum } from '../curriculum';
+import { MasterCurriculum } from '@/lib/curriculum';
 
-export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: Theme) => {
+export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: Theme, persona: string) => {
     ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
     ctx.font = `bold 48px ${theme.FONT_FAMILY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(`QUIZ TIME`, width / 2, 80);
+    const personaDisplayName = MasterCurriculum[persona]?.displayName || '';
+    ctx.fillText(`${personaDisplayName}`, width / 2, 90);
 };
 
-export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme, persona: string) => {
-    const personaDisplayName = MasterCurriculum[persona]?.displayName || '';
+export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
     ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
-    ctx.font = `bold 36px ${theme.FONT_FAMILY}`;
+    ctx.font = `bold 48px ${theme.FONT_FAMILY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.globalAlpha = 0.8;
-    ctx.fillText(personaDisplayName, width / 2, height - 120);
-    ctx.font = `32px ${theme.FONT_FAMILY}`;
-    ctx.fillText('@gibbiai', width / 2, height - 60);
+    ctx.font = `48px ${theme.FONT_FAMILY}`;
+    ctx.fillText('@gibbiai', width / 2, height - 90);
     ctx.globalAlpha = 1.0;
 };
 

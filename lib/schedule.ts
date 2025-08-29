@@ -15,9 +15,10 @@ interface HourlySchedule {
 
 // This pattern creates 3 generation slots per day, 5 for each run.
 const dailyPattern: HourlySchedule = {
-    5: ['english_learning'],  // 5 AM
-    20: ['english_learning'],  // 5 AM
-    21: ['english_learning'],  // 5 AM
+    5: ['english_learning'],  
+    20: ['english_learning'],  
+    23: ['grammar', 'english_learning'],  
+    0: ['english_learning'],
 };
 
 export const GenerationSchedule: DailySchedule = {

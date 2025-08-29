@@ -80,13 +80,21 @@ export async function getOrCreatePlaylist(
   jobData: QuizJob,
   playlistMap: Map<string, string>
 ): Promise<string> {
-  const { persona, category, data, created_at } = jobData;
-  const { topic_display_name, category_display_name, generation_date } = data;
+  const { persona, category, topic, data, created_at } = jobData;
+  // Use display names from job properties first, then fallback to data properties
+  const topic_display_name = jobData.topic_display_name || data.topic_display_name;
+  const category_display_name = jobData.category_display_name || data.category_display_name;
+  const generation_date = data.generation_date;
 
   let canonicalKey: string;
   let playlistTitle: string;
   const personaDisplayName = MasterCurriculum[persona]?.displayName || persona;
   const effectiveDate = generation_date || created_at;
+
+  // Get the category and subcategory information from curriculum
+  const curriculumData = MasterCurriculum[persona];
+  const categoryData = curriculumData?.structure?.find(cat => cat.key === category);
+  const subCategoryData = categoryData?.subCategories?.find(sub => sub.key === topic);
 
   if (persona === 'current_affairs') {
     const date = new Date(effectiveDate);
@@ -95,8 +103,13 @@ export async function getOrCreatePlaylist(
     canonicalKey = generateCanonicalKey(persona, category, String(year), month);
     playlistTitle = `▶️ ${category_display_name} - ${month} ${year}`;
   } else {
-    canonicalKey = generateCanonicalKey(persona, category, data.question.topic);
-    playlistTitle = `▶️ ${personaDisplayName}: ${topic_display_name}`;
+    // Use subcategory for more specific playlist organization
+    const subCategoryKey = subCategoryData?.key || topic;
+    const subCategoryDisplayName = subCategoryData?.displayName || topic_display_name;
+    const categoryDisplayName = categoryData?.displayName || category_display_name;
+    
+    canonicalKey = generateCanonicalKey(persona, category, subCategoryKey);
+    playlistTitle = `▶️ ${personaDisplayName}: ${categoryDisplayName} - ${subCategoryDisplayName}`;
   }
     
   if (playlistMap.has(canonicalKey)) {
@@ -106,7 +119,9 @@ export async function getOrCreatePlaylist(
   console.log(`Creating new playlist: "${playlistTitle}" for key "${canonicalKey}"...`);
   
   const tag = `${MANAGER_TAG_PREFIX}${canonicalKey}${MANAGER_TAG_SUFFIX}`;
-  const playlistDescription = `A collection of quiz videos on ${topic_display_name || category_display_name} for students of ${personaDisplayName}.\n\n${tag}`;
+  const subCategoryDisplayName = subCategoryData?.displayName || topic_display_name;
+  const categoryDisplayName = categoryData?.displayName || category_display_name;
+  const playlistDescription = `A collection of quiz videos focusing on ${subCategoryDisplayName} within ${categoryDisplayName} for students of ${personaDisplayName}.\n\n${tag}`;
 
   try {
     const newPlaylist = await youtube.playlists.insert({

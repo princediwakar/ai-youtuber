@@ -3,8 +3,8 @@
  * This ensures the visual style matches the content's tone for brand consistency.
  */
 export const PersonaThemeMap: Record<string, string[]> = {
-    english_learning: ['lightCoffee'],
+    english_learning: ['charcoalOrange'],
     
     // A default set of themes for any new persona not explicitly listed.
-    default: ['warmPaper'],
+    default: ['charcoalOrange'],
   };

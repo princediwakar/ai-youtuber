@@ -10,45 +10,63 @@ const drawBackground = (ctx: CanvasRenderingContext2D, width: number, height: nu
     ctx.fillRect(0, 0, width, height);
 };
 
+function drawQuestionText(ctx: CanvasRenderingContext2D, canvas: Canvas, question: string, theme: Theme): number {
+  ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  
+  const textMaxWidth = canvas.width - 160;
+  let fontSize = 68;
+  let lines: string[];
+  let lineHeight: number;
+  
+  // Dynamic font sizing for question text
+  do {
+      ctx.font = `bold ${fontSize}px ${theme.FONT_FAMILY}`;
+      lines = wrapText(ctx, question, textMaxWidth);
+      lineHeight = fontSize * 1.25;
+      const textHeight = lines.length * lineHeight;
+      
+      // If text fits in reasonable space (less than 400px height), we're good
+      if (textHeight < 400 || fontSize <= 40) break;
+      
+      fontSize -= 2;
+  } while (fontSize > 40);
+  
+  let y = 300;
+  lines.forEach((line, index) => {
+    ctx.fillText(line, canvas.width / 2, y + index * lineHeight);
+  });
+  return y + lines.length * lineHeight;
+}
+
 export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { question } = job.data;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
-  drawHeader(ctx, canvas.width, theme);
+  // drawHeader(ctx, canvas.width, theme);
   
-  ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `bold 68px ${theme.FONT_FAMILY}`;
-  let y = 400;
-  const questionLines = wrapText(ctx, question.question, canvas.width - 160);
-  questionLines.forEach((line, index) => {
-    ctx.fillText(line, canvas.width / 2, y + index * 85);
-  });
-  y += questionLines.length * 85;
-
-  renderOptions(ctx, canvas.width, y + 100, job, theme, false);
-  drawFooter(ctx, canvas.width, canvas.height, theme, job.persona);
+  const questionEndY = drawQuestionText(ctx, canvas, question.question, theme);
+  renderOptions(ctx, canvas.width, questionEndY + 100, job, theme, false);
+  drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
 export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
-  renderQuestionFrame(canvas, job, theme); // Draw the base frame first
+  const { question } = job.data;
   const ctx = canvas.getContext('2d');
+  drawBackground(ctx, canvas.width, canvas.height, theme);
+  // drawHeader(ctx, canvas.width, theme);
   
-  let y = 400;
-  ctx.font = `bold 68px ${theme.FONT_FAMILY}`;
-  const questionLines = wrapText(ctx, job.data.question.question, canvas.width - 160);
-  y += questionLines.length * 85;
-
-  // Then, re-render options with highlighting logic
-  renderOptions(ctx, canvas.width, y + 100, job, theme, true);
+  const questionEndY = drawQuestionText(ctx, canvas, question.question, theme);
+  renderOptions(ctx, canvas.width, questionEndY + 100, job, theme, true);
+  drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
 export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { explanation } = job.data.question;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
-  drawHeader(ctx, canvas.width, theme);
+  drawHeader(ctx, canvas.width, theme, job.persona);
 
   ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
   ctx.textAlign = 'center';
@@ -78,7 +96,7 @@ export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Them
       ctx.fillText(line, textStartX, startY + index * lineHeight);
   });
 
-  drawFooter(ctx, canvas.width, canvas.height, theme, job.persona);
+  drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
 // ✨ CORRECTED FUNCTION
@@ -117,7 +135,12 @@ function renderOptions(ctx: CanvasRenderingContext2D, width: number, startY: num
       
       drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
       
-      ctx.fillStyle = isAnswerFrame && !isCorrect ? theme.MUTED_TEXT_COLOR : theme.COLOR_TEXT_PRIMARY;
+      if (isAnswerFrame) {
+        ctx.fillStyle = isCorrect ? theme.COLOR_CORRECT_TEXT : theme.MUTED_TEXT_COLOR;
+      } else {
+        // Question frame - use primary text color (non-white)
+        ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+      }
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
 

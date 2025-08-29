@@ -32,21 +32,32 @@ export async function POST(request: NextRequest) {
     const dayOfWeek = now.getDay();
     const hourOfDay = now.getHours();
 
-    const personasToUpload = UploadSchedule[dayOfWeek]?.[hourOfDay];
+    let personasToUpload: string[] = [];
 
-    // 2. If no personas are scheduled for this hour, exit gracefully.
-    if (!personasToUpload || personasToUpload.length === 0) {
-      const message = `No uploads scheduled for this hour (${hourOfDay}:00).`;
-      console.log(message);
-      return NextResponse.json({ success: true, message });
+    if (config.DEBUG_MODE) {
+      // In debug mode, bypass schedule and allow all personas
+      console.log('🐛 DEBUG MODE: Bypassing upload schedule, allowing all personas');
+      personasToUpload = []; // Empty array means all personas in getPendingJobs
+    } else {
+      personasToUpload = UploadSchedule[dayOfWeek]?.[hourOfDay] || [];
+      
+      // 2. If no personas are scheduled for this hour, exit gracefully.
+      if (personasToUpload.length === 0) {
+        const message = `No uploads scheduled for this hour (${hourOfDay}:00).`;
+        console.log(message);
+        return NextResponse.json({ success: true, message });
+      }
+      
+      console.log(`🚀 Found scheduled uploads for this hour: ${personasToUpload.join(', ')}`);
     }
 
-    console.log(`🚀 Found scheduled uploads for this hour: ${personasToUpload.join(', ')}`);
-
-    // 3. Fetch pending jobs ONLY for the scheduled personas.
-    const jobs = await getPendingJobs(4, config.UPLOAD_CONCURRENCY, personasToUpload);
+    // 3. Fetch pending jobs for the scheduled personas (or all if debug mode).
+    const jobs = await getPendingJobs(4, config.UPLOAD_CONCURRENCY, personasToUpload.length > 0 ? personasToUpload : undefined);
     if (jobs.length === 0) {
-      return NextResponse.json({ success: true, message: `No videos ready for upload for scheduled personas.` });
+      const message = config.DEBUG_MODE 
+        ? `No videos ready for upload (debug mode - all personas allowed).`
+        : `No videos ready for upload for scheduled personas.`;
+      return NextResponse.json({ success: true, message });
     }
     
     const cache = await getCache();
@@ -63,7 +74,10 @@ export async function POST(request: NextRequest) {
     
     const successfulJobs = results.filter(r => r.status === 'fulfilled' && r.value).length;
 
-    console.log(`YouTube upload batch completed. Processed ${successfulJobs} jobs for: ${personasToUpload.join(', ')}.`);
+    const personaMessage = config.DEBUG_MODE 
+      ? 'all personas (debug mode)' 
+      : personasToUpload.join(', ');
+    console.log(`YouTube upload batch completed. Processed ${successfulJobs} jobs for: ${personaMessage}.`);
     return NextResponse.json({ success: true, processed: successfulJobs });
 
   } catch (error) {
@@ -155,9 +169,22 @@ async function addVideoToPlaylist(
 }
 
 function generateVideoMetadata(job: QuizJob) {
-  const { question, topic_display_name, category_display_name } = job.data;
+  const { question } = job.data;
+  // Use display names from job properties first, then fallback to data properties  
+  const topic_display_name = job.topic_display_name || job.data.topic_display_name;
+  const category_display_name = job.category_display_name || job.data.category_display_name;
   const title = `▶️ ${topic_display_name || category_display_name} Quiz | #shorts #${job.persona}`;
-  const description = `Test your knowledge with this quick challenge on ${topic_display_name}!
+  
+  // Generate viral and relevant hashtags
+  const viralHashtags = [
+    '#viral', '#trending', '#fyp', '#foryou', '#explore', '#shorts', 
+    '#quiz', '#challenge', '#learn', '#education', '#study', '#test'
+  ];
+  
+  const personaSpecificHashtags = generatePersonaHashtags(job.persona);
+  const categoryHashtags = generateCategoryHashtags(job.category, topic_display_name);
+  
+  const description = `Test your knowledge with this quick challenge on ${topic_display_name}! 🧠💡
   
 ${question.question}
 
@@ -166,10 +193,70 @@ B) ${question.options.B}
 C) ${question.options.C}
 D) ${question.options.D}
 
-#${job.persona} #${job.category} #${topic_display_name?.replace(/\s/g, '')} #Quiz #Education`;
+📚 Answer in the comments below! 
+🔔 Follow for more educational content!
+
+${viralHashtags.slice(0, 8).join(' ')} ${personaSpecificHashtags.join(' ')} ${categoryHashtags.join(' ')}`;
   
-  const tags = [job.persona, job.category, topic_display_name, 'quiz', 'shorts', 'education'];
+  const tags = [
+    job.persona, job.category, topic_display_name, 
+    'quiz', 'shorts', 'education', 'viral', 'trending',
+    'study', 'learn', 'challenge', 'test'
+  ];
+  
   return { title: title.slice(0, 100), description, tags: [...new Set(tags)].filter(Boolean) as string[] };
+}
+
+function generatePersonaHashtags(persona: string): string[] {
+  const personaHashtagMap: Record<string, string[]> = {
+    'english_learning': [
+      '#EnglishLearning', '#ESL', '#Grammar', '#Vocabulary', '#EnglishQuiz',
+      '#LearnEnglish', '#EnglishTips', '#LanguageLearning', '#EnglishTest'
+    ],
+    'current_affairs': [
+      '#CurrentAffairs', '#News', '#Politics', '#WorldNews', '#CurrentEvents',
+      '#NewsQuiz', '#GeneralKnowledge', '#Affairs', '#Updates'
+    ],
+    'math': [
+      '#Math', '#Mathematics', '#MathQuiz', '#Numbers', '#MathTest',
+      '#Algebra', '#Geometry', '#Calculus', '#MathTricks', '#MathFun'
+    ],
+    'science': [
+      '#Science', '#ScienceQuiz', '#Physics', '#Chemistry', '#Biology',
+      '#ScienceFacts', '#STEM', '#ScienceTest', '#Laboratory', '#Research'
+    ]
+  };
+  
+  return personaHashtagMap[persona] || [`#${persona}`];
+}
+
+function generateCategoryHashtags(category: string, topicDisplayName?: string): string[] {
+  const hashtags: string[] = [];
+  
+  // Category-specific hashtags
+  const categoryHashtagMap: Record<string, string[]> = {
+    'vocabulary': ['#WordMeaning', '#Synonyms', '#Antonyms', '#Words', '#Dictionary'],
+    'grammar': ['#GrammarRules', '#Tenses', '#Sentence', '#PartsOfSpeech', '#Punctuation'],
+    'reading': ['#ReadingComprehension', '#Reading', '#Literature', '#Passages'],
+    'writing': ['#Writing', '#Essay', '#Composition', '#WritingSkills'],
+    'mathematics': ['#Addition', '#Subtraction', '#Multiplication', '#Division', '#Fractions'],
+    'history': ['#History', '#Historical', '#Past', '#Ancient', '#Modern'],
+    'geography': ['#Geography', '#Countries', '#Capitals', '#Maps', '#World']
+  };
+  
+  hashtags.push(...(categoryHashtagMap[category] || [`#${category}`]));
+  
+  // Topic-specific hashtags
+  if (topicDisplayName) {
+    const topicWords = topicDisplayName.split(' ');
+    topicWords.forEach(word => {
+      if (word.length > 3) {
+        hashtags.push(`#${word.replace(/[^a-zA-Z]/g, '')}`);
+      }
+    });
+  }
+  
+  return hashtags.slice(0, 5); // Limit to 5 category hashtags
 }
 
 async function cleanupCloudinaryAssets(jobData: any): Promise<void> {

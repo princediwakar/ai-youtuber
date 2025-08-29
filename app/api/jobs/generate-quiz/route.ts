@@ -1,7 +1,6 @@
 // app/api/jobs/generate-quiz/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { MasterCurriculum } from '@/lib/curriculum';
-import { getDynamicContext } from '@/lib/contentSource';
 import { generateAndStoreQuiz } from '@/lib/generationService';
 import { config } from '@/lib/config';
 import { GenerationSchedule } from '@/lib/schedule'; // Import the new schedule
@@ -12,6 +11,7 @@ const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.
  * This API is the single endpoint for a frequent cron job (e.g., hourly).
  * It checks the central schedule to determine if any personas should be generated
  * during the current hour and then processes them.
+ * In DEBUG_MODE, it randomly selects personas instead of following the schedule.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -20,18 +20,30 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // 1. Check the schedule to see what needs to be generated right now.
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
-    const hourOfDay = now.getHours();
+    let personasToGenerate: string[] = [];
 
-    const personasToGenerate = GenerationSchedule[dayOfWeek]?.[hourOfDay];
+    // Check if we're in DEBUG_MODE
+    if (process.env.DEBUG_MODE === 'true') {
+      // In DEBUG_MODE, randomly select only one persona from available curriculum
+      const availablePersonas = Object.keys(MasterCurriculum);
+      const randomPersona = getRandomElement(availablePersonas);
+      personasToGenerate.push(randomPersona);
+      
+      console.log(`🐞 DEBUG_MODE: Randomly selected persona: ${randomPersona}`);
+    } else {
+      // 1. Check the schedule to see what needs to be generated right now.
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
+      const hourOfDay = now.getHours();
 
-    // 2. If no personas are scheduled for this hour, exit gracefully.
-    if (!personasToGenerate || personasToGenerate.length === 0) {
-      const message = `No personas scheduled for generation at ${hourOfDay}:00 on day ${dayOfWeek}.`;
-      console.log(message);
-      return NextResponse.json({ success: true, message });
+      personasToGenerate = GenerationSchedule[dayOfWeek]?.[hourOfDay] || [];
+
+      // 2. If no personas are scheduled for this hour, exit gracefully.
+      if (personasToGenerate.length === 0) {
+        const message = `No personas scheduled for generation at ${hourOfDay}:00 on day ${dayOfWeek}.`;
+        console.log(message);
+        return NextResponse.json({ success: true, message });
+      }
     }
 
     console.log(`🚀 Found scheduled personas for this hour: ${personasToGenerate.join(', ')}`);
@@ -50,14 +62,13 @@ export async function POST(request: NextRequest) {
       
       const generationPromises = Array(config.GENERATE_BATCH_SIZE).fill(null).map(async () => {
           const category = getRandomElement(personaConfig.structure);
-          const topic = category.subCategories ? getRandomElement(category.subCategories) : category;
+          const subCategory = category.subCategories ? getRandomElement(category.subCategories) : category;
 
           const jobConfig = {
               persona: personaKey,
               generationDate,
-              category: { key: category.key, displayName: category.displayName },
-              topic: { key: topic.key, displayName: topic.displayName },
-              context: await getDynamicContext(personaKey, topic.displayName),
+              category: category.key,
+              subCategory: subCategory.key,
           };
 
           return generateAndStoreQuiz(jobConfig);
