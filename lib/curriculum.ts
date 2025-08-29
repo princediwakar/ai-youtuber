@@ -6,11 +6,11 @@ import { Curriculum } from './types'; // 💡 FIX: Imports the shared Curriculum
  */
 export const MasterCurriculum: Curriculum = {
   english_learning: {
-    displayName: 'English Power-Up',
+    displayName: 'English Learning',
     structure: [
       {
         key: 'vocabulary',
-        displayName: 'Vocabulary Hacks',
+        displayName: 'Vocabulary',
         subCategories: [
           { key: 'word_meaning', displayName: 'Word Meanings That Matter' },
           { key: 'synonyms_antonyms', displayName: 'Word Twins & Opposites' },
@@ -19,7 +19,7 @@ export const MasterCurriculum: Curriculum = {
       },
       {
         key: 'grammar',
-        displayName: 'Grammar Secrets',
+        displayName: 'Grammar',
         subCategories: [
           { key: 'tenses', displayName: 'Time Travel with Tenses' },
           { key: 'parts_of_speech', displayName: 'Word Types Decoded' },
@@ -31,7 +31,7 @@ export const MasterCurriculum: Curriculum = {
   },
   
   cricket_trivia: {
-    displayName: 'Cricket Fever',
+    displayName: 'Cricket',
     structure: [
       {
         key: 'records',
@@ -55,7 +55,7 @@ export const MasterCurriculum: Curriculum = {
   },
 
   psychology_facts: {
-    displayName: 'Mind Tricks Revealed',
+    displayName: 'Mind Tricks',
     structure: [
       {
         key: 'body_language',
@@ -103,7 +103,7 @@ export const MasterCurriculum: Curriculum = {
   },
 
   geography_travel: {
-    displayName: 'World Explorer',
+    displayName: 'World Travel',
     structure: [
       {
         key: 'countries',

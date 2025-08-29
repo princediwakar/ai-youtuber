@@ -22,6 +22,13 @@ const dailyPattern: HourlySchedule = {
     6: ['geography_travel'],          // Generate 5 Geography quizzes
     7: ['science_facts'],             // Generate 5 Science quizzes
     8: ['technology_facts'],          // Generate 5 Technology quizzes
+    12: ['english_learning'],           // Generate 5 English quizzes
+    13: ['cricket_trivia'],             // Generate 5 Cricket quizzes  
+    14: ['psychology_facts'],           // Generate 5 Psychology quizzes
+    15: ['historical_facts'],          // Generate 5 History quizzes
+    16: ['geography_travel'],          // Generate 5 Geography quizzes
+    17: ['science_facts'],             // Generate 5 Science quizzes
+    18: ['technology_facts'],          // Generate 5 Technology quizzes
 };
 
 export const GenerationSchedule: DailySchedule = {
