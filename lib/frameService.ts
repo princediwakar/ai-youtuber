@@ -45,7 +45,7 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
       const canvas = createCanvas(config.VIDEO_WIDTH, config.VIDEO_HEIGHT);
       renderFunction(canvas);
       if (config.DEBUG_MODE) {
-        await saveDebugFrame(canvas, `job-${job.id}-theme-${theme.name}-frame-${index + 1}.png`);
+        await saveDebugFrame(canvas, `${theme.name}-job-${job.id}-frame-${index + 1}.png`);
       }
       renderedCanvases.push(canvas);
   }
