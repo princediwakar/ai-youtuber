@@ -1,25 +1,30 @@
 import { CanvasRenderingContext2D } from 'canvas';
-import { Theme } from '@/lib/types';
+import { Theme, QuizJob } from '@/lib/types';
 import { MasterCurriculum } from '@/lib/curriculum';
 
-export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: Theme, persona: string) => {
-    ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
-    ctx.font = `bold 48px ${theme.FONT_FAMILY}`;
+export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: Theme, job: QuizJob) => {
+    ctx.fillStyle = theme.text.primary; // ✨ Changed
+    ctx.font = `bold 48px ${theme.fontFamily}`; // ✨ Changed
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    const personaDisplayName = MasterCurriculum[persona]?.displayName || '';
-    ctx.fillText(`${personaDisplayName}`, width / 2, 90);
+    
+    // Use category_display_name from the job data, with fallbacks
+    const categoryDisplayName = job.category_display_name || 
+                               job.data?.category_display_name || 
+                               MasterCurriculum[job.persona]?.displayName || 
+                               job.persona;
+    
+    ctx.fillText(`${categoryDisplayName}`, width / 2, 90);
 };
 
 export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
-    ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
-    ctx.font = `bold 48px ${theme.FONT_FAMILY}`;
+    ctx.fillStyle = theme.text.secondary; // ✨ Changed to use secondary text color
+    ctx.font = `bold 48px ${theme.fontFamily}`; // ✨ Changed
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.globalAlpha = 0.8;
-    ctx.font = `48px ${theme.FONT_FAMILY}`;
+    // No need for globalAlpha, as the color itself has transparency
+    ctx.font = `48px ${theme.fontFamily}`; // ✨ Changed
     ctx.fillText('@gibbiai', width / 2, height - 90);
-    ctx.globalAlpha = 1.0;
 };
 
 export const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {

@@ -66,12 +66,20 @@ export interface UploadedVideo {
 // Represents the structure of a visual theme.
 export interface Theme {
   name: string;
-  FONT_FAMILY: string;
-  COLOR_BG_DARK: string;
-  COLOR_BG_LIGHT: string;
-  COLOR_TEXT_PRIMARY: string;
-  COLOR_BUTTON_BG: string;
-  COLOR_CORRECT_BG: string;
-  COLOR_CORRECT_TEXT: string;
-  MUTED_TEXT_COLOR: string;
+  fontFamily: string;
+  page: {
+    background: string;
+  };
+  text: {
+    primary: string;    // For questions, main content
+    secondary: string;  // For footers, muted text
+    onAccent: string;   // For text on colored buttons/backgrounds
+  };
+  button: {
+    background: string;
+    text: string;
+  };
+  feedback: {
+    correct: string;    // Background for correct answers
+  };
 }

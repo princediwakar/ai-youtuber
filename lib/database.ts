@@ -104,7 +104,7 @@ export async function getRecentJobs(limit: number = 20): Promise<QuizJob[]> {
   try {
     await client.connect();
     const query = `
-      SELECT id, persona, category, difficulty, status, step, created_at, error_message, data
+      SELECT id, persona, category, topic, category_display_name, topic_display_name, difficulty, status, step, created_at, error_message, data
       FROM quiz_jobs
       ORDER BY created_at DESC
       LIMIT $1

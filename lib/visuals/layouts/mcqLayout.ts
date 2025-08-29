@@ -1,17 +1,18 @@
 import { Canvas, CanvasRenderingContext2D } from 'canvas';
-import { Theme, QuizJob } from '@/lib/types';
+import { Theme } from '@/lib/visuals/themes'; // ✨ FIX: Import new Theme type
+import { QuizJob } from '@/lib/types';
 import { drawHeader, drawFooter, wrapText, drawRoundRect } from '../drawingUtils';
 
+// --- Updated to use the new theme structure ---
 const drawBackground = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, theme.COLOR_BG_DARK);
-    gradient.addColorStop(1, theme.COLOR_BG_LIGHT);
-    ctx.fillStyle = gradient;
+    // Simplified to a solid background color from the new theme structure.
+    ctx.fillStyle = theme.page.background; // ✨ Changed
     ctx.fillRect(0, 0, width, height);
 };
 
+// --- Updated to use the new theme structure ---
 function drawQuestionText(ctx: CanvasRenderingContext2D, canvas: Canvas, question: string, theme: Theme): number {
-  ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+  ctx.fillStyle = theme.text.primary; // ✨ Changed
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
@@ -20,14 +21,12 @@ function drawQuestionText(ctx: CanvasRenderingContext2D, canvas: Canvas, questio
   let lines: string[];
   let lineHeight: number;
   
-  // Dynamic font sizing for question text
   do {
-      ctx.font = `bold ${fontSize}px ${theme.FONT_FAMILY}`;
+      ctx.font = `bold ${fontSize}px ${theme.fontFamily}`; // ✨ Changed
       lines = wrapText(ctx, question, textMaxWidth);
       lineHeight = fontSize * 1.25;
       const textHeight = lines.length * lineHeight;
       
-      // If text fits in reasonable space (less than 400px height), we're good
       if (textHeight < 400 || fontSize <= 40) break;
       
       fontSize -= 2;
@@ -40,38 +39,41 @@ function drawQuestionText(ctx: CanvasRenderingContext2D, canvas: Canvas, questio
   return y + lines.length * lineHeight;
 }
 
+// --- No changes needed here, but functions it calls are updated ---
 export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { question } = job.data;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
-  // drawHeader(ctx, canvas.width, theme);
+  drawHeader(ctx, canvas.width, theme, job);
   
   const questionEndY = drawQuestionText(ctx, canvas, question.question, theme);
   renderOptions(ctx, canvas.width, questionEndY + 100, job, theme, false);
   drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
+// --- No changes needed here, but functions it calls are updated ---
 export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { question } = job.data;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
-  // drawHeader(ctx, canvas.width, theme);
+  drawHeader(ctx, canvas.width, theme, job);
   
   const questionEndY = drawQuestionText(ctx, canvas, question.question, theme);
   renderOptions(ctx, canvas.width, questionEndY + 100, job, theme, true);
   drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
+// --- Updated to use the new theme structure ---
 export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { explanation } = job.data.question;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
-  drawHeader(ctx, canvas.width, theme, job.persona);
+  drawHeader(ctx, canvas.width, theme, job);
 
-  ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+  ctx.fillStyle = theme.text.primary; // ✨ Changed
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.font = `bold 70px ${theme.FONT_FAMILY}`;
+  ctx.font = `bold 70px ${theme.fontFamily}`; // ✨ Changed
   ctx.fillText('Explanation', canvas.width / 2, 250);
 
   const textMaxWidth = canvas.width - 160;
@@ -83,7 +85,7 @@ export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Them
   let lines: string[];
   
   do {
-      ctx.font = `bold ${fontSize}px ${theme.FONT_FAMILY}`;
+      ctx.font = `bold ${fontSize}px ${theme.fontFamily}`; // ✨ Changed
       lines = wrapText(ctx, explanation, textMaxWidth);
       const textHeight = lines.length * fontSize * 1.5;
       if (textHeight < canvas.height - 700) break;
@@ -99,7 +101,7 @@ export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Them
   drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
-// ✨ CORRECTED FUNCTION
+// --- Fully updated to use the new theme structure ---
 function renderOptions(ctx: CanvasRenderingContext2D, width: number, startY: number, job: QuizJob, theme: Theme, isAnswerFrame: boolean) {
   const { options, answer } = job.data.question;
 
@@ -107,17 +109,15 @@ function renderOptions(ctx: CanvasRenderingContext2D, width: number, startY: num
   const buttonX = (width - buttonWidth) / 2;
   let optionY = startY;
 
-  // Layout constants
   const PADDING = 40;
   const FONT_SIZE = 45;
   const LINE_HEIGHT = FONT_SIZE * 1.4;
   const OPTION_SPACING = 40;
 
-  // Convert options object to array for iteration
   Object.entries(options).forEach(([optionKey, optionText]) => {
       const fullOptionText = `${optionKey}. ${optionText}`;
       
-      ctx.font = `bold ${FONT_SIZE}px ${theme.FONT_FAMILY}`;
+      ctx.font = `bold ${FONT_SIZE}px ${theme.fontFamily}`; // ✨ Changed
 
       const maxWidth = buttonWidth - (PADDING * 2);
       const lines = wrapText(ctx, fullOptionText, maxWidth);
@@ -125,21 +125,20 @@ function renderOptions(ctx: CanvasRenderingContext2D, width: number, startY: num
       const textBlockHeight = lines.length * LINE_HEIGHT;
       const dynamicButtonHeight = textBlockHeight + (PADDING * 2);
 
-      // Determine colors - compare with correct answer key
       const isCorrect = optionKey === answer;
       if (isAnswerFrame) {
-          ctx.fillStyle = isCorrect ? theme.COLOR_CORRECT_BG : theme.COLOR_BUTTON_BG;
+          ctx.fillStyle = isCorrect ? theme.feedback.correct : theme.button.background; // ✨ Changed
       } else {
-          ctx.fillStyle = theme.COLOR_BUTTON_BG;
+          ctx.fillStyle = theme.button.background; // ✨ Changed
       }
       
       drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
       
       if (isAnswerFrame) {
-        ctx.fillStyle = isCorrect ? theme.COLOR_CORRECT_TEXT : theme.MUTED_TEXT_COLOR;
+        ctx.fillStyle = isCorrect ? theme.text.onAccent : theme.text.secondary; // ✨ Changed
       } else {
-        // Question frame - use primary text color (non-white)
-        ctx.fillStyle = theme.COLOR_TEXT_PRIMARY;
+        // This is the key legibility fix: always use the button's dedicated text color.
+        ctx.fillStyle = theme.button.text; // ✨ Changed
       }
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';

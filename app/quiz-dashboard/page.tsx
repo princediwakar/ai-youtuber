@@ -165,8 +165,8 @@ export default function QuizDashboard() {
                   <tr key={job.id} className="hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-400">{job.id.slice(-8)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      {job.data?.topic_display_name || job.category}
-                      <div className="text-xs text-gray-400">{job.data?.category_display_name || job.persona}</div>
+                      {job.topic_display_name || job.data?.topic_display_name || job.topic || job.category}
+                      <div className="text-xs text-gray-400">{job.category_display_name || job.data?.category_display_name || job.persona}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{getStepName(job.step)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
