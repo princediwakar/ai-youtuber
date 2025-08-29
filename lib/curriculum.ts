@@ -6,73 +6,73 @@ import { Curriculum } from './types'; // 💡 FIX: Imports the shared Curriculum
  */
 export const MasterCurriculum: Curriculum = {
   english_learning: {
-    displayName: 'Daily English Learning',
+    displayName: 'English Power-Up',
     structure: [
       {
         key: 'vocabulary',
-        displayName: 'Vocabulary',
+        displayName: 'Vocabulary Hacks',
         subCategories: [
-          { key: 'word_meaning', displayName: 'Word Meaning' },
-          { key: 'synonyms_antonyms', displayName: 'Synonyms & Antonyms' },
-          { key: 'idioms_phrases', displayName: 'Idioms & Phrases' },
+          { key: 'word_meaning', displayName: 'Word Meanings That Matter' },
+          { key: 'synonyms_antonyms', displayName: 'Word Twins & Opposites' },
+          { key: 'idioms_phrases', displayName: 'Cool English Expressions' },
         ],
       },
       {
         key: 'grammar',
-        displayName: 'Grammar',
+        displayName: 'Grammar Secrets',
         subCategories: [
-          { key: 'tenses', displayName: 'Verb Tenses' },
-          { key: 'parts_of_speech', displayName: 'Parts of Speech' },
-          { key: 'sentence_structure', displayName: 'Sentence Structure' },
-          { key: 'punctuation', displayName: 'Punctuation' },
+          { key: 'tenses', displayName: 'Time Travel with Tenses' },
+          { key: 'parts_of_speech', displayName: 'Word Types Decoded' },
+          { key: 'sentence_structure', displayName: 'Perfect Sentence Tricks' },
+          { key: 'punctuation', displayName: 'Punctuation Power' },
         ],
       },
     ],
   },
   
-  sports_trivia: {
-    displayName: 'Sports Trivia',
+  cricket_trivia: {
+    displayName: 'Cricket Fever',
     structure: [
       {
         key: 'records',
-        displayName: 'Records',
+        displayName: 'Unbreakable Records',
         subCategories: [
-          { key: 'world_records', displayName: 'World Records' },
-          { key: 'olympic_records', displayName: 'Olympic Records' },
-          { key: 'league_records', displayName: 'League Records' },
+          { key: 'batting_records', displayName: 'Batting Legends' },
+          { key: 'bowling_records', displayName: 'Bowling Wizards' },
+          { key: 'team_records', displayName: 'Team Domination' },
         ],
       },
       {
-        key: 'championships',
-        displayName: 'Championships',
+        key: 'tournaments',
+        displayName: 'Epic Tournaments',
         subCategories: [
-          { key: 'world_cup', displayName: 'World Cup' },
-          { key: 'super_bowl', displayName: 'Super Bowl' },
-          { key: 'olympics', displayName: 'Olympics' },
+          { key: 'world_cup', displayName: 'World Cup Moments' },
+          { key: 'ipl', displayName: 'IPL Madness' },
+          { key: 'test_cricket', displayName: 'Test Cricket Drama' },
         ],
       },
     ],
   },
 
   psychology_facts: {
-    displayName: 'Psychology Facts',
+    displayName: 'Mind Tricks Revealed',
     structure: [
       {
         key: 'body_language',
-        displayName: 'Body Language',
+        displayName: 'Secret Body Signals',
         subCategories: [
-          { key: 'facial_expressions', displayName: 'Facial Expressions' },
-          { key: 'gestures', displayName: 'Gestures' },
-          { key: 'posture_meaning', displayName: 'Posture Meaning' },
+          { key: 'facial_expressions', displayName: 'Face Reading Secrets' },
+          { key: 'gestures', displayName: 'Hidden Hand Meanings' },
+          { key: 'posture_meaning', displayName: 'Posture Psychology' },
         ],
       },
       {
         key: 'human_behavior',
-        displayName: 'Human Behavior',
+        displayName: 'Why Humans Act Weird',
         subCategories: [
-          { key: 'decision_making', displayName: 'Decision Making' },
-          { key: 'social_psychology', displayName: 'Social Psychology' },
-          { key: 'cognitive_biases', displayName: 'Cognitive Biases' },
+          { key: 'decision_making', displayName: 'Decision Hacks' },
+          { key: 'social_psychology', displayName: 'Social Mind Games' },
+          { key: 'cognitive_biases', displayName: 'Brain Glitches' },
         ],
       },
     ],
@@ -103,22 +103,21 @@ export const MasterCurriculum: Curriculum = {
   },
 
   geography_travel: {
-    displayName: 'Geography & Travel',
+    displayName: 'World Explorer',
     structure: [
       {
         key: 'countries',
-        displayName: 'Countries',
+        displayName: 'Amazing Countries',
         subCategories: [
-          { key: 'capitals', displayName: 'Capitals' },
-          { key: 'flags', displayName: 'Flags' },
-          { key: 'famous_landmarks', displayName: 'Famous Landmarks' },
+          { key: 'capitals', displayName: 'Capital Cities Quiz' },
+          { key: 'famous_landmarks', displayName: 'Iconic Landmarks' },
         ],
       },
       {
         key: 'travel_facts',
-        displayName: 'Travel Facts',
+        displayName: 'Travel Secrets',
         subCategories: [
-          { key: 'weird_laws', displayName: 'Weird Laws' },
+          { key: 'weird_laws', displayName: 'Bizarre Laws' },
           { key: 'cultural_customs', displayName: 'Cultural Customs' },
           { key: 'amazing_facts', displayName: 'Amazing Facts' },
         ],
@@ -127,24 +126,24 @@ export const MasterCurriculum: Curriculum = {
   },
 
   science_facts: {
-    displayName: 'Science Facts',
+    displayName: 'Science Mysteries',
     structure: [
       {
         key: 'space',
-        displayName: 'Space & Universe',
+        displayName: 'Cosmic Secrets',
         subCategories: [
-          { key: 'planets', displayName: 'Planets' },
-          { key: 'space_exploration', displayName: 'Space Exploration' },
-          { key: 'universe_facts', displayName: 'Universe Facts' },
+          { key: 'planets', displayName: 'Planet Mysteries' },
+          { key: 'space_exploration', displayName: 'Space Adventures' },
+          { key: 'universe_facts', displayName: 'Universe Wonders' },
         ],
       },
       {
         key: 'nature',
-        displayName: 'Nature',
+        displayName: 'Nature\'s Secrets',
         subCategories: [
-          { key: 'animals', displayName: 'Animals' },
-          { key: 'plants', displayName: 'Plants' },
-          { key: 'weather', displayName: 'Weather' },
+          { key: 'animals', displayName: 'Wild Animal Facts' },
+          { key: 'plants', displayName: 'Plant Superpowers' },
+          { key: 'weather', displayName: 'Weather Wonders' },
         ],
       },
     ],
@@ -157,18 +156,18 @@ export const MasterCurriculum: Curriculum = {
         key: 'internet',
         displayName: 'Internet & Digital',
         subCategories: [
-          { key: 'social_media', displayName: 'Social Media' },
-          { key: 'internet_history', displayName: 'Internet History' },
-          { key: 'digital_trends', displayName: 'Digital Trends' },
+          { key: 'social_media', displayName: 'Social Media Secrets' },
+          { key: 'internet_history', displayName: 'Internet Origins' },
+          { key: 'digital_trends', displayName: 'Viral Tech Trends' },
         ],
       },
       {
         key: 'innovations',
-        displayName: 'Innovations',
+        displayName: 'Future Tech',
         subCategories: [
-          { key: 'ai_technology', displayName: 'AI Technology' },
-          { key: 'future_tech', displayName: 'Future Tech' },
-          { key: 'tech_breakthroughs', displayName: 'Tech Breakthroughs' },
+          { key: 'ai_technology', displayName: 'AI Mind-Blowing Facts' },
+          { key: 'future_tech', displayName: 'Sci-Fi Becoming Real' },
+          { key: 'tech_breakthroughs', displayName: 'Game-Changing Tech' },
         ],
       },
     ],

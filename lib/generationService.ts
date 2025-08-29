@@ -86,17 +86,21 @@ export async function generateAndStoreQuiz(jobConfig: any): Promise<any | null> 
     };
 
     // Construct the payload for database insertion with strong typing.
+    // Ensure all fields are strings, not objects
+    const categoryKey = typeof jobConfig.category === 'string' ? jobConfig.category : jobConfig.category?.key || 'unknown';
+    const topicKey = typeof jobConfig.subCategory === 'string' ? jobConfig.subCategory : jobConfig.subCategory?.key || jobConfig.topic || 'unknown';
+    
     const curriculumData = MasterCurriculum[jobConfig.persona];
-    const categoryData = curriculumData?.structure?.find(cat => cat.key === jobConfig.category);
-    const subCategoryData = categoryData?.subCategories?.find(sub => sub.key === jobConfig.subCategory);
+    const categoryData = curriculumData?.structure?.find(cat => cat.key === categoryKey);
+    const subCategoryData = categoryData?.subCategories?.find(sub => sub.key === topicKey);
     
     const jobPayload = {
         persona: jobConfig.persona,
         generation_date: jobConfig.generationDate,
-        category: jobConfig.category,
-        category_display_name: categoryData?.displayName || jobConfig.category,
-        topic: jobConfig.subCategory || jobConfig.topic,
-        topic_display_name: subCategoryData?.displayName || jobConfig.topic,
+        category: categoryKey,
+        category_display_name: categoryData?.displayName || categoryKey,
+        topic: topicKey,
+        topic_display_name: subCategoryData?.displayName || topicKey,
         step: 2, // Next step is frame creation
         status: 'frames_pending',
         data: { 

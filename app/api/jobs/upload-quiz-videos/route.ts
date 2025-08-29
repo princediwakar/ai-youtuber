@@ -99,7 +99,11 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
     await fs.writeFile(tempFile, videoBuffer);
 
     const metadata = generateVideoMetadata(job);
-    const youtubeVideoId = await uploadToYouTube(tempFile, metadata, youtube);
+    
+    // Get the first frame URL as thumbnail (question frame)
+    const thumbnailUrl = job.data.frameUrls?.[0];
+    
+    const youtubeVideoId = await uploadToYouTube(tempFile, metadata, youtube, thumbnailUrl);
     
     await addVideoToPlaylist(youtubeVideoId, job, youtube, playlistMap);
     
@@ -124,7 +128,7 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
   }
 }
 
-async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtube_v3.Youtube): Promise<string> {
+async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtube_v3.Youtube, thumbnailUrl?: string): Promise<string> {
     const response = await youtube.videos.insert({
         part: ['snippet', 'status'],
         requestBody: {
@@ -142,7 +146,49 @@ async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtub
     if (!response.data.id) {
         throw new Error("YouTube API did not return a video ID.");
     }
+
+    // Upload custom thumbnail if provided
+    if (thumbnailUrl) {
+        try {
+            await uploadThumbnailToYouTube(response.data.id, thumbnailUrl, youtube);
+            console.log(`✅ Custom thumbnail uploaded for video ${response.data.id}`);
+        } catch (error) {
+            console.warn(`⚠️ Failed to upload thumbnail for video ${response.data.id}:`, error);
+            // Don't fail the entire upload if thumbnail fails
+        }
+    }
+
     return response.data.id;
+}
+
+async function uploadThumbnailToYouTube(videoId: string, thumbnailUrl: string, youtube: youtube_v3.Youtube): Promise<void> {
+    // Download the thumbnail image from Cloudinary
+    const response = await fetch(thumbnailUrl);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch thumbnail from ${thumbnailUrl}: ${response.statusText}`);
+    }
+    
+    const imageBuffer = Buffer.from(await response.arrayBuffer());
+    
+    // Create a temporary file for the thumbnail
+    const tempThumbnailPath = path.join(require('os').tmpdir(), `thumbnail-${videoId}-${Date.now()}.png`);
+    await fs.writeFile(tempThumbnailPath, imageBuffer);
+    
+    try {
+        // Upload thumbnail to YouTube
+        await youtube.thumbnails.set({
+            videoId: videoId,
+            media: {
+                body: require('fs').createReadStream(tempThumbnailPath),
+                mimeType: 'image/png'
+            }
+        });
+    } finally {
+        // Clean up temp file
+        await fs.unlink(tempThumbnailPath).catch(e => 
+            console.warn(`Failed to delete temp thumbnail file ${tempThumbnailPath}:`, e)
+        );
+    }
 }
 
 async function addVideoToPlaylist(
@@ -213,17 +259,29 @@ function generatePersonaHashtags(persona: string): string[] {
       '#EnglishLearning', '#ESL', '#Grammar', '#Vocabulary', '#EnglishQuiz',
       '#LearnEnglish', '#EnglishTips', '#LanguageLearning', '#EnglishTest'
     ],
-    'current_affairs': [
-      '#CurrentAffairs', '#News', '#Politics', '#WorldNews', '#CurrentEvents',
-      '#NewsQuiz', '#GeneralKnowledge', '#Affairs', '#Updates'
+    'cricket_trivia': [
+      '#Cricket', '#CricketTrivia', '#CricketQuiz', '#IPL', '#WorldCup',
+      '#CricketFacts', '#CricketRecords', '#CricketLovers', '#CricketFever'
     ],
-    'math': [
-      '#Math', '#Mathematics', '#MathQuiz', '#Numbers', '#MathTest',
-      '#Algebra', '#Geometry', '#Calculus', '#MathTricks', '#MathFun'
+    'psychology_facts': [
+      '#Psychology', '#PsychologyFacts', '#MindTricks', '#BodyLanguage', '#HumanBehavior',
+      '#MentalHealth', '#BrainScience', '#PsychologyQuiz', '#MindReading'
     ],
-    'science': [
-      '#Science', '#ScienceQuiz', '#Physics', '#Chemistry', '#Biology',
-      '#ScienceFacts', '#STEM', '#ScienceTest', '#Laboratory', '#Research'
+    'historical_facts': [
+      '#History', '#HistoryFacts', '#HistoryQuiz', '#Inventions', '#HistoricalEvents',
+      '#WorldHistory', '#Legends', '#HistoryLovers', '#AncientHistory'
+    ],
+    'geography_travel': [
+      '#Geography', '#Travel', '#Countries', '#WorldExplorer', '#TravelFacts',
+      '#GeographyQuiz', '#TravelTrivia', '#WorldKnowledge', '#Landmarks'
+    ],
+    'science_facts': [
+      '#Science', '#ScienceFacts', '#ScienceQuiz', '#Space', '#Nature',
+      '#ScienceLovers', '#STEM', '#Discovery', '#Universe', '#Animals'
+    ],
+    'technology_facts': [
+      '#Technology', '#TechFacts', '#AI', '#DigitalWorld', '#TechQuiz',
+      '#Innovation', '#FutureTech', '#TechTrends', '#TechLovers'
     ]
   };
   
@@ -237,11 +295,18 @@ function generateCategoryHashtags(category: string, topicDisplayName?: string): 
   const categoryHashtagMap: Record<string, string[]> = {
     'vocabulary': ['#WordMeaning', '#Synonyms', '#Antonyms', '#Words', '#Dictionary'],
     'grammar': ['#GrammarRules', '#Tenses', '#Sentence', '#PartsOfSpeech', '#Punctuation'],
-    'reading': ['#ReadingComprehension', '#Reading', '#Literature', '#Passages'],
-    'writing': ['#Writing', '#Essay', '#Composition', '#WritingSkills'],
-    'mathematics': ['#Addition', '#Subtraction', '#Multiplication', '#Division', '#Fractions'],
-    'history': ['#History', '#Historical', '#Past', '#Ancient', '#Modern'],
-    'geography': ['#Geography', '#Countries', '#Capitals', '#Maps', '#World']
+    'records': ['#Records', '#CricketRecords', '#SportRecords', '#Champions', '#Legends'],
+    'tournaments': ['#Tournament', '#Championship', '#Competition', '#WorldCup', '#IPL'],
+    'body_language': ['#BodyLanguage', '#Gestures', '#FacialExpressions', '#Communication'],
+    'human_behavior': ['#HumanBehavior', '#Psychology', '#MindScience', '#BrainFacts'],
+    'inventions': ['#Inventions', '#Innovation', '#Discovery', '#History', '#Inventors'],
+    'historical_events': ['#HistoricalEvents', '#History', '#WorldEvents', '#Timeline'],
+    'countries': ['#Countries', '#World', '#Geography', '#Nations', '#Culture'],
+    'travel_facts': ['#Travel', '#TravelFacts', '#WorldFacts', '#Culture', '#Adventure'],
+    'space': ['#Space', '#Universe', '#Planets', '#Astronomy', '#SpaceExploration'],
+    'nature': ['#Nature', '#Animals', '#Plants', '#Wildlife', '#Environment'],
+    'internet': ['#Internet', '#Digital', '#Technology', '#SocialMedia', '#Web'],
+    'innovations': ['#Innovation', '#Technology', '#AI', '#FutureTech', '#TechBreakthroughs']
   };
   
   hashtags.push(...(categoryHashtagMap[category] || [`#${category}`]));

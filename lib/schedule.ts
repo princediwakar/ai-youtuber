@@ -13,12 +13,15 @@ interface HourlySchedule {
   // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   type DailySchedule = Record<number, HourlySchedule>;
 
-// This pattern creates 3 generation slots per day, 5 for each run.
+// Optimized generation: 7 generations daily (35 quizzes) to cover all personas evenly
 const dailyPattern: HourlySchedule = {
-    5: ['english_learning'],  
-    20: ['english_learning'],  
-    23: ['grammar', 'english_learning'],  
-    0: ['english_learning'],
+    2: ['english_learning'],           // Generate 5 English quizzes
+    3: ['cricket_trivia'],             // Generate 5 Cricket quizzes  
+    4: ['psychology_facts'],           // Generate 5 Psychology quizzes
+    5: ['historical_facts'],          // Generate 5 History quizzes
+    6: ['geography_travel'],          // Generate 5 Geography quizzes
+    7: ['science_facts'],             // Generate 5 Science quizzes
+    8: ['technology_facts'],          // Generate 5 Technology quizzes
 };
 
 export const GenerationSchedule: DailySchedule = {
