@@ -1,4 +1,4 @@
-# Gemini Project: Universal YouTube Uploader & Quiz Video Generator
+# Gemini Project: Universal YouTube Uploader & Educational Quiz Video Generator
 
 This document provides context for the Gemini AI assistant to understand and work with this project.
 
@@ -7,7 +7,7 @@ This document provides context for the Gemini AI assistant to understand and wor
 This project consists of two main components:
 
 *   **Universal YouTube Uploader**: A web application that allows users to upload multiple videos to their YouTube channels with intelligent playlists, smart descriptions, and automatic content detection.
-*   **Quiz Video Generation System**: An automated system that generates quiz videos for SAT/GMAT/GRE test preparation and uploads them to YouTube as Shorts.
+*   **Educational Quiz Video Generation System**: An automated system that generates educational quiz videos for Indian students covering Class 10-12 subjects and competitive exams (NEET, JEE, SSC, Banking, UPSC) and uploads them to YouTube as Shorts.
 
 The two systems share the same codebase and are deployed as a single Next.js application on Vercel.
 
@@ -63,8 +63,8 @@ Authentication is handled by NextAuth.js, configured to use Google as the OAuth 
 The application exposes several API endpoints under `/api/`.
 
 *   **/api/auth/**: Handles NextAuth.js authentication routes.
-*   **/api/jobs/**: Manages the quiz video generation pipeline.
-    *   `generate-quiz`: Creates new quiz questions.
+*   **/api/jobs/**: Manages the educational quiz video generation pipeline.
+    *   `generate-quiz`: Creates new educational quiz questions for Class 10-12 and competitive exams.
     *   `create-frames`: Generates video frames from questions.
     *   `assemble-video`: Compiles frames into a video file.
     *   `upload-quiz-videos`: Uploads the final video to YouTube.
@@ -94,9 +94,14 @@ The project follows a standard Next.js project structure:
 ├── database/             # Database schema
 │   └── schema.sql
 ├── lib/                  # Shared libraries
-│   ├── auth.ts
-│   ├── database.ts
-│   └── deepseek.ts
+│   ├── auth.ts           # NextAuth configuration
+│   ├── database.ts       # Database utilities
+│   ├── deepseek.ts       # DeepSeek API integration
+│   ├── curriculum.ts     # Educational content structure (10 academic personas)
+│   ├── generationService.ts # Academic content generation with exam-specific prompts
+│   ├── schedule.ts       # Generation schedule (50 daily questions)
+│   ├── uploadSchedule.ts # Student-optimized upload timing
+│   └── playlistManager.ts # Academic playlist organization
 ├── public/               # Static assets
 ├── .env.example          # Environment variables example
 ├── next.config.js        # Next.js configuration
@@ -108,8 +113,8 @@ The project follows a standard Next.js project structure:
 
 The database schema is defined in `database/schema.sql`. It consists of two tables:
 
-*   `quiz_jobs`: Stores the state of the quiz generation jobs.
-*   `uploaded_videos`: Stores information about the videos uploaded to YouTube.
+*   `quiz_jobs`: Stores the state of the educational quiz generation jobs with academic persona information.
+*   `uploaded_videos`: Stores information about the educational videos uploaded to YouTube.
 
 ```sql
 -- quiz_jobs table
@@ -135,13 +140,24 @@ CREATE TABLE uploaded_videos (
 );
 ```
 
-## 9. Quiz Generation and Upload Pipeline
-The system uses a 4-step pipeline to automatically generate and upload quiz videos:
+## 9. Educational Quiz Generation and Upload Pipeline
 
-1.  **Question Generation**: A cron job calls the `/api/jobs/generate-quiz` endpoint every 30 minutes to generate new quiz questions using the DeepSeek API.
-2.  **Frame Creation**: A cron job calls the `/api/jobs/create-frames` endpoint to generate video frames using the Canvas API.
-3.  **Video Assembly**: A cron job calls the `/api/jobs/assemble-video` endpoint to combine the frames into a video using FFmpeg.
-4.  **YouTube Upload**: A cron job calls the `/api/jobs/upload-quiz-videos` endpoint to upload the generated videos to YouTube.
+The system uses a 4-step pipeline to automatically generate and upload educational quiz videos covering 10 academic personas:
+
+**Academic Content Coverage:**
+*   **Class 10-12 Subjects**: Mathematics, Physics, Chemistry, Biology
+*   **Competitive Exams**: NEET (Medical), JEE (Engineering), SSC/Banking, UPSC (Civil Services)
+*   **Foundation**: English Grammar, General Knowledge
+
+**Pipeline Process:**
+1.  **Question Generation**: Cron jobs call the `/api/jobs/generate-quiz` endpoint to generate 50 educational quiz questions daily (5 per persona) using the DeepSeek API with exam-specific prompts.
+2.  **Frame Creation**: Cron jobs call the `/api/jobs/create-frames` endpoint to generate video frames using the Canvas API.
+3.  **Video Assembly**: Cron jobs call the `/api/jobs/assemble-video` endpoint to combine the frames into a video using FFmpeg.
+4.  **YouTube Upload**: Cron jobs call the `/api/jobs/upload-quiz-videos` endpoint to upload the generated videos to YouTube.
+
+**Scheduling:**
+*   **Generation**: 2-11 AM daily (10 hours, 1 persona per hour)
+*   **Upload**: 6 AM-11 PM (student-optimized timing aligned with Indian study patterns)
 
 These jobs are orchestrated by external cron jobs (e.g., from cron-job.org) and the entire process can be monitored from the `/quiz-dashboard`.
 
@@ -172,7 +188,16 @@ To ensure the project is always in a good state, please follow this workflow:
     ```
 3.  Once the build is successful, you can commit your changes.
 
-## 12. Deployment
+## 12. Educational Content Structure
+
+The educational content is organized through a comprehensive curriculum system:
+
+*   **10 Academic Personas**: Each persona represents a subject area or exam type
+*   **Hierarchical Structure**: Persona → Category → Subcategory for organized content
+*   **Exam-Specific Prompts**: AI prompts tailored for each educational context
+*   **Progressive Difficulty**: Content ranges from Class 10 basics to advanced competitive exam level
+*   **Indian Education Focus**: Aligned with CBSE, ICSE, and major competitive exam patterns
+
+## 13. Deployment
 
 The production URL for this project is: https://youtube-playlist-uploader.vercel.app/
---- End of Context from: GEMINI.md ---

@@ -1,10 +1,13 @@
 /**
- * Defines the daily content generation schedule.
- * The cron job will trigger the generation API every hour, and this schedule
- * determines which persona's content gets generated during that specific hour.
- *
- * The key is the hour of the day (0-23) in a 24-hour format.
- * The value is an array of persona keys to be generated during that hour.
+ * NEET-FOCUSED Generation Schedule for #1 NEET MCQ Channel Dominance
+ * 
+ * Strategy: 6 daily generations (18 total questions = 6 generations × 3 batch size) 
+ * perfectly aligned with 16 daily upload slots (2 extras for quality selection).
+ * 
+ * Distribution aligned with NEET exam weightage:
+ * - Biology: 60% (4 generations) - Morning, Evening, Prime time, Night
+ * - Chemistry: 20% (1 generation) - Mid-morning  
+ * - Physics: 20% (1 generation) - Afternoon
  */
 interface HourlySchedule {
     [hour: number]: string[];
@@ -13,22 +16,25 @@ interface HourlySchedule {
   // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   type DailySchedule = Record<number, HourlySchedule>;
 
-// Optimized generation: 7 generations daily (35 quizzes) to cover all personas evenly
+// OPTIMIZED: Generate exactly what we need (16 uploads = ~6 generation batches)
 const dailyPattern: HourlySchedule = {
-    2: ['english_learning'],           // Generate 5 English quizzes
-    3: ['cricket_trivia'],             // Generate 5 Cricket quizzes  
-    4: ['psychology_facts'],           // Generate 5 Psychology quizzes
-    5: ['historical_facts'],          // Generate 5 History quizzes
-    6: ['geography_travel'],          // Generate 5 Geography quizzes
-    7: ['science_facts'],             // Generate 5 Science quizzes
-    8: ['technology_facts'],          // Generate 5 Technology quizzes
-    12: ['english_learning'],           // Generate 5 English quizzes
-    13: ['cricket_trivia'],             // Generate 5 Cricket quizzes  
-    14: ['psychology_facts'],           // Generate 5 Psychology quizzes
-    15: ['historical_facts'],          // Generate 5 History quizzes
-    16: ['geography_travel'],          // Generate 5 Geography quizzes
-    17: ['science_facts'],             // Generate 5 Science quizzes
-    18: ['technology_facts'],          // Generate 5 Technology quizzes
+    // Morning batch (for 6:30 AM - 3 uploads)
+    2: ['neet_preparation'],   // Biology focus - 3 questions
+    
+    // Mid-morning batch (for 12:30 PM - 2 uploads)  
+    6: ['neet_preparation'],   // Chemistry focus - 3 questions (1 extra for selection)
+    
+    // Afternoon batch (for 4:00 PM - 2 uploads)
+    10: ['neet_preparation'],  // Physics focus - 3 questions (1 extra for selection)
+    
+    // Evening batch (for 6:00 PM - 3 uploads)
+    14: ['neet_preparation'],  // Biology focus - 3 questions
+    
+    // Prime time batch (for 8:00 PM - 3 uploads)
+    17: ['neet_preparation'],  // Biology focus - 3 questions
+    
+    // Night batch (for 10:00 PM - 3 uploads)
+    20: ['neet_preparation'],  // Mixed subjects - 3 questions
 };
 
 export const GenerationSchedule: DailySchedule = {

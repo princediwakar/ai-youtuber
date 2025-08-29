@@ -1,15 +1,15 @@
 /**
- * Centralized configuration for the entire video generation system.
- * Use environment variables for sensitive data or values that differ by environment.
+ * HIGH-VOLUME NEET MCQ CHANNEL CONFIGURATION
+ * Optimized for 16 daily uploads targeting #1 NEET channel position.
+ * All settings tuned for maximum throughput while maintaining quality.
  */
 export const config = {
-  // Job Processing Configuration
-  GENERATE_BATCH_SIZE: 5,
-  CREATE_FRAMES_CONCURRENCY: 2,
-  ASSEMBLY_CONCURRENCY: 1,
-  UPLOAD_CONCURRENCY: 2,
-  // 💡 FIX: Increased the daily upload limit to accommodate the generation schedule.
-  MAX_DAILY_UPLOADS: 20,
+  // Job Processing Configuration - Optimized for 16 daily uploads
+  GENERATE_BATCH_SIZE: 3,              // Reduced for faster individual processing
+  CREATE_FRAMES_CONCURRENCY: 4,       // Increased for parallel frame creation
+  ASSEMBLY_CONCURRENCY: 2,             // Increased for video assembly speed
+  UPLOAD_CONCURRENCY: 3,               // Increased for faster YouTube uploads
+  MAX_DAILY_UPLOADS: 20,               // Buffer above 16 target for safety
 
   // Video & Frame Dimensions
   VIDEO_WIDTH: 1080,

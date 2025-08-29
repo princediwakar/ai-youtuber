@@ -1,11 +1,11 @@
 /**
- * Defines the daily content UPLOAD schedule, thinking like a teacher.
- * This file acts as the master content calendar for your YouTube channel.
- * The schedule is designed to publish exactly 4 videos per persona, each day,
- * for a total of 28 daily uploads across 7 personas.
- *
- * The key is the hour of the day (0-23) in a 24-hour format (IST).
- * The value is an array of persona keys to be published during that hour.
+ * STRATEGIC NEET UPLOAD SCHEDULE FOR #1 CHANNEL DOMINANCE
+ * 
+ * 6 daily uploads optimized for NEET aspirant study patterns and peak engagement.
+ * Timing based on typical NEET student routine: Early morning motivation → 
+ * Coaching breaks → Evening intensive study → Night revision.
+ * 
+ * Target: 16 uploads/day (6 slots × 2.67 avg) for maximum market capture.
  */
 interface HourlySchedule {
   [hour: number]: string[];
@@ -14,30 +14,30 @@ interface HourlySchedule {
 // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 type DailySchedule = Record<number, HourlySchedule>;
 
-// Upload schedule: Daytime focus (6 AM - 11 PM) when audiences are most active
 const dailyPattern: HourlySchedule = {
-    6: ['english_learning'],                        // Morning commute
-    7: ['cricket_trivia'],                          // Morning cricket check
-    8: ['science_facts'],                           // Morning curiosity
-    9: ['geography_travel'],                        // Morning planning
-    10: ['psychology_facts'],                       // Mid-morning break
-    11: ['technology_facts'],                       // Pre-lunch tech
-    12: ['cricket_trivia', 'english_learning'],     // Lunch break (double slot)
-    13: ['historical_facts'],                       // Post-lunch learning
-    14: ['english_learning'],                       // Afternoon study
-    15: ['science_facts'],                          // Afternoon discovery
-    16: ['geography_travel'],                       // Afternoon dreaming
-    17: ['psychology_facts', 'historical_facts'],   // End of workday (double slot)
-    18: ['technology_facts'],                       // Evening tech
-    19: ['cricket_trivia'],                         // Evening cricket
-    20: ['historical_facts', 'science_facts'],      // Prime time (double slot)
-    21: ['english_learning', 'psychology_facts'],   // Evening study (double slot)
-    22: ['geography_travel'],                       // Late evening travel
-    23: ['technology_facts'],                       // Late evening tech
+    // 6 strategic upload slots for maximum NEET student reach
+    
+    6: ['neet_preparation', 'neet_preparation', 'neet_preparation'],    
+    // 6:30 AM: Morning Motivation Batch - Start day with confidence boosters
+    
+    12: ['neet_preparation', 'neet_preparation'],                       
+    // 12:30 PM: Lunch Break Revision - Quick MCQs during coaching break
+    
+    16: ['neet_preparation', 'neet_preparation'],                       
+    // 4:00 PM: Post-Coaching Session - Reinforce concepts learned
+    
+    18: ['neet_preparation', 'neet_preparation', 'neet_preparation'],   
+    // 6:00 PM: Evening Study Launch - Prime study time begins
+    
+    20: ['neet_preparation', 'neet_preparation', 'neet_preparation'],   
+    // 8:00 PM: Intensive Study Hours - Biology focus (highest weightage)
+    
+    22: ['neet_preparation', 'neet_preparation', 'neet_preparation'],   
+    // 10:00 PM: Night Revision - End day with challenging concepts
 }
 
 export const UploadSchedule: DailySchedule = {
-  // The same consistent schedule applies to every day of the week.
+  // A consistent daily schedule that NEET aspirants can build their study routine around.
   0: dailyPattern, // Sunday
   1: dailyPattern, // Monday
   2: dailyPattern, // Tuesday

@@ -63,37 +63,49 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
   drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
-// --- Updated to use the new theme structure ---
+// --- Updated to use the new theme structure with better text layout ---
 export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { explanation } = job.data.question;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
 
-  ctx.fillStyle = theme.text.primary; // ✨ Changed
+  // Draw "Explanation" title
+  ctx.fillStyle = theme.text.primary;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.font = `bold 70px ${theme.fontFamily}`; // ✨ Changed
+  ctx.font = `bold 70px ${theme.fontFamily}`;
   ctx.fillText('Explanation', canvas.width / 2, 250);
 
+  // Calculate available space for explanation text
   const textMaxWidth = canvas.width - 160;
   const textStartX = (canvas.width - textMaxWidth) / 2;
+  const titleEndY = 250 + 70; // Title Y + title font size
+  const footerStartY = canvas.height - 180; // Account for footer space
+  const availableHeight = footerStartY - titleEndY - 100; // 100px padding from title
+
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
 
   let fontSize = 55;
   let lines: string[];
+  let lineHeight: number;
+  let totalTextHeight: number;
   
+  // Iterate to find the best font size that fits
   do {
-      ctx.font = `bold ${fontSize}px ${theme.fontFamily}`; // ✨ Changed
+      ctx.font = `bold ${fontSize}px ${theme.fontFamily}`;
       lines = wrapText(ctx, explanation, textMaxWidth);
-      const textHeight = lines.length * fontSize * 1.5;
-      if (textHeight < canvas.height - 700) break;
+      lineHeight = fontSize * 1.4; // Tighter line spacing
+      totalTextHeight = lines.length * lineHeight;
+      
+      if (totalTextHeight <= availableHeight || fontSize <= 24) break;
       fontSize -= 2;
-  } while (fontSize > 20);
+  } while (fontSize > 24);
 
-  const lineHeight = fontSize * 1.5;
-  const startY = 400;
+  // Center the text vertically in available space
+  const startY = titleEndY + 50 + (availableHeight - totalTextHeight) / 2;
+  
   lines.forEach((line, index) => {
       ctx.fillText(line, textStartX, startY + index * lineHeight);
   });

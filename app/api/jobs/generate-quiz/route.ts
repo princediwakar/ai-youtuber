@@ -8,6 +8,32 @@ import { GenerationSchedule } from '@/lib/schedule'; // Import the new schedule
 const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
 /**
+ * NEET Subject Distribution: Weighted selection aligned with exam pattern
+ * Biology: 60% (90/180 questions) - Highest weightage
+ * Chemistry: 20% (45/180 questions) 
+ * Physics: 20% (45/180 questions)
+ */
+const getNEETWeightedCategory = (structure: any[]) => {
+  const random = Math.random();
+  
+  // Find Biology category (should be at index with 'neet_biology' key)
+  const biologyCategory = structure.find(cat => cat.key === 'neet_biology');
+  const chemistryCategory = structure.find(cat => cat.key === 'neet_chemistry'); 
+  const physicsCategory = structure.find(cat => cat.key === 'neet_physics');
+  
+  if (random < 0.6) {
+    // 60% Biology
+    return biologyCategory || structure[0];
+  } else if (random < 0.8) {
+    // 20% Chemistry  
+    return chemistryCategory || structure[1];
+  } else {
+    // 20% Physics
+    return physicsCategory || structure[2];
+  }
+};
+
+/**
  * This API is the single endpoint for a frequent cron job (e.g., hourly).
  * It checks the central schedule to determine if any personas should be generated
  * during the current hour and then processes them.
@@ -61,7 +87,11 @@ export async function POST(request: NextRequest) {
       const generationDate = new Date();
       
       const generationPromises = Array(config.GENERATE_BATCH_SIZE).fill(null).map(async () => {
-          const category = getRandomElement(personaConfig.structure);
+          // Use weighted selection for NEET to match exam pattern (60% Bio, 20% Chem, 20% Physics)
+          const category = personaKey === 'neet_preparation' 
+            ? getNEETWeightedCategory(personaConfig.structure)
+            : getRandomElement(personaConfig.structure);
+            
           const subCategory = category.subCategories ? getRandomElement(category.subCategories) : category;
 
           const jobConfig = {

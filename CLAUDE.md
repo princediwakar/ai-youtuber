@@ -1,12 +1,12 @@
-# YouTube Uploader & Quiz Video Generator
+# YouTube Uploader & Educational Quiz Video Generator
 
-This Next.js application combines a universal YouTube uploader with automated quiz video generation for test preparation content.
+This Next.js application combines a universal YouTube uploader with automated educational quiz video generation for Indian students and competitive exam aspirants.
 
 ## Project Overview
 
 **Main Components:**
 - Universal YouTube Uploader: Upload multiple videos with intelligent playlists and descriptions
-- Quiz Video Generator: Automated SAT/GMAT/GRE quiz video creation and upload system
+- Educational Quiz Generator: Automated Class 10-12 and competitive exam quiz video creation system targeting NEET, JEE, SSC, Banking, UPSC, and other Indian entrance exams
 
 ## Quick Setup
 
@@ -42,8 +42,8 @@ npm run dev
 ## API Routes
 
 - `/api/auth/` - NextAuth authentication
-- `/api/jobs/` - Quiz generation pipeline:
-  - `generate-quiz` - Create quiz questions (DeepSeek API)
+- `/api/jobs/` - Educational quiz generation pipeline:
+  - `generate-quiz` - Create educational quiz questions (DeepSeek API)
   - `create-frames` - Generate video frames (Canvas)
   - `assemble-video` - Compile video (FFmpeg)
   - `upload-quiz-videos` - Upload to YouTube
@@ -55,18 +55,32 @@ npm run dev
   - `suggest-category` - Category suggestions
 - `/api/quiz-dashboard/` - Dashboard data
 
-## Quiz Pipeline
+## Educational Content System
 
-4-step automated process (orchestrated by external cron jobs):
-1. Generate questions → 2. Create frames → 3. Assemble video → 4. Upload to YouTube
+**10 Academic Personas (50 daily videos):**
+- Class 10-12: Mathematics, Physics, Chemistry, Biology
+- Competitive Exams: NEET, JEE, SSC/Banking, UPSC
+- Foundation: English Grammar, General Knowledge
+
+**4-step automated process (orchestrated by external cron jobs):**
+1. Generate educational questions → 2. Create frames → 3. Assemble video → 4. Upload to YouTube
 
 Monitor via `/quiz-dashboard`
+
+**Content Schedule:**
+- Generation: 2-11 AM (50 questions daily)
+- Upload: 6 AM-11 PM (student-optimized timing)
 
 ## Key Files
 
 - `lib/auth.ts` - NextAuth configuration
 - `lib/database.ts` - Database utilities
 - `lib/deepseek.ts` - DeepSeek API integration
+- `lib/curriculum.ts` - Educational content structure (10 academic personas)
+- `lib/generationService.ts` - Academic content generation with exam-specific prompts
+- `lib/schedule.ts` - Generation schedule (50 daily questions)
+- `lib/uploadSchedule.ts` - Student-optimized upload timing
+- `lib/playlistManager.ts` - Academic playlist organization
 - `database/schema.sql` - Database schema
 
 ## Development Workflow
