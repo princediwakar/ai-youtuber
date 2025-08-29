@@ -14,6 +14,24 @@ import { config } from '@/lib/config';
 
 const ffmpegPath = require('ffmpeg-static');
 
+// Array of available audio files
+const AUDIO_FILES = [
+  '1.mp3',
+  '2.mp3', 
+  '3.mp3',
+  '4.mp3'
+];
+
+/**
+ * Randomly selects an audio file from the available options
+ * @returns Full path to a random audio file
+ */
+function getRandomAudioFile(): string {
+  const randomIndex = Math.floor(Math.random() * AUDIO_FILES.length);
+  const selectedAudio = AUDIO_FILES[randomIndex];
+  return path.join(process.cwd(), 'public', 'audio', selectedAudio);
+}
+
 async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: string) {
   if (!config.DEBUG_MODE) return;
   try {
@@ -123,7 +141,8 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
 
   const tempVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
   const totalVideoDuration = durations.reduce((sum, duration) => sum + duration, 0);
-  const audioPath = path.join(process.cwd(), 'public', 'audio', '1.mp3'); // Assuming a default audio
+  const audioPath = getRandomAudioFile();
+  console.log(`[Job ${job.id}] Using audio file: ${path.basename(audioPath)}`);
 
   const ffmpegArgs = [
     '-f', 'concat', '-safe', '0', '-i', inputFilePath,
