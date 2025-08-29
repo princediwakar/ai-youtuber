@@ -159,12 +159,15 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
 
 function getFrameDuration(question: any, frameNumber: number): number {
   if (frameNumber === 1) {
+    // Question frame: 4-7 seconds (balanced pace - readable but engaging)
     const textLength = (question?.question?.length || 0) + Object.values(question?.options || {}).join(" ").length;
-    return Math.max(5, Math.min(10, Math.ceil(textLength / 15)));
+    return Math.max(4, Math.min(7, Math.ceil(textLength / 20)));
   } else if (frameNumber === 2) {
-    return 3;
+    // Answer frame: 2.5 seconds (enough time to process the answer)
+    return 2.5;
   } else {
-    return Math.max(5, Math.min(8, Math.ceil((question?.explanation?.length || 0) / 15)));
+    // Explanation frame: 4-6 seconds (readable explanation)
+    return Math.max(4, Math.min(6, Math.ceil((question?.explanation?.length || 0) / 20)));
   }
 }
 
