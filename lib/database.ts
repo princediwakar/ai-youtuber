@@ -67,9 +67,9 @@ export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> 
   const query = `
     INSERT INTO quiz_jobs (
       persona, category, topic, category_display_name, topic_display_name, 
-      question_format, difficulty, generation_date, status, step, data
+      question_format, generation_date, status, step, data
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING id
   `;
   
@@ -81,7 +81,6 @@ export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> 
     jobData.category_display_name,    // ✅ Corrected
     jobData.topic_display_name,       // ✅ Corrected
     jobData.question_format || 'multiple_choice',
-    jobData.difficulty || 'medium',
     jobData.generation_date,          // ✅ Corrected
     jobData.status,                   // ✅ Corrected: Uses status from service
     jobData.step,                     // ✅ Corrected: Uses step from service
@@ -104,7 +103,7 @@ export async function getRecentJobs(limit: number = 20): Promise<QuizJob[]> {
   try {
     await client.connect();
     const query = `
-      SELECT id, persona, category, topic, category_display_name, topic_display_name, difficulty, status, step, created_at, error_message, data
+      SELECT id, persona, category, topic, category_display_name, topic_display_name, status, step, created_at, error_message, data
       FROM quiz_jobs
       ORDER BY created_at DESC
       LIMIT $1

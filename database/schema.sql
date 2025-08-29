@@ -44,7 +44,6 @@ CREATE TABLE quiz_jobs (
 
     -- Analytics & Routing Fields (kept for potential future use)
     question_format VARCHAR(50) NOT NULL DEFAULT 'multiple_choice',
-    difficulty VARCHAR(50) NOT NULL DEFAULT 'medium',
 
     -- Time-sensitive Field for Personas like Current Affairs
     generation_date TIMESTAMPTZ,

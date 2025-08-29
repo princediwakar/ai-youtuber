@@ -32,25 +32,109 @@ async function generatePrompt(jobConfig: any): Promise<string> {
   const { timeMarker, tokenMarker } = generateVariationMarkers();
   
   let prompt = '';
+  const curriculumData = MasterCurriculum[persona];
+  const categoryData = curriculumData?.structure?.find(cat => cat.key === category);
+  const subCategoryData = categoryData?.subCategories?.find(sub => sub.key === subCategory);
+  
   switch (persona) {
+    case 'mathematics_10_12':
+      if (subCategoryData) {
+        prompt = `Generate a Class 10-12 level Mathematics question specifically focused on "${subCategoryData.displayName}" within the ${categoryData.displayName} category. Create a practical problem that tests conceptual understanding. Keep explanation concise - just the key concept and solution approach. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate a Class 10-12 Mathematics question on "${category}" with practical applications. Include solution techniques that help in board exam preparation. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
+
+    case 'physics_10_12':
+      if (subCategoryData) {
+        prompt = `Generate a Class 10-12 Physics question on "${subCategoryData.displayName}" within ${categoryData.displayName}. Create a real-world application problem that tests both conceptual knowledge and numerical problem-solving. Keep explanation short - just the key physics principle. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate a Class 10-12 Physics question on "${category}" with real-world applications and clear physics principles. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
+
+    case 'chemistry_10_12':
+      if (subCategoryData) {
+        prompt = `Generate a Class 10-12 Chemistry question on "${subCategoryData.displayName}" within ${categoryData.displayName}. Focus on conceptual understanding with practical examples. Keep explanation brief - just the key concept or reaction. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate a Class 10-12 Chemistry question on "${category}" with conceptual clarity and practical examples. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
+
+    case 'biology_10_12':
+      if (subCategoryData) {
+        prompt = `Generate a Class 10-12 Biology question on "${subCategoryData.displayName}" within ${categoryData.displayName}. Create a question that relates to human body, plant life, or biological processes. Keep explanation concise - just the key biological principle. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate a Class 10-12 Biology question on "${category}" with biological processes and real-life relevance. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
+
+    case 'neet_preparation':
+      if (subCategoryData) {
+        prompt = `Generate a NEET-level medical entrance question on "${subCategoryData.displayName}" within ${categoryData.displayName}. Create a challenging problem that tests deep conceptual understanding required for medical entrance. Focus on application-based scenarios relevant to medicine and healthcare. Keep explanation short and focused. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate a NEET medical entrance question on "${category}" with medical relevance and deep conceptual understanding. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
+
+    case 'jee_preparation':
+      if (subCategoryData) {
+        prompt = `Generate a JEE-level engineering entrance question on "${subCategoryData.displayName}" within ${categoryData.displayName}. Create a challenging analytical problem that requires advanced problem-solving skills. Focus on engineering applications and mathematical rigor. Keep explanation crisp and direct. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate a JEE engineering entrance question on "${category}" with advanced problem-solving and engineering applications. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
+
+    case 'english_grammar':
+      if (subCategoryData) {
+        prompt = `Generate an English Grammar question on "${subCategoryData.displayName}" within ${categoryData.displayName}. Create a question that tests both understanding and application of grammar rules. Include examples that help competitive exam preparation. Keep explanation short - just the key grammar rule. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate an English Grammar question on "${category}" with competitive exam focus and practical usage. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
+
+    case 'ssc_banking':
+      if (subCategoryData) {
+        prompt = `Generate an SSC/Banking exam question on "${subCategoryData.displayName}" within ${categoryData.displayName}. Create a problem that tests quick analytical thinking and shortcut methods. Focus on time-efficient solving techniques used in competitive exams. Keep explanation brief - just the key trick or method. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate an SSC/Banking exam question on "${category}" with quick-solving techniques and competitive exam strategies. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
+
+    case 'upsc_preparation':
+      if (subCategoryData) {
+        prompt = `Generate a UPSC Civil Services question on "${subCategoryData.displayName}" within ${categoryData.displayName}. Create a comprehensive question that tests analytical thinking and current affairs knowledge. Focus on Indian governance, policy, and administrative aspects. Keep explanation concise - just key facts and reasoning. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate a UPSC Civil Services question on "${category}" with analytical depth and current relevance. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
+
+    case 'general_knowledge':
+      if (subCategoryData) {
+        prompt = `Generate a General Knowledge question on "${subCategoryData.displayName}" within ${categoryData.displayName}. Create an interesting question that covers important facts, current developments, or cultural knowledge. Focus on information that's relevant for multiple competitive exams. Keep explanation short and informative. [${timeMarker}-${tokenMarker}]`;
+      } else {
+        prompt = `Generate a General Knowledge question on "${category}" with broad applicability and interesting facts. [${timeMarker}-${tokenMarker}]`;
+      }
+      break;
 
     case 'english_learning':
     default:
-      // Use the full curriculum structure for more specific prompts
-      const curriculumData = MasterCurriculum[persona];
-      const categoryData = curriculumData?.structure?.find(cat => cat.key === category);
-      const subCategoryData = categoryData?.subCategories?.find(sub => sub.key === subCategory);
-      
-      
+      // Fallback for backward compatibility
       if (subCategoryData) {
-        prompt = `Generate a medium-difficulty English ${categoryData.displayName} question specifically focused on "${subCategoryData.displayName}" within the ${categoryData.displayName} category. Use a fresh approach. Provide a clear, concise explanation with an example sentence that helps learners understand the rule or meaning. [${timeMarker}-${tokenMarker}]`;
+        prompt = `Generate a medium-difficulty English ${categoryData.displayName} question specifically focused on "${subCategoryData.displayName}" within the ${categoryData.displayName} category. Use a fresh approach. Keep explanation very brief - just the key rule and one example. [${timeMarker}-${tokenMarker}]`;
       } else {
-        // Fallback to original behavior if subcategory not found
         prompt = `Generate a medium-difficulty English ${category} question focusing on "${topic}" with a varied approach. Provide a clear, concise explanation with an example sentence that helps learners understand the rule or meaning. [${timeMarker}-${tokenMarker}]`;
       }
       break;
   }
-  return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), and "explanation".';
+  // Randomly choose question format (80% MCQ, 20% True/False)
+  const questionFormat = Math.random() < 0.8 ? 'multiple_choice' : 'true_false';
+  
+  if (questionFormat === 'true_false') {
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", and "question_type" (set to "true_false"). Create a statement that can be definitively true or false. IMPORTANT: Keep the explanation SHORT and CRISP - maximum 2-3 sentences that directly explain why the statement is true or false. This is for video format, so be concise!';
+  } else {
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", and "question_type" (set to "multiple_choice"). IMPORTANT: Keep the explanation SHORT and CRISP - maximum 2-3 sentences that directly explain why the answer is correct. This is for video format, so be concise!';
+  }
 }
 
 /**
@@ -101,6 +185,7 @@ export async function generateAndStoreQuiz(jobConfig: any): Promise<any | null> 
         category_display_name: categoryData?.displayName || categoryKey,
         topic: topicKey,
         topic_display_name: subCategoryData?.displayName || topicKey,
+        question_format: finalQuestion.question_type || 'multiple_choice',
         step: 2, // Next step is frame creation
         status: 'frames_pending',
         data: { 

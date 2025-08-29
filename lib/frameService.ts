@@ -7,6 +7,7 @@ import { themes } from './visuals/themes';
 import { Theme, QuizJob } from '@/lib/types'; // Using QuizJob type
 import { PersonaThemeMap } from './visuals/themeMap';
 import * as mcqLayout from './visuals/layouts/mcqLayout';
+import * as trueFalseLayout from './visuals/layouts/trueFalseLayout';
 import { 
   uploadImageToCloudinary, 
   generateFramePublicIds,
@@ -24,13 +25,13 @@ try {
 // Layout Router
 const layoutRouter = {
   multiple_choice: mcqLayout,
+  true_false: trueFalseLayout,
   default: mcqLayout,
 };
 
 export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   const theme = selectThemeForPersona(job.persona);
   
-  // @ts-ignore - question_type should be added to the job data for better routing
   const questionType = job.data.question.question_type || 'multiple_choice';
   const layout = layoutRouter[questionType as keyof typeof layoutRouter] || layoutRouter.default;
 

@@ -11,6 +11,7 @@ export interface Question {
   explanation: string;
   category: string;
   topic: string;
+  question_type?: string; // 'multiple_choice' or 'true_false'
 }
 
 
@@ -39,7 +40,6 @@ export interface QuizJob {
   category_display_name?: string;
   topic_display_name?: string;
   question_format: string;
-  difficulty: string;
   generation_date: string;
   status: string;
   step: number;
