@@ -219,7 +219,13 @@ function generateVideoMetadata(job: QuizJob) {
   // Use display names from job properties first, then fallback to data properties  
   const topic_display_name = job.topic_display_name || job.data.topic_display_name;
   const category_display_name = job.category_display_name || job.data.category_display_name;
-  const title = `▶️ ${topic_display_name || category_display_name} Quiz | #shorts #${job.persona}`;
+  
+  // For NEET subjects, prioritize category_display_name (e.g., "NEET Physics") over topic_display_name
+  const displayName = (job.persona === 'neet_preparation' && category_display_name) 
+    ? category_display_name 
+    : (topic_display_name || category_display_name);
+  
+  const title = `▶️ ${displayName} Quiz | #shorts #${job.persona}`;
   
   // Generate viral and relevant hashtags
   const viralHashtags = [
@@ -228,9 +234,9 @@ function generateVideoMetadata(job: QuizJob) {
   ];
   
   const personaSpecificHashtags = generatePersonaHashtags(job.persona);
-  const categoryHashtags = generateCategoryHashtags(job.category, topic_display_name);
+  const categoryHashtags = generateCategoryHashtags(job.category, displayName);
   
-  const description = `Test your knowledge with this quick challenge on ${topic_display_name}! 🧠💡
+  const description = `Test your knowledge with this quick challenge on ${displayName}! 🧠💡
   
 ${question.question}
 
@@ -245,7 +251,7 @@ D) ${question.options.D}
 ${viralHashtags.slice(0, 8).join(' ')} ${personaSpecificHashtags.join(' ')} ${categoryHashtags.join(' ')}`;
   
   const tags = [
-    job.persona, job.category, topic_display_name, 
+    job.persona, job.category, displayName, 
     'quiz', 'shorts', 'education', 'viral', 'trending',
     'study', 'learn', 'challenge', 'test'
   ];
