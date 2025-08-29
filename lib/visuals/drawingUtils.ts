@@ -1,6 +1,6 @@
 import { CanvasRenderingContext2D } from 'canvas';
 import { Theme, QuizJob } from '@/lib/types';
-import { MasterCurriculum } from '@/lib/curriculum';
+import { MasterPersonas } from '@/lib/personas';
 
 export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: Theme, job: QuizJob) => {
     ctx.fillStyle = theme.text.primary; // ✨ Changed
@@ -11,7 +11,7 @@ export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: 
     // Use category_display_name from the job data, with fallbacks
     const categoryDisplayName = job.category_display_name || 
                                job.data?.category_display_name || 
-                               MasterCurriculum[job.persona]?.displayName || 
+                               MasterPersonas[job.persona]?.displayName || 
                                job.persona;
     
     ctx.fillText(`${categoryDisplayName}`, width / 2, 90);

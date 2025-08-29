@@ -30,7 +30,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE quiz_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    -- Core Persona & Curriculum Information
+    -- Core Persona & Content Information
     persona VARCHAR(50) NOT NULL,
     category VARCHAR(100) NOT NULL,
     topic VARCHAR(100),
@@ -59,8 +59,8 @@ CREATE TABLE quiz_jobs (
 
 COMMENT ON TABLE quiz_jobs IS 'Tracks the state of each content generation job from creation to completion.';
 COMMENT ON COLUMN quiz_jobs.persona IS 'The content persona, e.g., ''upsc_prep'', ''english_learning''.';
-COMMENT ON COLUMN quiz_jobs.category IS 'The machine-readable category key from the curriculum, e.g., ''gs_paper_1''.';
-COMMENT ON COLUMN quiz_jobs.topic IS 'The machine-readable topic key from the curriculum, e.g., ''history''.';
+COMMENT ON COLUMN quiz_jobs.category IS 'The machine-readable category key from the persona config, e.g., ''gs_paper_1''.';
+COMMENT ON COLUMN quiz_jobs.topic IS 'The machine-readable topic key from the persona config, e.g., ''history''.';
 COMMENT ON COLUMN quiz_jobs.data IS 'Stores the AI-generated question, frame URLs, video URL, etc.';
 
 

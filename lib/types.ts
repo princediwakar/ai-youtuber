@@ -15,18 +15,18 @@ export interface Question {
 }
 
 
-// Represents a node in the curriculum hierarchy.
-interface CurriculumNode {
+// Represents a node in the persona hierarchy.
+interface PersonaNode {
   key: string;
   displayName: string;
-  subCategories?: CurriculumNode[];
+  subCategories?: PersonaNode[];
 }
 
-// Defines the structure for the MasterCurriculum object.
-export interface Curriculum {
+// Defines the structure for the MasterPersonas object.
+export interface PersonaConfig {
   [personaKey: string]: {
-    displayName:string;
-    structure: CurriculumNode[];
+    displayName: string;
+    subCategories: PersonaNode[];
   };
 }
 

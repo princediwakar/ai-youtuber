@@ -97,7 +97,7 @@ The project follows a standard Next.js project structure:
 │   ├── auth.ts           # NextAuth configuration
 │   ├── database.ts       # Database utilities
 │   ├── deepseek.ts       # DeepSeek API integration
-│   ├── curriculum.ts     # Educational content structure (10 academic personas)
+│   ├── personas.ts       # Educational content structure (10 academic personas)
 │   ├── generationService.ts # Academic content generation with exam-specific prompts
 │   ├── schedule.ts       # Generation schedule (50 daily questions)
 │   ├── uploadSchedule.ts # Student-optimized upload timing
@@ -190,7 +190,7 @@ To ensure the project is always in a good state, please follow this workflow:
 
 ## 12. Educational Content Structure
 
-The educational content is organized through a comprehensive curriculum system:
+The educational content is organized through a comprehensive persona system:
 
 *   **10 Academic Personas**: Each persona represents a subject area or exam type
 *   **Hierarchical Structure**: Persona → Category → Subcategory for organized content

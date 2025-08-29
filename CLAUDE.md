@@ -76,7 +76,7 @@ Monitor via `/quiz-dashboard`
 - `lib/auth.ts` - NextAuth configuration
 - `lib/database.ts` - Database utilities
 - `lib/deepseek.ts` - DeepSeek API integration
-- `lib/curriculum.ts` - Educational content structure (10 academic personas)
+- `lib/personas.ts` - Educational content structure (10 academic personas)
 - `lib/generationService.ts` - Academic content generation with exam-specific prompts
 - `lib/schedule.ts` - Generation schedule (50 daily questions)
 - `lib/uploadSchedule.ts` - Student-optimized upload timing

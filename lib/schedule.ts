@@ -19,22 +19,22 @@ interface HourlySchedule {
 // OPTIMIZED: Generate exactly what we need (16 uploads = ~6 generation batches)
 const dailyPattern: HourlySchedule = {
     // Morning batch (for 6:30 AM - 3 uploads)
-    2: ['neet_preparation'],   // Biology focus - 3 questions
+    2: ['neet_biology'],      // Biology focus - 3 questions
     
     // Mid-morning batch (for 12:30 PM - 2 uploads)  
-    6: ['neet_preparation'],   // Chemistry focus - 3 questions (1 extra for selection)
+    6: ['neet_chemistry'],    // Chemistry focus - 3 questions (1 extra for selection)
     
     // Afternoon batch (for 4:00 PM - 2 uploads)
-    10: ['neet_preparation'],  // Physics focus - 3 questions (1 extra for selection)
+    10: ['neet_physics'],     // Physics focus - 3 questions (1 extra for selection)
     
     // Evening batch (for 6:00 PM - 3 uploads)
-    14: ['neet_preparation'],  // Biology focus - 3 questions
+    14: ['neet_biology'],     // Biology focus - 3 questions
     
     // Prime time batch (for 8:00 PM - 3 uploads)
-    17: ['neet_preparation'],  // Biology focus - 3 questions
+    17: ['neet_biology'],     // Biology focus - 3 questions
     
     // Night batch (for 10:00 PM - 3 uploads)
-    20: ['neet_preparation'],  // Mixed subjects - 3 questions
+    20: ['neet_biology'],     // Biology focus - 3 questions (maintains 60% biology weightage)
 };
 
 export const GenerationSchedule: DailySchedule = {

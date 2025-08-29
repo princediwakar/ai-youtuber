@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { createQuizJob } from '@/lib/database';
 import { Question } from './types'; // Using strong types
-import { MasterCurriculum } from './curriculum';
+import { MasterPersonas } from './personas';
 
 const deepseekClient = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
@@ -16,7 +16,7 @@ const deepseekClient = new OpenAI({
 function generateVariationMarkers(): { timeMarker: string; tokenMarker: string; } {
   const timestamp = Date.now();
   const timeMarker = `T${timestamp}`;
-  const tokenMarker = `TK${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+  const tokenMarker = `TK${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   
   
   return { timeMarker, tokenMarker };
@@ -32,32 +32,67 @@ async function generatePrompt(jobConfig: any): Promise<string> {
   const { timeMarker, tokenMarker } = generateVariationMarkers();
   
   let prompt = '';
-  const curriculumData = MasterCurriculum[persona];
-  const categoryData = curriculumData?.structure?.find(cat => cat.key === category);
-  const subCategoryData = categoryData?.subCategories?.find(sub => sub.key === subCategory);
+  const personaData = MasterPersonas[persona];
+  const subCategoryData = personaData?.subCategories?.find(sub => sub.key === subCategory);
   
-  // NEET-ONLY Generation: Single persona focus for #1 channel dominance
-  if (persona === 'neet_preparation') {
+  // NEET Subject-Specific Generation: Three personas for better content management
+  if (persona === 'neet_physics') {
     if (subCategoryData) {
-      prompt = `Generate a NEET 2025-style medical entrance MCQ on "${subCategoryData.displayName}" from ${categoryData.displayName}. 
+      prompt = `Generate a NEET 2025-style Physics MCQ on "${subCategoryData.displayName}" from ${personaData.displayName}. 
 
 CRITICAL REQUIREMENTS:
 • Follow NEET's exact difficulty pattern - moderate to challenging level
-• Include medical/healthcare relevance where applicable (especially for Biology)
+• Include quantitative elements and formula applications (NEET Physics style)
 • Use NCERT-based concepts with application twist (NEET's signature style)
-• Create distractors that test common misconceptions (like actual NEET)
-• Include quantitative elements for Physics/Chemistry when appropriate
-• Focus on concept application, not just memory recall
+• Create distractors that test common physics misconceptions
+• Focus on concept application and problem-solving, not just memory recall
+• Include units, dimensions, and numerical accuracy where applicable
 
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2025 style with clear conceptual depth, practical application, and precise scientific language. Avoid overly complex calculations but include analytical thinking.
+PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2025 Physics style with clear conceptual depth, practical application, and precise scientific language. Include analytical thinking and problem-solving approach.
 
-Keep explanation CONCISE (2-3 lines maximum) focusing on the key concept and why other options are incorrect. [${timeMarker}-${tokenMarker}]`;
+Keep explanation CONCISE (2-3 lines maximum) focusing on the key physics concept and why other options are incorrect. [${timeMarker}-${tokenMarker}]`;
     } else {
-      prompt = `Generate a NEET 2025 medical entrance MCQ on "${category}" with authentic exam-level difficulty, medical relevance, and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
+      prompt = `Generate a NEET 2025 Physics MCQ on "${category}" with authentic exam-level difficulty and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
+    }
+  } else if (persona === 'neet_chemistry') {
+    if (subCategoryData) {
+      prompt = `Generate a NEET 2025-style Chemistry MCQ on "${subCategoryData.displayName}" from ${personaData.displayName}. 
+
+CRITICAL REQUIREMENTS:
+• Follow NEET's exact difficulty pattern - moderate to challenging level
+• Include chemical equations, reactions, and molecular understanding
+• Use NCERT-based concepts with application twist (NEET's signature style)
+• Create distractors that test common chemistry misconceptions
+• Focus on concept application, reaction mechanisms, not just memory recall
+• Include quantitative aspects for Physical Chemistry when appropriate
+
+PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2025 Chemistry style with clear conceptual depth, practical application, and precise scientific language. Include analytical thinking and chemical reasoning.
+
+Keep explanation CONCISE (2-3 lines maximum) focusing on the key chemistry concept and why other options are incorrect. [${timeMarker}-${tokenMarker}]`;
+    } else {
+      prompt = `Generate a NEET 2025 Chemistry MCQ on "${category}" with authentic exam-level difficulty and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
+    }
+  } else if (persona === 'neet_biology') {
+    if (subCategoryData) {
+      prompt = `Generate a NEET 2025-style Biology MCQ on "${subCategoryData.displayName}" from ${personaData.displayName}. 
+
+CRITICAL REQUIREMENTS:
+• Follow NEET's exact difficulty pattern - moderate to challenging level
+• Include medical/healthcare relevance and clinical applications (NEET Biology specialty)
+• Use NCERT-based concepts with application twist (NEET's signature style)
+• Create distractors that test common biological misconceptions
+• Focus on concept application, physiological processes, not just memory recall
+• Include anatomical, physiological, and ecological understanding
+
+PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2025 Biology style with clear conceptual depth, medical relevance, and precise scientific language. Include analytical thinking and biological reasoning.
+
+Keep explanation CONCISE (2-3 lines maximum) focusing on the key biology concept and why other options are incorrect. [${timeMarker}-${tokenMarker}]`;
+    } else {
+      prompt = `Generate a NEET 2025 Biology MCQ on "${category}" with authentic exam-level difficulty, medical relevance, and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
     }
   } else {
     // Fallback - should not occur with NEET-only setup
-    throw new Error(`Unsupported persona: ${persona}. Only 'neet_preparation' is supported in NEET-focused mode.`);
+    throw new Error(`Unsupported persona: ${persona}. Only 'neet_physics', 'neet_chemistry', and 'neet_biology' are supported in NEET-focused mode.`);
   }
   // Randomly choose question format (80% MCQ, 20% True/False)
   const questionFormat = Math.random() < 0.8 ? 'multiple_choice' : 'true_false';
@@ -106,15 +141,14 @@ export async function generateAndStoreQuiz(jobConfig: any): Promise<any | null> 
     const categoryKey = typeof jobConfig.category === 'string' ? jobConfig.category : jobConfig.category?.key || 'unknown';
     const topicKey = typeof jobConfig.subCategory === 'string' ? jobConfig.subCategory : jobConfig.subCategory?.key || jobConfig.topic || 'unknown';
     
-    const curriculumData = MasterCurriculum[jobConfig.persona];
-    const categoryData = curriculumData?.structure?.find(cat => cat.key === categoryKey);
-    const subCategoryData = categoryData?.subCategories?.find(sub => sub.key === topicKey);
+    const personaData = MasterPersonas[jobConfig.persona];
+    const subCategoryData = personaData?.subCategories?.find(sub => sub.key === topicKey);
     
     const jobPayload = {
         persona: jobConfig.persona,
         generation_date: jobConfig.generationDate,
         category: categoryKey,
-        category_display_name: categoryData?.displayName || categoryKey,
+        category_display_name: personaData?.displayName || categoryKey,
         topic: topicKey,
         topic_display_name: subCategoryData?.displayName || topicKey,
         question_format: finalQuestion.question_type || 'multiple_choice',
