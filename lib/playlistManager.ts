@@ -25,19 +25,10 @@ function generateViralHashtags(persona: string, categoryDisplayName: string): st
   const baseHashtags: Record<string, string[]> = {
     neet_physics: ['#NEET', '#NEETPhysics', '#Physics', '#NEETPrep', '#MedicalEntrance', '#PhysicsQuiz'],
     neet_chemistry: ['#NEET', '#NEETChemistry', '#Chemistry', '#NEETPrep', '#MedicalEntrance', '#ChemistryQuiz'],
-    neet_biology: ['#NEET', '#NEETBiology', '#Biology', '#NEETPrep', '#MedicalEntrance', '#BiologyQuiz'],
-    jee_maths: ['#JEE', '#JEEMaths', '#Mathematics', '#JEEPrep', '#Engineering', '#MathsQuiz'],
-    jee_physics: ['#JEE', '#JEEPhysics', '#Physics', '#JEEPrep', '#Engineering', '#PhysicsQuiz'],
-    jee_chemistry: ['#JEE', '#JEEChemistry', '#Chemistry', '#JEEPrep', '#Engineering', '#ChemistryQuiz'],
-    class_10_maths: ['#Class10', '#CBSE', '#Mathematics', '#BoardExam', '#StudyTips', '#MathsQuiz'],
-    class_11_physics: ['#Class11', '#CBSE', '#Physics', '#BoardExam', '#StudyTips', '#PhysicsQuiz'],
-    class_12_biology: ['#Class12', '#CBSE', '#Biology', '#BoardExam', '#StudyTips', '#BiologyQuiz'],
-    ssc_gk: ['#SSC', '#GeneralKnowledge', '#CompetitiveExam', '#GK', '#CurrentAffairs', '#Quiz'],
-    upsc_history: ['#UPSC', '#History', '#CivilServices', '#IAS', '#CompetitiveExam', '#StudyMaterial'],
-    current_affairs: ['#CurrentAffairs', '#News', '#CompetitiveExam', '#GeneralKnowledge', '#Updates', '#ExamPrep']
+    neet_biology: ['#NEET', '#NEETBiology', '#Biology', '#NEETPrep', '#MedicalEntrance', '#BiologyQuiz']
   };
 
-  const personalizedHashtags = baseHashtags[persona] || ['#Education', '#Quiz', '#StudyTips', '#ExamPrep', '#Learning', '#Knowledge'];
+  const personalizedHashtags = baseHashtags[persona] || ['#NEET', '#Education', '#Quiz', '#StudyTips', '#ExamPrep', '#Learning'];
   
   // Add category-specific hashtags
   const categoryKey = categoryDisplayName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
@@ -49,6 +40,23 @@ function generateViralHashtags(persona: string, categoryDisplayName: string): st
 }
 
 /**
+ * Generates engaging, professional playlist titles
+ * @param persona The educational persona
+ * @param categoryDisplayName The category display name
+ * @returns Professional playlist title
+ */
+function generatePlaylistTitle(persona: string, categoryDisplayName: string): string {
+  // NEET teachers organize content chapter-wise with clear learning objectives
+  const titleTemplates: Record<string, string> = {
+    neet_physics: `🔬 NEET Physics | ${categoryDisplayName} - Complete Chapter`,
+    neet_chemistry: `⚗️ NEET Chemistry | ${categoryDisplayName} - Complete Chapter`, 
+    neet_biology: `🧬 NEET Biology | ${categoryDisplayName} - Complete Chapter`
+  };
+
+  return titleTemplates[persona] || `📚 NEET | ${categoryDisplayName} - Complete Chapter`;
+}
+
+/**
  * Generates SEO-optimized keywords for playlist descriptions
  * @param persona The educational persona
  * @param categoryDisplayName The category display name
@@ -56,19 +64,15 @@ function generateViralHashtags(persona: string, categoryDisplayName: string): st
  */
 function generateSEOKeywords(persona: string, categoryDisplayName: string): string {
   const keywordMap: Record<string, string[]> = {
-    neet_physics: ['NEET physics', 'medical entrance', 'physics MCQ', 'NEET preparation', 'physics concepts'],
-    neet_chemistry: ['NEET chemistry', 'medical entrance', 'chemistry MCQ', 'NEET preparation', 'chemistry concepts'],
-    neet_biology: ['NEET biology', 'medical entrance', 'biology MCQ', 'NEET preparation', 'biology concepts'],
-    class_10_maths: ['class 10 maths', 'CBSE board', 'mathematics MCQ', '10th grade', 'board exam'],
-    class_11_physics: ['class 11 physics', 'CBSE board', 'physics MCQ', '11th grade', 'board exam'],
-    class_12_biology: ['class 12 biology', 'CBSE board', 'biology MCQ', '12th grade', 'board exam'],
-    
+    neet_physics: ['NEET physics', 'medical entrance exam', 'physics MCQ questions', 'NEET 2025 preparation', 'physics concepts for NEET'],
+    neet_chemistry: ['NEET chemistry', 'medical entrance exam', 'chemistry MCQ questions', 'NEET 2025 preparation', 'chemistry concepts for NEET'],
+    neet_biology: ['NEET biology', 'medical entrance exam', 'biology MCQ questions', 'NEET 2025 preparation', 'biology concepts for NEET']
   };
 
-  const baseKeywords = keywordMap[persona] || ['education', 'quiz', 'study material', 'exam preparation', 'learning'];
+  const baseKeywords = keywordMap[persona] || ['NEET preparation', 'medical entrance exam', 'quiz questions', 'concept clarity', 'exam strategy'];
   const categoryKeyword = categoryDisplayName.toLowerCase();
   
-  return [...baseKeywords, categoryKeyword, 'online learning', 'free education'].slice(0, 8).join(', ');
+  return [...baseKeywords, categoryKeyword, 'chapter wise practice', 'previous year questions'].slice(0, 8).join(', ');
 }
 
 /**
@@ -150,22 +154,13 @@ export async function getOrCreatePlaylist(
   const personaData = MasterPersonas[persona];
   let categoryDisplayName = category_display_name;
 
-  if (persona === 'current_affairs') {
-    const date = new Date(effectiveDate);
-    const year = date.getFullYear();
-    const month = date.toLocaleString('default', { month: 'long' });
-    canonicalKey = generateCanonicalKey(persona, category, String(year), month);
-    playlistTitle = `🔥 ${category_display_name} ${month} ${year} | #CurrentAffairs #ExamPrep #Competition`;
-  } else {
-    // Use category level only for broader playlist organization
-    categoryDisplayName = personaData?.subCategories?.find(cat => cat.key === category)?.displayName || category_display_name;
-    
-    canonicalKey = generateCanonicalKey(persona, category);
-    
-    // Generate viral hashtags based on persona
-    const hashtags = generateViralHashtags(persona, categoryDisplayName);
-    playlistTitle = `🎯 ${categoryDisplayName} | ${hashtags}`;
-  }
+  // Use category level for chapter-wise organization (how NEET teachers structure content)
+  categoryDisplayName = personaData?.subCategories?.find(cat => cat.key === category)?.displayName || category_display_name;
+  
+  canonicalKey = generateCanonicalKey(persona, category);
+  
+  // Generate teacher-style chapter playlist titles
+  playlistTitle = generatePlaylistTitle(persona, categoryDisplayName);
     
   if (playlistMap.has(canonicalKey)) {
     return playlistMap.get(canonicalKey)!;
@@ -175,19 +170,25 @@ export async function getOrCreatePlaylist(
   
   const tag = `${MANAGER_TAG_PREFIX}${canonicalKey}${MANAGER_TAG_SUFFIX}`;
   
-  // Generate enhanced description with SEO keywords
+  // Generate enhanced description with SEO keywords and hashtags
   const seoKeywords = generateSEOKeywords(persona, categoryDisplayName);
-  const playlistDescription = `🎓 Master ${categoryDisplayName} with expert quiz videos designed for ${personaDisplayName} students!
+  const hashtags = generateViralHashtags(persona, categoryDisplayName);
+  const playlistDescription = `🎯 Complete ${categoryDisplayName} chapter coverage for NEET 2025 aspirants!
 
-📚 Perfect for:
-• Quick revision sessions
-• Exam preparation 
-• Concept reinforcement
-• Self-assessment
+📖 This playlist includes:
+• Concept-based quiz questions
+• Previous year NEET questions  
+• Chapter-wise practice tests
+• Quick revision MCQs
+• Doubt clearing exercises
 
-🎯 Keywords: ${seoKeywords}
+🔬 Designed by expert ${personaDisplayName} faculty to ensure complete syllabus coverage.
 
-📈 Subscribe for daily educational content and boost your exam performance!
+💡 Study Strategy: Watch → Practice → Revise → Test
+🏆 Perfect for daily practice and exam preparation!
+
+📚 Keywords: ${seoKeywords}
+🎯 Tags: ${hashtags}
 
 ${tag}`;
 
