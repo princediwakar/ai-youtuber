@@ -64,7 +64,7 @@ export default function HomePage() {
   const [currentPlaylistId, setCurrentPlaylistId] = useState<string | null>(null)
   const [uploadSettings, setUploadSettings] = useState<UploadSettings>({
     playlistName: '',
-    privacyStatus: 'unlisted',
+    privacyStatus: 'public',
     maxVideos: 10,
     contentType: 'auto',
     // Upload mode

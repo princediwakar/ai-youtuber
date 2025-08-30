@@ -15,7 +15,6 @@ interface HourlySchedule {
 type DailySchedule = Record<number, HourlySchedule>;
 
 const dailyPattern: HourlySchedule = {
-    // 6 strategic upload slots for maximum NEET student reach
     
     8: ['neet_biology'],    
     9: ['neet_biology'],    
