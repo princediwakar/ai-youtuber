@@ -32,9 +32,7 @@ CREATE TABLE quiz_jobs (
 
     -- Core Persona & Content Information
     persona VARCHAR(50) NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    topic VARCHAR(100),
-    category_display_name VARCHAR(255),
+    topic VARCHAR(100) NOT NULL,
     topic_display_name VARCHAR(255),
 
     -- Job Status & Pipeline Control
@@ -58,9 +56,8 @@ CREATE TABLE quiz_jobs (
 );
 
 COMMENT ON TABLE quiz_jobs IS 'Tracks the state of each content generation job from creation to completion.';
-COMMENT ON COLUMN quiz_jobs.persona IS 'The content persona, e.g., ''upsc_prep'', ''english_learning''.';
-COMMENT ON COLUMN quiz_jobs.category IS 'The machine-readable category key from the persona config, e.g., ''gs_paper_1''.';
-COMMENT ON COLUMN quiz_jobs.topic IS 'The machine-readable topic key from the persona config, e.g., ''history''.';
+COMMENT ON COLUMN quiz_jobs.persona IS 'The content persona, e.g., ''neet_physics'', ''neet_chemistry''.';
+COMMENT ON COLUMN quiz_jobs.topic IS 'The machine-readable topic key from the persona config, e.g., ''physics_units_measurements''.';
 COMMENT ON COLUMN quiz_jobs.data IS 'Stores the AI-generated question, frame URLs, video URL, etc.';
 
 
@@ -93,7 +90,7 @@ COMMENT ON COLUMN uploaded_videos.job_id IS 'A foreign key linking back to the o
 CREATE INDEX idx_jobs_pending ON quiz_jobs(status, step);
 
 -- For analytics and filtering by content type.
-CREATE INDEX idx_jobs_persona_category_topic ON quiz_jobs(persona, category, topic);
+CREATE INDEX idx_jobs_persona_topic ON quiz_jobs(persona, topic);
 
 -- Allows for efficient querying of the JSONB data column.
 CREATE INDEX idx_jobs_data ON quiz_jobs USING gin(data);

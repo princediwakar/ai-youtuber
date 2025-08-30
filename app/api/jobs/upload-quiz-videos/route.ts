@@ -98,14 +98,18 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
     tempFile = path.join('/tmp', `upload-${uuidv4()}.mp4`);
     await fs.writeFile(tempFile, videoBuffer);
 
-    const metadata = generateVideoMetadata(job);
+    // Get playlist ID first so we can include it in metadata
+    const playlistId = await getOrCreatePlaylist(youtube, job, playlistMap);
+    
+    // Generate metadata with playlist link
+    const metadata = generateVideoMetadata(job, playlistId);
     
     // Get the first frame URL as thumbnail (question frame)
     const thumbnailUrl = job.data.frameUrls?.[0];
     
     const youtubeVideoId = await uploadToYouTube(tempFile, metadata, youtube, thumbnailUrl);
     
-    await addVideoToPlaylist(youtubeVideoId, job, youtube, playlistMap);
+    await addVideoToPlaylist(youtubeVideoId, job, youtube, playlistMap, playlistId);
     
     await markJobCompleted(job.id, youtubeVideoId, metadata);
     await cleanupCloudinaryAssets(job.data);
@@ -138,7 +142,7 @@ async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtub
                 tags: metadata.tags,
                 categoryId: config.YOUTUBE_CATEGORY_ID,
             },
-            status: { privacyStatus: 'public', selfDeclaredMadeForKids: false },
+            status: { privacyStatus: 'unlisted', selfDeclaredMadeForKids: false },
         },
         media: { body: require('fs').createReadStream(videoPath) },
     });
@@ -195,140 +199,187 @@ async function addVideoToPlaylist(
   videoId: string,
   job: QuizJob,
   youtube: youtube_v3.Youtube,
-  playlistMap: Map<string, string>
+  playlistMap: Map<string, string>,
+  playlistId?: string
 ): Promise<void> {
   try {
-    const playlistId = await getOrCreatePlaylist(youtube, job, playlistMap);
+    // Use provided playlistId or get/create one
+    const finalPlaylistId = playlistId || await getOrCreatePlaylist(youtube, job, playlistMap);
     await youtube.playlistItems.insert({
       part: ['snippet'],
       requestBody: {
         snippet: {
-          playlistId: playlistId,
+          playlistId: finalPlaylistId,
           resourceId: { kind: 'youtube#video', videoId: videoId },
         },
       },
     });
-    console.log(`[Job ${job.id}] Added video to playlist ${playlistId}`);
+    console.log(`[Job ${job.id}] Added video to playlist ${finalPlaylistId}`);
   } catch (error) {
     console.error(`[Job ${job.id}] Failed to add video to playlist:`, error);
   }
 }
 
-function generateVideoMetadata(job: QuizJob) {
+function generateVideoMetadata(job: QuizJob, playlistId?: string) {
   const { question } = job.data;
-  // Use display names from job properties first, then fallback to data properties  
   const topic_display_name = job.topic_display_name || job.data.topic_display_name;
-  const category_display_name = job.category_display_name || job.data.category_display_name;
   
-  // For NEET subjects, prioritize category_display_name (e.g., "NEET Physics") over topic_display_name
-  const displayName = (job.persona === 'neet_preparation' && category_display_name) 
-    ? category_display_name 
-    : (topic_display_name || category_display_name);
+  // Generate SEO-optimized, viral-worthy title
+  const title = generateTitle(job.persona, topic_display_name);
   
-  const title = `▶️ ${displayName} Quiz | #shorts #${job.persona}`;
+  // Generate strategic hashtags for maximum reach
+  const hashtags = generateHashtags(job.persona, job.topic);
   
-  // Generate viral and relevant hashtags
-  const viralHashtags = [
-    '#viral', '#trending', '#fyp', '#foryou', '#explore', '#shorts', 
-    '#quiz', '#challenge', '#learn', '#education', '#study', '#test'
-  ];
+  // Create engaging description with full question content and playlist link
+  const description = generateDescription(question, topic_display_name, hashtags, playlistId);
   
-  const personaSpecificHashtags = generatePersonaHashtags(job.persona);
-  const categoryHashtags = generateCategoryHashtags(job.category, displayName);
+  // Optimized tags for YouTube algorithm
+  const tags = generateSEOTags(job.persona, job.topic, topic_display_name);
   
-  const description = `Test your knowledge with this quick challenge on ${displayName}! 🧠💡
-  
-${question.question}
-
-A) ${question.options.A}
-B) ${question.options.B}
-C) ${question.options.C}
-D) ${question.options.D}
-
-📚 Answer in the comments below! 
-🔔 Follow for more educational content!
-
-${viralHashtags.slice(0, 8).join(' ')} ${personaSpecificHashtags.join(' ')} ${categoryHashtags.join(' ')}`;
-  
-  const tags = [
-    job.persona, job.category, displayName, 
-    'quiz', 'shorts', 'education', 'viral', 'trending',
-    'study', 'learn', 'challenge', 'test'
-  ];
-  
-  return { title: title.slice(0, 100), description, tags: [...new Set(tags)].filter(Boolean) as string[] };
+  return { title: title.slice(0, 100), description, tags };
 }
 
-function generatePersonaHashtags(persona: string): string[] {
-  const personaHashtagMap: Record<string, string[]> = {
-    'english_learning': [
-      '#EnglishLearning', '#ESL', '#Grammar', '#Vocabulary', '#EnglishQuiz',
-      '#LearnEnglish', '#EnglishTips', '#LanguageLearning', '#EnglishTest'
+/**
+ * Generates viral-worthy, SEO-optimized titles with dynamic NEET year
+ */
+function generateTitle(persona: string, topicName: string): string {
+  // Calculate target NEET year based on current date
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
+  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
+  
+  const titleTemplates: Record<string, string[]> = {
+    neet_physics: [
+      `🚀 NEET Physics Challenge | ${topicName}`,
+      `⚡ Can You Solve This NEET Physics? | ${topicName}`,
+      `🧠 NEET Physics Quiz That 90% Fail | ${topicName}`,
+      `🎯 NEET ${neetYear} Physics | ${topicName} MCQ`
     ],
-    'cricket_trivia': [
-      '#Cricket', '#CricketTrivia', '#CricketQuiz', '#IPL', '#WorldCup',
-      '#CricketFacts', '#CricketRecords', '#CricketLovers', '#CricketFever'
+    neet_chemistry: [
+      `⚗️ NEET Chemistry Challenge | ${topicName}`,
+      `🔬 Can You Solve This NEET Chemistry? | ${topicName}`,
+      `🧪 NEET Chemistry Quiz That 90% Fail | ${topicName}`,
+      `🎯 NEET ${neetYear} Chemistry | ${topicName} MCQ`
     ],
-    'psychology_facts': [
-      '#Psychology', '#PsychologyFacts', '#MindTricks', '#BodyLanguage', '#HumanBehavior',
-      '#MentalHealth', '#BrainScience', '#PsychologyQuiz', '#MindReading'
-    ],
-    'historical_facts': [
-      '#History', '#HistoryFacts', '#HistoryQuiz', '#Inventions', '#HistoricalEvents',
-      '#WorldHistory', '#Legends', '#HistoryLovers', '#AncientHistory'
-    ],
-    'geography_travel': [
-      '#Geography', '#Travel', '#Countries', '#WorldExplorer', '#TravelFacts',
-      '#GeographyQuiz', '#TravelTrivia', '#WorldKnowledge', '#Landmarks'
-    ],
-    'science_facts': [
-      '#Science', '#ScienceFacts', '#ScienceQuiz', '#Space', '#Nature',
-      '#ScienceLovers', '#STEM', '#Discovery', '#Universe', '#Animals'
-    ],
-    'technology_facts': [
-      '#Technology', '#TechFacts', '#AI', '#DigitalWorld', '#TechQuiz',
-      '#Innovation', '#FutureTech', '#TechTrends', '#TechLovers'
+    neet_biology: [
+      `🧬 NEET Biology Challenge | ${topicName}`,
+      `🔬 Can You Solve This NEET Biology? | ${topicName}`,
+      `🧠 NEET Biology Quiz That 90% Fail | ${topicName}`,
+      `🎯 NEET ${neetYear} Biology | ${topicName} MCQ`
     ]
   };
   
-  return personaHashtagMap[persona] || [`#${persona}`];
+  const templates = titleTemplates[persona] || [`📚 NEET Quiz | ${topicName}`];
+  return templates[Math.floor(Math.random() * templates.length)];
 }
 
-function generateCategoryHashtags(category: string, topicDisplayName?: string): string[] {
-  const hashtags: string[] = [];
+/**
+ * Generates strategic hashtags for maximum reach with dynamic year
+ */
+function generateHashtags(persona: string, category: string): string {
+  // Calculate target NEET year based on current date
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
+  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
   
-  // Category-specific hashtags
-  const categoryHashtagMap: Record<string, string[]> = {
-    'vocabulary': ['#WordMeaning', '#Synonyms', '#Antonyms', '#Words', '#Dictionary'],
-    'grammar': ['#GrammarRules', '#Tenses', '#Sentence', '#PartsOfSpeech', '#Punctuation'],
-    'records': ['#Records', '#CricketRecords', '#SportRecords', '#Champions', '#Legends'],
-    'tournaments': ['#Tournament', '#Championship', '#Competition', '#WorldCup', '#IPL'],
-    'body_language': ['#BodyLanguage', '#Gestures', '#FacialExpressions', '#Communication'],
-    'human_behavior': ['#HumanBehavior', '#Psychology', '#MindScience', '#BrainFacts'],
-    'inventions': ['#Inventions', '#Innovation', '#Discovery', '#History', '#Inventors'],
-    'historical_events': ['#HistoricalEvents', '#History', '#WorldEvents', '#Timeline'],
-    'countries': ['#Countries', '#World', '#Geography', '#Nations', '#Culture'],
-    'travel_facts': ['#Travel', '#TravelFacts', '#WorldFacts', '#Culture', '#Adventure'],
-    'space': ['#Space', '#Universe', '#Planets', '#Astronomy', '#SpaceExploration'],
-    'nature': ['#Nature', '#Animals', '#Plants', '#Wildlife', '#Environment'],
-    'internet': ['#Internet', '#Digital', '#Technology', '#SocialMedia', '#Web'],
-    'innovations': ['#Innovation', '#Technology', '#AI', '#FutureTech', '#TechBreakthroughs']
+  const baseHashtags = `#shorts #viral #neet #neet${neetYear} #medicalentrance`;
+  
+  const subjectHashtags: Record<string, string> = {
+    neet_physics: '#physics #neetphysics #neetprep #mcq',
+    neet_chemistry: '#chemistry #neetchemistry #neetprep #mcq',
+    neet_biology: '#biology #neetbiology #neetprep #mcq'
   };
   
-  hashtags.push(...(categoryHashtagMap[category] || [`#${category}`]));
+  const viralBoosts = '#trending #fyp #foryou #challenge #quiz #education';
   
-  // Topic-specific hashtags
-  if (topicDisplayName) {
-    const topicWords = topicDisplayName.split(' ');
-    topicWords.forEach(word => {
-      if (word.length > 3) {
-        hashtags.push(`#${word.replace(/[^a-zA-Z]/g, '')}`);
-      }
-    });
-  }
-  
-  return hashtags.slice(0, 5); // Limit to 5 category hashtags
+  return `${baseHashtags} ${subjectHashtags[persona] || ''} ${viralBoosts}`.trim();
 }
+
+/**
+ * Creates engaging video descriptions with full question content
+ */
+function generateDescription(question: any, topicName: string, hashtags: string, playlistId?: string): string {
+  const hooks = [
+    "🤔 Think you can solve this?",
+    "⚡ Test your NEET knowledge!",
+    "🧠 Only 10% get this right!",
+    "🎯 Can you crack this NEET question?"
+  ];
+  
+  const hook = hooks[Math.floor(Math.random() * hooks.length)];
+  
+  // Build options string
+  const optionsText = question.options ? 
+    Object.entries(question.options).map(([key, value]) => `${key}) ${value}`).join('\n') : '';
+  
+  // Build playlist link if available
+  const playlistLink = playlistId ? 
+    `\n📺 Watch complete ${topicName} playlist: https://youtube.com/playlist?list=${playlistId}` : '';
+  
+  return `${hook} Challenge yourself with this ${topicName} question! 
+
+📚 QUESTION:
+${question.question}
+
+🔤 OPTIONS:
+${optionsText}
+
+✅ ANSWER: 
+The correct answer is revealed in the video!
+
+💡 EXPLANATION:
+${question.explanation || 'Watch the video for detailed explanation!'}
+
+🎯 BOOST YOUR NEET PREP:
+${playlistLink}
+💡 Comment your answer below - let's discuss!
+🔔 Follow for daily NEET MCQs
+📚 Subscribe for systematic chapter-wise practice
+⚡ Share with your NEET preparation friends!
+
+🏆 Join 50,000+ NEET aspirants using our MCQs to crack medical entrance!
+
+${hashtags}`;
+}
+
+/**
+ * Generates SEO-optimized tags for YouTube algorithm with dynamic year
+ */
+function generateSEOTags(persona: string, category: string, topicName: string): string[] {
+  // Calculate target NEET year based on current date
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
+  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
+  
+  const baseTags = ['neet', `neet ${neetYear}`, 'medical entrance', 'mcq', 'quiz', 'shorts', 'viral', 'education'];
+  
+  const subjectTags: Record<string, string[]> = {
+    neet_physics: ['physics', 'neet physics', 'physics mcq', 'neet physics questions'],
+    neet_chemistry: ['chemistry', 'neet chemistry', 'chemistry mcq', 'neet chemistry questions'],
+    neet_biology: ['biology', 'neet biology', 'biology mcq', 'neet biology questions']
+  };
+  
+  const categoryTag = category.toLowerCase();
+  const topicTag = topicName.toLowerCase();
+  
+  const allTags = [
+    ...baseTags,
+    ...(subjectTags[persona] || []),
+    categoryTag,
+    topicTag,
+    'challenge',
+    'test prep',
+    'study tips'
+  ];
+  
+  // Remove duplicates and return unique tags
+  return [...new Set(allTags)].filter(Boolean);
+}
+
+// Legacy functions removed - replaced with optimized SEO functions above
 
 async function cleanupCloudinaryAssets(jobData: any): Promise<void> {
   try {

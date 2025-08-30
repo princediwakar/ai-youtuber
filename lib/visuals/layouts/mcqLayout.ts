@@ -1,7 +1,17 @@
 import { Canvas, CanvasRenderingContext2D } from 'canvas';
-import { Theme } from '@/lib/visuals/themes'; // ✨ FIX: Import new Theme type
 import { QuizJob } from '@/lib/types';
-import { drawHeader, drawFooter, wrapText, drawRoundRect } from '../drawingUtils';
+import { Theme } from '@/lib/visuals/themes';
+import { 
+    drawHeader, 
+    drawFooter, 
+    wrapText, 
+    drawRoundRect,
+    calculateOptimalLayout,
+    calculateDynamicPositions,
+    measureQuestionContent,
+    ContentMeasurements,
+    LayoutPositions 
+} from '../drawingUtils';
 
 // --- Updated to use the new theme structure ---
 const drawBackground = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
@@ -10,111 +20,161 @@ const drawBackground = (ctx: CanvasRenderingContext2D, width: number, height: nu
     ctx.fillRect(0, 0, width, height);
 };
 
-// --- Updated to use the new theme structure ---
-function drawQuestionText(ctx: CanvasRenderingContext2D, canvas: Canvas, question: string, theme: Theme): number {
-  ctx.fillStyle = theme.text.primary; // ✨ Changed
+// Dynamic question text drawing with optimized font size
+function drawQuestionText(
+    ctx: CanvasRenderingContext2D, 
+    canvas: Canvas, 
+    question: string, 
+    theme: Theme,
+    startY: number,
+    fontSize: number
+): number {
+  ctx.fillStyle = theme.text.primary;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.textBaseline = 'top';
   
   const textMaxWidth = canvas.width - 160;
-  let fontSize = 68;
-  let lines: string[];
-  let lineHeight: number;
+  ctx.font = `bold ${fontSize}px ${theme.fontFamily}`;
+  const lines = wrapText(ctx, question, textMaxWidth);
+  const lineHeight = fontSize * 1.4;
   
-  do {
-      ctx.font = `bold ${fontSize}px ${theme.fontFamily}`; // ✨ Changed
-      lines = wrapText(ctx, question, textMaxWidth);
-      lineHeight = fontSize * 1.25;
-      const textHeight = lines.length * lineHeight;
-      
-      if (textHeight < 400 || fontSize <= 40) break;
-      
-      fontSize -= 2;
-  } while (fontSize > 40);
-  
-  let y = 300;
   lines.forEach((line, index) => {
-    ctx.fillText(line, canvas.width / 2, y + index * lineHeight);
+    ctx.fillText(line, canvas.width / 2, startY + index * lineHeight);
   });
-  return y + lines.length * lineHeight;
+  
+  return startY + lines.length * lineHeight;
 }
 
-// --- No changes needed here, but functions it calls are updated ---
+// Dynamic MCQ question frame with optimized layout
 export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { question } = job.data;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
   
-  const questionEndY = drawQuestionText(ctx, canvas, question.question, theme);
-  renderOptions(ctx, canvas.width, questionEndY + 100, job, theme, false);
+  // Calculate optimal layout
+  const measurements = calculateOptimalLayout(
+    ctx, 
+    question.question, 
+    question.options, 
+    canvas.width, 
+    canvas.height, 
+    theme.fontFamily
+  );
+  
+  const positions = calculateDynamicPositions(measurements, canvas.height);
+  
+  // Draw question with optimized font size and position
+  const actualQuestionEndY = drawQuestionText(
+    ctx, 
+    canvas, 
+    question.question, 
+    theme, 
+    positions.questionStartY, 
+    measurements.questionFontSize
+  );
+  
+  // Render options with dynamic positioning, ensuring proper spacing from actual question end
+  const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
+  renderOptions(ctx, canvas.width, actualOptionsStartY, job, theme, false, measurements.optionsFontSize);
   drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
-// --- No changes needed here, but functions it calls are updated ---
+// Dynamic MCQ answer frame with optimized layout
 export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { question } = job.data;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
   
-  const questionEndY = drawQuestionText(ctx, canvas, question.question, theme);
-  renderOptions(ctx, canvas.width, questionEndY + 100, job, theme, true);
+  // Calculate optimal layout (same as question frame)
+  const measurements = calculateOptimalLayout(
+    ctx, 
+    question.question, 
+    question.options, 
+    canvas.width, 
+    canvas.height, 
+    theme.fontFamily
+  );
+  
+  const positions = calculateDynamicPositions(measurements, canvas.height);
+  
+  // Draw question with optimized font size and position
+  const actualQuestionEndY = drawQuestionText(
+    ctx, 
+    canvas, 
+    question.question, 
+    theme, 
+    positions.questionStartY, 
+    measurements.questionFontSize
+  );
+  
+  // Render options with dynamic positioning and correct answer highlighted, ensuring proper spacing from actual question end
+  const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
+  renderOptions(ctx, canvas.width, actualOptionsStartY, job, theme, true, measurements.optionsFontSize);
   drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
-// --- Updated to use the new theme structure with better text layout ---
+// Dynamic explanation frame with optimized layout
 export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { explanation } = job.data.question;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
-  drawHeader(ctx, canvas.width, theme, job);
-
-  // Draw "Explanation" title
+  
+  // Draw custom header with "Explanation" instead of persona name
   ctx.fillStyle = theme.text.primary;
+  ctx.font = `bold 48px ${theme.fontFamily}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.font = `bold 70px ${theme.fontFamily}`;
-  ctx.fillText('Explanation', canvas.width / 2, 250);
+  ctx.fillText('Explanation', canvas.width / 2, 90);
 
-  // Calculate available space for explanation text
+  // Calculate dynamic layout for explanation
   const textMaxWidth = canvas.width - 160;
   const textStartX = (canvas.width - textMaxWidth) / 2;
-  const titleEndY = 250 + 70; // Title Y + title font size
-  const footerStartY = canvas.height - 180; // Account for footer space
-  const availableHeight = footerStartY - titleEndY - 100; // 100px padding from title
+  const HEADER_HEIGHT = 180;
+  const FOOTER_HEIGHT = 180;
+  const availableHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT;
+
+  // Measure explanation content with larger starting font and height constraint
+  const measurement = measureQuestionContent(
+    ctx, 
+    explanation, 
+    textMaxWidth, 
+    theme.fontFamily, 
+    80,  // Start with larger font for explanations
+    50,  // Higher minimum readable size for explanations
+    availableHeight // Constrain to available height
+  );
+
+  // Center the explanation vertically, but ensure it doesn't overlap footer
+  const unusedSpace = Math.max(0, availableHeight - measurement.height);
+  const idealStartY = HEADER_HEIGHT + (unusedSpace / 2);
+  const maxStartY = canvas.height - FOOTER_HEIGHT - measurement.height - 20; // 20px safety margin
+  const startY = Math.min(idealStartY, maxStartY);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-
-  let fontSize = 55;
-  let lines: string[];
-  let lineHeight: number;
-  let totalTextHeight: number;
+  ctx.font = `bold ${measurement.fontSize}px ${theme.fontFamily}`;
   
-  // Iterate to find the best font size that fits
-  do {
-      ctx.font = `bold ${fontSize}px ${theme.fontFamily}`;
-      lines = wrapText(ctx, explanation, textMaxWidth);
-      lineHeight = fontSize * 1.4; // Tighter line spacing
-      totalTextHeight = lines.length * lineHeight;
-      
-      if (totalTextHeight <= availableHeight || fontSize <= 24) break;
-      fontSize -= 2;
-  } while (fontSize > 24);
-
-  // Center the text vertically in available space
-  const startY = titleEndY + 50 + (availableHeight - totalTextHeight) / 2;
-  
-  lines.forEach((line, index) => {
+  // Draw explanation text
+  measurement.lines.forEach((line, index) => {
+      const lineHeight = measurement.fontSize * 1.4;
       ctx.fillText(line, textStartX, startY + index * lineHeight);
   });
 
   drawFooter(ctx, canvas.width, canvas.height, theme);
 }
 
-// --- Fully updated to use the new theme structure ---
-function renderOptions(ctx: CanvasRenderingContext2D, width: number, startY: number, job: QuizJob, theme: Theme, isAnswerFrame: boolean) {
+// Dynamic options rendering with variable font size
+function renderOptions(
+    ctx: CanvasRenderingContext2D, 
+    width: number, 
+    startY: number, 
+    job: QuizJob, 
+    theme: Theme, 
+    isAnswerFrame: boolean,
+    fontSize: number = 45
+) {
   const { options, answer } = job.data.question;
 
   const buttonWidth = width * 0.85;
@@ -122,14 +182,13 @@ function renderOptions(ctx: CanvasRenderingContext2D, width: number, startY: num
   let optionY = startY;
 
   const PADDING = 40;
-  const FONT_SIZE = 45;
-  const LINE_HEIGHT = FONT_SIZE * 1.4;
+  const LINE_HEIGHT = fontSize * 1.4;
   const OPTION_SPACING = 40;
 
   Object.entries(options).forEach(([optionKey, optionText]) => {
       const fullOptionText = `${optionKey}. ${optionText}`;
       
-      ctx.font = `bold ${FONT_SIZE}px ${theme.fontFamily}`; // ✨ Changed
+      ctx.font = `bold ${fontSize}px ${theme.fontFamily}`;
 
       const maxWidth = buttonWidth - (PADDING * 2);
       const lines = wrapText(ctx, fullOptionText, maxWidth);
@@ -139,18 +198,17 @@ function renderOptions(ctx: CanvasRenderingContext2D, width: number, startY: num
 
       const isCorrect = optionKey === answer;
       if (isAnswerFrame) {
-          ctx.fillStyle = isCorrect ? theme.feedback.correct : theme.button.background; // ✨ Changed
+          ctx.fillStyle = isCorrect ? theme.feedback.correct : theme.button.background;
       } else {
-          ctx.fillStyle = theme.button.background; // ✨ Changed
+          ctx.fillStyle = theme.button.background;
       }
       
       drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
       
       if (isAnswerFrame) {
-        ctx.fillStyle = isCorrect ? theme.text.onAccent : theme.text.secondary; // ✨ Changed
+        ctx.fillStyle = isCorrect ? theme.text.onAccent : theme.text.secondary;
       } else {
-        // This is the key legibility fix: always use the button's dedicated text color.
-        ctx.fillStyle = theme.button.text; // ✨ Changed
+        ctx.fillStyle = theme.text.secondary;
       }
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';

@@ -28,17 +28,17 @@ function generateVariationMarkers(): { timeMarker: string; tokenMarker: string; 
  * @returns A promise resolving to the AI prompt string.
  */
 async function generatePrompt(jobConfig: any): Promise<string> {
-  const { persona, category, subCategory } = jobConfig;
+  const { persona, topic } = jobConfig;
   const { timeMarker, tokenMarker } = generateVariationMarkers();
   
   let prompt = '';
   const personaData = MasterPersonas[persona];
-  const subCategoryData = personaData?.subCategories?.find(sub => sub.key === subCategory);
+  const topicData = personaData?.subCategories?.find(sub => sub.key === topic);
   
   // NEET Subject-Specific Generation: Three personas for better content management
   if (persona === 'neet_physics') {
-    if (subCategoryData) {
-      prompt = `Generate a NEET 2025-style Physics MCQ on "${subCategoryData.displayName}" from ${personaData.displayName}. 
+    if (topicData) {
+      prompt = `Generate a NEET 2026-style Physics MCQ on "${topicData.displayName}" from ${personaData.displayName}. 
 
 CRITICAL REQUIREMENTS:
 • Follow NEET's exact difficulty pattern - moderate to challenging level
@@ -48,15 +48,15 @@ CRITICAL REQUIREMENTS:
 • Focus on concept application and problem-solving, not just memory recall
 • Include units, dimensions, and numerical accuracy where applicable
 
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2025 Physics style with clear conceptual depth, practical application, and precise scientific language. Include analytical thinking and problem-solving approach.
+PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2026 Physics style with clear conceptual depth, practical application, and precise scientific language. Include analytical thinking and problem-solving approach.
 
-Keep explanation CONCISE (2-3 lines maximum) focusing on the key physics concept and why other options are incorrect. [${timeMarker}-${tokenMarker}]`;
+EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characters total). Focus ONLY on why the answer is correct. [${timeMarker}-${tokenMarker}]`;
     } else {
-      prompt = `Generate a NEET 2025 Physics MCQ on "${category}" with authentic exam-level difficulty and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
+      prompt = `Generate a NEET 2026 Physics MCQ on "${topic}" with authentic exam-level difficulty and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
     }
   } else if (persona === 'neet_chemistry') {
-    if (subCategoryData) {
-      prompt = `Generate a NEET 2025-style Chemistry MCQ on "${subCategoryData.displayName}" from ${personaData.displayName}. 
+    if (topicData) {
+      prompt = `Generate a NEET 2026-style Chemistry MCQ on "${topicData.displayName}" from ${personaData.displayName}. 
 
 CRITICAL REQUIREMENTS:
 • Follow NEET's exact difficulty pattern - moderate to challenging level
@@ -66,15 +66,15 @@ CRITICAL REQUIREMENTS:
 • Focus on concept application, reaction mechanisms, not just memory recall
 • Include quantitative aspects for Physical Chemistry when appropriate
 
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2025 Chemistry style with clear conceptual depth, practical application, and precise scientific language. Include analytical thinking and chemical reasoning.
+PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2026 Chemistry style with clear conceptual depth, practical application, and precise scientific language. Include analytical thinking and chemical reasoning.
 
-Keep explanation CONCISE (2-3 lines maximum) focusing on the key chemistry concept and why other options are incorrect. [${timeMarker}-${tokenMarker}]`;
+EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characters total). Focus ONLY on why the answer is correct. [${timeMarker}-${tokenMarker}]`;
     } else {
-      prompt = `Generate a NEET 2025 Chemistry MCQ on "${category}" with authentic exam-level difficulty and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
+      prompt = `Generate a NEET 2026 Chemistry MCQ on "${topic}" with authentic exam-level difficulty and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
     }
   } else if (persona === 'neet_biology') {
-    if (subCategoryData) {
-      prompt = `Generate a NEET 2025-style Biology MCQ on "${subCategoryData.displayName}" from ${personaData.displayName}. 
+    if (topicData) {
+      prompt = `Generate a NEET 2026-style Biology MCQ on "${topicData.displayName}" from ${personaData.displayName}. 
 
 CRITICAL REQUIREMENTS:
 • Follow NEET's exact difficulty pattern - moderate to challenging level
@@ -84,11 +84,11 @@ CRITICAL REQUIREMENTS:
 • Focus on concept application, physiological processes, not just memory recall
 • Include anatomical, physiological, and ecological understanding
 
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2025 Biology style with clear conceptual depth, medical relevance, and precise scientific language. Include analytical thinking and biological reasoning.
+PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2026 Biology style with clear conceptual depth, medical relevance, and precise scientific language. Include analytical thinking and biological reasoning.
 
-Keep explanation CONCISE (2-3 lines maximum) focusing on the key biology concept and why other options are incorrect. [${timeMarker}-${tokenMarker}]`;
+EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characters total). Focus ONLY on why the answer is correct. [${timeMarker}-${tokenMarker}]`;
     } else {
-      prompt = `Generate a NEET 2025 Biology MCQ on "${category}" with authentic exam-level difficulty, medical relevance, and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
+      prompt = `Generate a NEET 2026 Biology MCQ on "${topic}" with authentic exam-level difficulty, medical relevance, and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
     }
   } else {
     // Fallback - should not occur with NEET-only setup
@@ -98,9 +98,9 @@ Keep explanation CONCISE (2-3 lines maximum) focusing on the key biology concept
   const questionFormat = Math.random() < 0.8 ? 'multiple_choice' : 'true_false';
   
   if (questionFormat === 'true_false') {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", and "question_type" (set to "true_false"). Create a statement that can be definitively true or false. IMPORTANT: Keep the explanation SHORT and CRISP - maximum 2-3 sentences that directly explain why the statement is true or false. This is for video format, so be concise!';
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", and "question_type" (set to "true_false"). Create a statement that can be definitively true or false. MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';
   } else {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", and "question_type" (set to "multiple_choice"). IMPORTANT: Keep the explanation SHORT and CRISP - maximum 2-3 sentences that directly explain why the answer is correct. This is for video format, so be concise!';
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", and "question_type" (set to "multiple_choice"). MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';
   }
 }
 
@@ -118,6 +118,8 @@ export async function generateAndStoreQuiz(jobConfig: any): Promise<any | null> 
       model: "deepseek-chat",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.8,
+    }, {
+      timeout: 30000, // 30 second timeout
     });
 
     const content = response.choices[0].message.content;
@@ -132,25 +134,21 @@ export async function generateAndStoreQuiz(jobConfig: any): Promise<any | null> 
     
     const finalQuestion: Question = {
         ...questionData,
-        category: jobConfig.category,
-        topic: jobConfig.subCategory || jobConfig.topic,
+        topic: jobConfig.topic,
     };
 
     // Construct the payload for database insertion with strong typing.
     // Ensure all fields are strings, not objects
-    const categoryKey = typeof jobConfig.category === 'string' ? jobConfig.category : jobConfig.category?.key || 'unknown';
-    const topicKey = typeof jobConfig.subCategory === 'string' ? jobConfig.subCategory : jobConfig.subCategory?.key || jobConfig.topic || 'unknown';
+    const topicKey = typeof jobConfig.topic === 'string' ? jobConfig.topic : jobConfig.topic?.key || 'unknown';
     
     const personaData = MasterPersonas[jobConfig.persona];
-    const subCategoryData = personaData?.subCategories?.find(sub => sub.key === topicKey);
+    const topicData = personaData?.subCategories?.find(sub => sub.key === topicKey);
     
     const jobPayload = {
         persona: jobConfig.persona,
         generation_date: jobConfig.generationDate,
-        category: categoryKey,
-        category_display_name: personaData?.displayName || categoryKey,
         topic: topicKey,
-        topic_display_name: subCategoryData?.displayName || topicKey,
+        topic_display_name: topicData?.displayName || topicKey,
         question_format: finalQuestion.question_type || 'multiple_choice',
         step: 2, // Next step is frame creation
         status: 'frames_pending',
@@ -208,6 +206,13 @@ function parseAndValidateResponse(content: string): Omit<Question, 'category' | 
             !data.explanation || typeof data.explanation !== 'string') {
             throw new Error('AI response missing required JSON fields or has invalid structure.');
         }
+        
+        // Enforce explanation length limit (150 characters max for good video readability)
+        if (data.explanation.length > 150) {
+            console.warn(`Explanation too long (${data.explanation.length} chars), truncating to 150 chars`);
+            data.explanation = data.explanation.substring(0, 147) + '...';
+        }
+        
         return data;
     } catch (error) {
         console.error(`Failed to parse AI JSON response. Content: "${content}"`, error);

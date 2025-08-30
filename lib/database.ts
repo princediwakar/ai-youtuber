@@ -66,24 +66,22 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
 export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> {
   const query = `
     INSERT INTO quiz_jobs (
-      persona, category, topic, category_display_name, topic_display_name, 
+      persona, topic, topic_display_name, 
       question_format, generation_date, status, step, data
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING id
   `;
   
-  // CORRECTED VALUES ARRAY
+  // UPDATED VALUES ARRAY - removed category references
   const values = [
     jobData.persona,
-    jobData.category,
-    jobData.topic,                    // ✅ Corrected: Reads from top-level jobData
-    jobData.category_display_name,    // ✅ Corrected
-    jobData.topic_display_name,       // ✅ Corrected
+    jobData.topic,
+    jobData.topic_display_name,
     jobData.question_format || 'multiple_choice',
-    jobData.generation_date,          // ✅ Corrected
-    jobData.status,                   // ✅ Corrected: Uses status from service
-    jobData.step,                     // ✅ Corrected: Uses step from service
+    jobData.generation_date,
+    jobData.status,
+    jobData.step,
     JSON.stringify(jobData.data || {})
   ];
   

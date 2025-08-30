@@ -17,22 +17,27 @@ type DailySchedule = Record<number, HourlySchedule>;
 const dailyPattern: HourlySchedule = {
     // 6 strategic upload slots for maximum NEET student reach
     
-    6: ['neet_biology', 'neet_biology', 'neet_biology'],    
-    // 6:30 AM: Morning Motivation Batch - Start day with confidence boosters (Biology focus)
+    8: ['neet_biology'],    
+    9: ['neet_biology'],    
+    //8:00 AM: Morning Motivation Batch - Start day with confidence boosters (Biology focus)
     
-    12: ['neet_chemistry', 'neet_chemistry'],                       
+    12: ['neet_chemistry'],                       
+    13: ['neet_chemistry'],                       
     // 12:30 PM: Lunch Break Revision - Quick MCQs during coaching break (Chemistry focus)
     
-    16: ['neet_physics', 'neet_physics'],                       
+    16: ['neet_physics'],                       
+    15: ['neet_physics'],                       
     // 4:00 PM: Post-Coaching Session - Reinforce concepts learned (Physics focus)
     
-    18: ['neet_biology', 'neet_biology', 'neet_biology'],   
+    18: ['neet_biology'],   
+    19: ['neet_biology'],   
     // 6:00 PM: Evening Study Launch - Prime study time begins (Biology focus)
     
-    20: ['neet_biology', 'neet_biology', 'neet_biology'],   
+    20: ['neet_biology'],   
+    21: ['neet_biology'],   
     // 8:00 PM: Intensive Study Hours - Biology focus (highest weightage)
     
-    22: ['neet_biology', 'neet_biology', 'neet_biology'],   
+    22: ['neet_biology'],   
     // 10:00 PM: Night Revision - End day with challenging concepts (Biology focus)
 }
 

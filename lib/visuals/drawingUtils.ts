@@ -1,5 +1,6 @@
 import { CanvasRenderingContext2D } from 'canvas';
-import { Theme, QuizJob } from '@/lib/types';
+import { QuizJob } from '@/lib/types';
+import { Theme } from '@/lib/visuals/themes';
 import { MasterPersonas } from '@/lib/personas';
 
 export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: Theme, job: QuizJob) => {
@@ -9,12 +10,11 @@ export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: 
     ctx.textBaseline = 'top';
     
     // Use category_display_name from the job data, with fallbacks
-    const categoryDisplayName = job.category_display_name || 
-                               job.data?.category_display_name || 
+    const personaDisplayName = 
                                MasterPersonas[job.persona]?.displayName || 
                                job.persona;
     
-    ctx.fillText(`${categoryDisplayName}`, width / 2, 90);
+    ctx.fillText(`${personaDisplayName}`, width / 2, 90);
 };
 
 export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
@@ -54,4 +54,153 @@ export const drawRoundRect = (ctx: CanvasRenderingContext2D, x: number, y: numbe
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
     ctx.fill();
+};
+
+// Content measurement utilities for dynamic layout
+export interface ContentMeasurements {
+    questionHeight: number;
+    optionsHeight: number;
+    totalContentHeight: number;
+    questionFontSize: number;
+    optionsFontSize: number;
+}
+
+export const measureQuestionContent = (
+    ctx: CanvasRenderingContext2D, 
+    text: string, 
+    maxWidth: number, 
+    fontFamily: string,
+    startFontSize = 70,
+    minFontSize = 45,
+    maxHeight?: number
+): { height: number; fontSize: number; lines: string[] } => {
+    let fontSize = startFontSize;
+    let lines: string[];
+    let lineHeight: number;
+    let totalHeight: number;
+    
+    do {
+        ctx.font = `bold ${fontSize}px ${fontFamily}`;
+        lines = wrapText(ctx, text, maxWidth);
+        lineHeight = fontSize * 1.4;
+        totalHeight = lines.length * lineHeight;
+        
+        // If no height constraint or content fits, use this size
+        if (!maxHeight || totalHeight <= maxHeight || fontSize <= minFontSize) {
+            break;
+        }
+        
+        fontSize -= 2;
+    } while (fontSize > minFontSize);
+    
+    return { height: totalHeight, fontSize, lines };
+};
+
+export const measureOptionsContent = (
+    ctx: CanvasRenderingContext2D,
+    options: Record<string, string>,
+    maxWidth: number,
+    fontFamily: string,
+    fontSize = 45
+): { height: number; optionHeights: number[] } => {
+    const PADDING = 40;
+    const OPTION_SPACING = 40;
+    const LINE_HEIGHT = fontSize * 1.4;
+    
+    let totalHeight = 0;
+    const optionHeights: number[] = [];
+    
+    Object.entries(options).forEach(([optionKey, optionText]) => {
+        const fullOptionText = `${optionKey}. ${optionText}`;
+        ctx.font = `bold ${fontSize}px ${fontFamily}`;
+        
+        const lines = wrapText(ctx, fullOptionText, maxWidth - (PADDING * 2));
+        const textHeight = lines.length * LINE_HEIGHT;
+        const optionHeight = textHeight + (PADDING * 2);
+        
+        optionHeights.push(optionHeight);
+        totalHeight += optionHeight + OPTION_SPACING;
+    });
+    
+    // Remove the last spacing
+    totalHeight -= OPTION_SPACING;
+    
+    return { height: totalHeight, optionHeights };
+};
+
+export const calculateOptimalLayout = (
+    ctx: CanvasRenderingContext2D,
+    questionText: string,
+    options: Record<string, string>,
+    canvasWidth: number,
+    canvasHeight: number,
+    fontFamily: string
+): ContentMeasurements => {
+    const HEADER_HEIGHT = 180; // Header + margin
+    const FOOTER_HEIGHT = 180; // Footer + margin
+    const QUESTION_OPTION_SPACING = 80;
+    const CONTENT_MARGIN = 160; // 80px margin on each side
+    
+    const availableHeight = canvasHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
+    const contentWidth = canvasWidth - CONTENT_MARGIN;
+    
+    // Start with larger question font size
+    let questionFontSize = 70;
+    let questionMeasurement = measureQuestionContent(ctx, questionText, contentWidth, fontFamily, questionFontSize);
+    
+    // Measure options at standard size
+    const optionsFontSize = 45;
+    const optionsMeasurement = measureOptionsContent(ctx, options, contentWidth, fontFamily, optionsFontSize);
+    
+    // Calculate total needed space
+    let totalNeededHeight = questionMeasurement.height + QUESTION_OPTION_SPACING + optionsMeasurement.height;
+    
+    // If content doesn't fit, optimize question font size
+    while (totalNeededHeight > availableHeight && questionFontSize > 45) {
+        questionFontSize -= 2;
+        questionMeasurement = measureQuestionContent(ctx, questionText, contentWidth, fontFamily, questionFontSize);
+        totalNeededHeight = questionMeasurement.height + QUESTION_OPTION_SPACING + optionsMeasurement.height;
+    }
+    
+    return {
+        questionHeight: questionMeasurement.height,
+        optionsHeight: optionsMeasurement.height,
+        totalContentHeight: totalNeededHeight,
+        questionFontSize,
+        optionsFontSize
+    };
+};
+
+export interface LayoutPositions {
+    questionStartY: number;
+    questionEndY: number;
+    optionsStartY: number;
+    contentCenterY: number;
+}
+
+export const calculateDynamicPositions = (
+    measurements: ContentMeasurements,
+    canvasHeight: number
+): LayoutPositions => {
+    const HEADER_HEIGHT = 180;
+    const FOOTER_HEIGHT = 180;
+    const QUESTION_OPTION_SPACING = 80;
+    
+    const availableHeight = canvasHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
+    const unusedSpace = availableHeight - measurements.totalContentHeight;
+    
+    // Center the content vertically in the available space
+    const contentStartY = HEADER_HEIGHT + (unusedSpace / 2);
+    
+    const questionStartY = contentStartY;
+    const questionEndY = questionStartY + measurements.questionHeight;
+    const optionsStartY = questionEndY + QUESTION_OPTION_SPACING;
+    const contentCenterY = contentStartY + (measurements.totalContentHeight / 2);
+    
+    return {
+        questionStartY,
+        questionEndY,
+        optionsStartY,
+        contentCenterY
+    };
 };

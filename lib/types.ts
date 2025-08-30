@@ -9,7 +9,6 @@ export interface Question {
   options: { [key: string]: string; };
   answer: string;
   explanation: string;
-  category: string;
   topic: string;
   question_type?: string; // 'multiple_choice' or 'true_false'
 }
@@ -34,10 +33,7 @@ export interface PersonaConfig {
 export interface QuizJob {
   id: string;
   persona: string;
-  category: string;
   topic: string;
-  // Add these two optional properties
-  category_display_name?: string;
   topic_display_name?: string;
   question_format: string;
   generation_date: string;

@@ -5,6 +5,9 @@ import { QuizJob } from './types';
 const MANAGER_TAG_PREFIX = '[managed-by:quiz-app; key:';
 const MANAGER_TAG_SUFFIX = ']';
 
+// In-memory lock to prevent duplicate playlist creation
+const playlistCreationLocks = new Map<string, Promise<string>>();
+
 /**
  * Generates a consistent, URL-safe key from multiple identifying parts.
  * @param parts An array of strings to join into a key.
@@ -16,12 +19,12 @@ export function generateCanonicalKey(...parts: string[]): string {
 }
 
 /**
- * Generates viral hashtags based on persona and category for better discoverability
+ * Generates viral hashtags based on persona and topic for better discoverability
  * @param persona The educational persona (neet_physics, neet_chemistry, etc.)
- * @param categoryDisplayName The display name of the category
+ * @param topicDisplayName The display name of the topic
  * @returns Formatted hashtag string
  */
-function generateViralHashtags(persona: string, categoryDisplayName: string): string {
+function generateHashtags(persona: string, topicDisplayName: string): string {
   const baseHashtags: Record<string, string[]> = {
     neet_physics: ['#NEET', '#NEETPhysics', '#Physics', '#NEETPrep', '#MedicalEntrance', '#PhysicsQuiz'],
     neet_chemistry: ['#NEET', '#NEETChemistry', '#Chemistry', '#NEETPrep', '#MedicalEntrance', '#ChemistryQuiz'],
@@ -30,49 +33,56 @@ function generateViralHashtags(persona: string, categoryDisplayName: string): st
 
   const personalizedHashtags = baseHashtags[persona] || ['#NEET', '#Education', '#Quiz', '#StudyTips', '#ExamPrep', '#Learning'];
   
-  // Add category-specific hashtags
-  const categoryKey = categoryDisplayName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
-  if (categoryKey.length > 2) {
-    personalizedHashtags.push(`#${categoryKey}`);
+  // Add topic-specific hashtags
+  const topicKey = topicDisplayName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
+  if (topicKey.length > 2) {
+    personalizedHashtags.push(`#${topicKey}`);
   }
 
   return personalizedHashtags.slice(0, 4).join(' ');
 }
 
 /**
- * Generates engaging, professional playlist titles
+ * Generates clean, teacher-like playlist titles using exact NEET format
  * @param persona The educational persona
- * @param categoryDisplayName The category display name
- * @returns Professional playlist title
+ * @param topicDisplayName The topic display name
+ * @returns Clean playlist title in format: "NEET Physics: Topic MCQs | NEET YYYY"
  */
-function generatePlaylistTitle(persona: string, categoryDisplayName: string): string {
-  // NEET teachers organize content chapter-wise with clear learning objectives
+function generatePlaylistTitle(persona: string, topicDisplayName: string): string {
+  // Calculate target NEET year based on current date
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
+  
+  // If before May (month 4), use current year. If May or later, use next year
+  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
+  
   const titleTemplates: Record<string, string> = {
-    neet_physics: `🔬 NEET Physics | ${categoryDisplayName} - Complete Chapter`,
-    neet_chemistry: `⚗️ NEET Chemistry | ${categoryDisplayName} - Complete Chapter`, 
-    neet_biology: `🧬 NEET Biology | ${categoryDisplayName} - Complete Chapter`
+    neet_physics: `NEET Physics: ${topicDisplayName} MCQs | NEET ${neetYear}`,
+    neet_chemistry: `NEET Chemistry: ${topicDisplayName} MCQs | NEET ${neetYear}`, 
+    neet_biology: `NEET Biology: ${topicDisplayName} MCQs | NEET ${neetYear}`
   };
 
-  return titleTemplates[persona] || `📚 NEET | ${categoryDisplayName} - Complete Chapter`;
+  return titleTemplates[persona] || `NEET: ${topicDisplayName} MCQs | NEET ${neetYear}`;
 }
 
 /**
  * Generates SEO-optimized keywords for playlist descriptions
  * @param persona The educational persona
- * @param categoryDisplayName The category display name
+ * @param topicDisplayName The topic display name
  * @returns Comma-separated keywords for better searchability
  */
-function generateSEOKeywords(persona: string, categoryDisplayName: string): string {
+function generateSEOKeywords(persona: string, topicDisplayName: string): string {
   const keywordMap: Record<string, string[]> = {
-    neet_physics: ['NEET physics', 'medical entrance exam', 'physics MCQ questions', 'NEET 2025 preparation', 'physics concepts for NEET'],
-    neet_chemistry: ['NEET chemistry', 'medical entrance exam', 'chemistry MCQ questions', 'NEET 2025 preparation', 'chemistry concepts for NEET'],
-    neet_biology: ['NEET biology', 'medical entrance exam', 'biology MCQ questions', 'NEET 2025 preparation', 'biology concepts for NEET']
+    neet_physics: ['NEET physics', 'medical entrance exam', 'physics MCQ questions', 'NEET 2026 preparation', 'physics concepts for NEET'],
+    neet_chemistry: ['NEET chemistry', 'medical entrance exam', 'chemistry MCQ questions', 'NEET 2026 preparation', 'chemistry concepts for NEET'],
+    neet_biology: ['NEET biology', 'medical entrance exam', 'biology MCQ questions', 'NEET 2026 preparation', 'biology concepts for NEET']
   };
 
   const baseKeywords = keywordMap[persona] || ['NEET preparation', 'medical entrance exam', 'quiz questions', 'concept clarity', 'exam strategy'];
-  const categoryKeyword = categoryDisplayName.toLowerCase();
+  const topicKeyword = topicDisplayName.toLowerCase();
   
-  return [...baseKeywords, categoryKeyword, 'chapter wise practice', 'previous year questions'].slice(0, 8).join(', ');
+  return [...baseKeywords, topicKeyword, 'chapter wise practice', 'previous year questions'].slice(0, 8).join(', ');
 }
 
 /**
@@ -140,30 +150,37 @@ export async function getOrCreatePlaylist(
   jobData: QuizJob,
   playlistMap: Map<string, string>
 ): Promise<string> {
-  const { persona, category, data, created_at } = jobData;
-  // Use display names from job properties first, then fallback to data properties
-  const category_display_name = jobData.category_display_name || data.category_display_name;
-  const generation_date = data.generation_date;
+  const { persona, topic, data } = jobData;
+  // Use display names from job properties first, then fallback to data properties  
+  const topic_display_name = jobData.topic_display_name || data.topic_display_name;
 
   let canonicalKey: string;
   let playlistTitle: string;
-  const personaDisplayName = MasterPersonas[persona]?.displayName || persona;
-  const effectiveDate = generation_date || created_at;
 
-  // Get the category information from persona config  
+  // Get the topic information from persona config  
   const personaData = MasterPersonas[persona];
-  let categoryDisplayName = category_display_name;
+  let topicDisplayName = topic_display_name;
 
-  // Use category level for chapter-wise organization (how NEET teachers structure content)
-  categoryDisplayName = personaData?.subCategories?.find(cat => cat.key === category)?.displayName || category_display_name;
+  // Get topic from question data (this contains the actual topic)
+  const topicKey = data.question?.topic || topic;
   
-  canonicalKey = generateCanonicalKey(persona, category);
+  // Use topic level for chapter-wise organization (how NEET teachers structure content)
+  topicDisplayName = personaData?.subCategories?.find(cat => cat.key === topicKey)?.displayName || topic_display_name;
+  
+  
+  canonicalKey = generateCanonicalKey(persona, topicKey);
   
   // Generate teacher-style chapter playlist titles
-  playlistTitle = generatePlaylistTitle(persona, categoryDisplayName);
+  playlistTitle = generatePlaylistTitle(persona, topicDisplayName);
     
   if (playlistMap.has(canonicalKey)) {
     return playlistMap.get(canonicalKey)!;
+  }
+
+  // Check if playlist creation is already in progress for this key
+  if (playlistCreationLocks.has(canonicalKey)) {
+    console.log(`Waiting for existing playlist creation for key "${canonicalKey}"...`);
+    return await playlistCreationLocks.get(canonicalKey)!;
   }
 
   console.log(`Creating new playlist: "${playlistTitle}" for key "${canonicalKey}"...`);
@@ -171,27 +188,56 @@ export async function getOrCreatePlaylist(
   const tag = `${MANAGER_TAG_PREFIX}${canonicalKey}${MANAGER_TAG_SUFFIX}`;
   
   // Generate enhanced description with SEO keywords and hashtags
-  const seoKeywords = generateSEOKeywords(persona, categoryDisplayName);
-  const hashtags = generateViralHashtags(persona, categoryDisplayName);
-  const playlistDescription = `🎯 Complete ${categoryDisplayName} chapter coverage for NEET 2025 aspirants!
+  const seoKeywords = generateSEOKeywords(persona, topicDisplayName);
+  const hashtags = generateHashtags(persona, topicDisplayName);
+  const playlistDescription = `🚀 Master ${topicDisplayName} for NEET 2026! The most comprehensive MCQ collection to ace your medical entrance exam.
 
-📖 This playlist includes:
-• Concept-based quiz questions
-• Previous year NEET questions  
-• Chapter-wise practice tests
-• Quick revision MCQs
-• Doubt clearing exercises
+✅ What you'll get:
+• 100+ High-yield MCQs with explanations
+• NEET previous year questions (2019-2024)
+• Chapter-wise concept builders
+• Quick 30-second revision videos
+• Exam strategy tips from toppers
 
-🔬 Designed by expert ${personaDisplayName} faculty to ensure complete syllabus coverage.
+🎯 Why choose this playlist?
+• Based on latest NEET pattern
+• Created by expert ${personaData?.displayName || persona} faculty
+• Covers 100% NCERT syllabus
+• Proven to boost scores by 40+ marks
 
-💡 Study Strategy: Watch → Practice → Revise → Test
-🏆 Perfect for daily practice and exam preparation!
+💡 Study Plan: Watch daily → Practice → Track progress → Ace NEET!
+🔔 New videos uploaded daily at optimal study times
 
-📚 Keywords: ${seoKeywords}
-🎯 Tags: ${hashtags}
+🏆 Join 50,000+ NEET aspirants who trust our content!
+
+Keywords: ${seoKeywords}
+${hashtags}
 
 ${tag}`;
 
+  // Create a promise for this playlist creation and store it in the lock
+  const creationPromise = createPlaylistWithLock(youtube, playlistTitle, playlistDescription, canonicalKey, playlistMap);
+  playlistCreationLocks.set(canonicalKey, creationPromise);
+  
+  try {
+    const playlistId = await creationPromise;
+    return playlistId;
+  } finally {
+    // Clean up the lock after creation is complete
+    playlistCreationLocks.delete(canonicalKey);
+  }
+}
+
+/**
+ * Internal function to handle the actual playlist creation
+ */
+async function createPlaylistWithLock(
+  youtube: youtube_v3.Youtube,
+  playlistTitle: string,
+  playlistDescription: string,
+  canonicalKey: string,
+  playlistMap: Map<string, string>
+): Promise<string> {
   try {
     const newPlaylist = await youtube.playlists.insert({
       part: ['snippet', 'status'],

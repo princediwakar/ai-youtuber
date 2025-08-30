@@ -68,8 +68,7 @@ export async function POST(request: NextRequest) {
           const jobConfig = {
               persona: personaKey,
               generationDate,
-              category: personaKey, // Use persona as category since they're now subject-specific
-              subCategory: subCategory.key,
+              topic: subCategory.key,
           };
 
           return generateAndStoreQuiz(jobConfig);
@@ -90,4 +89,4 @@ export async function POST(request: NextRequest) {
 }
 
 export const runtime = 'nodejs';
-export const maxDuration = 25;
+export const maxDuration = 300;

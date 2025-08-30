@@ -10,7 +10,7 @@ import { PersonaConfig } from './types';
  * video quizzes for platforms like YouTube Shorts and Instagram Reels.
  */
 export const MasterPersonas: PersonaConfig = {
-neet_physics: {
+  neet_physics: {
     displayName: 'NEET Physics',
     subCategories: [
       // Class XI
@@ -25,7 +25,7 @@ neet_physics: {
       { key: 'physics_mechanical_fluids', displayName: 'Mechanical Properties of Fluids' },
       { key: 'physics_thermal_properties', displayName: 'Thermal Properties of Matter' },
       { key: 'physics_thermodynamics', displayName: 'Thermodynamics' },
-      { key: 'physics_kinetic_theory', displayName: 'Kinetic Theory' },
+      { key: 'physics_kinetic_theory', displayName: 'Kinetic Theory of Gases' },
       { key: 'physics_oscillations', displayName: 'Oscillations' },
       { key: 'physics_waves', displayName: 'Waves' },
       // Class XII
@@ -126,5 +126,5 @@ neet_physics: {
       { key: 'bio_biodiversity_conservation', displayName: 'Biodiversity and Conservation' },
       { key: 'bio_environmental_issues', displayName: 'Environmental Issues' },
     ],
-  },
+  },  
 };

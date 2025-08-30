@@ -63,7 +63,7 @@ export default function QuizDashboard() {
       const response = await fetch('/api/test-pipeline', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'test-secret'}`,
+          'Authorization': `Bearer ${process.env.CRON_SECRET || 'test-secret'}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ step })
@@ -165,8 +165,8 @@ export default function QuizDashboard() {
                   <tr key={job.id} className="hover:bg-gray-700/50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-400">{job.id.slice(-8)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      {job.topic_display_name || job.data?.topic_display_name || job.topic || job.category}
-                      <div className="text-xs text-gray-400">{job.category_display_name || job.data?.category_display_name || job.persona}</div>
+                      {job.topic_display_name || job.data?.topic_display_name || job.topic}
+                      <div className="text-xs text-gray-400">{job.persona}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{getStepName(job.step)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
