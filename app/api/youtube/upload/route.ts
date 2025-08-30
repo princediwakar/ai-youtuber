@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const videoFile = formData.get('video') as File
     const title = formData.get('title') as string
     const contentType = formData.get('contentType') as string || 'auto'
-    const privacyStatus = formData.get('privacyStatus') as string || 'unlisted'
+    const privacyStatus = formData.get('privacyStatus') as string || 'public'
     const playlistId = formData.get('playlistId') as string
     const position = formData.get('position') as string
     const uploadMode = formData.get('uploadMode') as string || 'playlist'

@@ -96,7 +96,7 @@ EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characte
   }
   // Randomly choose question format (70% MCQ, 15% T/F, 15% A/R)
   const rand = Math.random();
-  const questionFormat = rand < 0.0 ? 'multiple_choice' : (rand < 0 ? 'true_false' : 'assertion_reason');
+  const questionFormat = rand < 0.7 ? 'multiple_choice' : (rand < 85 ? 'true_false' : 'assertion_reason');
 
   if (questionFormat === 'true_false') {
     return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", and "question_type" (set to "true_false"). Create a statement that can be definitively true or false. MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';

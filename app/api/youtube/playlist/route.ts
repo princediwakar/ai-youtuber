@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
           description: description || `Playlist created with Universal YouTube Uploader\n\n🎯 Organized collection of videos for optimal learning experience.\n\n#Playlist #Education #Learning`
         },
         status: {
-          privacyStatus: privacyStatus || 'unlisted'
+          privacyStatus: privacyStatus || 'public'
         }
       }
     })

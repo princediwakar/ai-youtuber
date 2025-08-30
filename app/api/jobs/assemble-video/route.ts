@@ -180,13 +180,13 @@ function getFrameDuration(question: any, frameNumber: number): number {
   if (frameNumber === 1) {
     // Question frame: 4-7 seconds (balanced pace - readable but engaging)
     const textLength = (question?.question?.length || 0) + Object.values(question?.options || {}).join(" ").length;
-    return Math.max(6, Math.min(7, Math.ceil(textLength / 16)));
+    return Math.max(6, Math.min(8, Math.ceil(textLength / 15)));
   } else if (frameNumber === 2) {
     // Answer frame: 2.5 seconds (enough time to process the answer)
-    return 2.5;
+    return 3;
   } else {
     // Explanation frame: 4-6 seconds (readable explanation)
-    return Math.max(4, Math.min(6, Math.ceil((question?.explanation?.length || 0) / 20)));
+    return Math.max(4, Math.min(6, Math.ceil((question?.explanation?.length || 0) / 15)));
   }
 }
 

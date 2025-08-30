@@ -1,3 +1,5 @@
+// app/api/jobs/upload-quiz-videos/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { getPendingJobs, markJobCompleted, updateJob } from '@/lib/database';
 import { google, youtube_v3 } from 'googleapis';
@@ -11,7 +13,7 @@ import { config } from '@/lib/config';
 import { getOAuth2Client } from '@/lib/googleAuth';
 import { UploadSchedule } from '@/lib/uploadSchedule';
 
-// The in-memory cache for the playlist map is still useful to avoid re-fetching on every run.
+// The in-memory cache for the playlist map
 interface Cache {
   playlistMap: Map<string, string> | null;
 }
@@ -27,7 +29,6 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // 1. Check the upload schedule to see what needs to be published now.
     const now = new Date();
     const dayOfWeek = now.getDay();
     const hourOfDay = now.getHours();
@@ -35,13 +36,11 @@ export async function POST(request: NextRequest) {
     let personasToUpload: string[] = [];
 
     if (config.DEBUG_MODE) {
-      // In debug mode, bypass schedule and allow all personas
       console.log('🐛 DEBUG MODE: Bypassing upload schedule, allowing all personas');
-      personasToUpload = []; // Empty array means all personas in getPendingJobs
+      personasToUpload = [];
     } else {
       personasToUpload = UploadSchedule[dayOfWeek]?.[hourOfDay] || [];
       
-      // 2. If no personas are scheduled for this hour, exit gracefully.
       if (personasToUpload.length === 0) {
         const message = `No uploads scheduled for this hour (${hourOfDay}:00).`;
         console.log(message);
@@ -51,7 +50,6 @@ export async function POST(request: NextRequest) {
       console.log(`🚀 Found scheduled uploads for this hour: ${personasToUpload.join(', ')}`);
     }
 
-    // 3. Fetch pending jobs for the scheduled personas (or all if debug mode).
     const jobs = await getPendingJobs(4, config.UPLOAD_CONCURRENCY, personasToUpload.length > 0 ? personasToUpload : undefined);
     if (jobs.length === 0) {
       const message = config.DEBUG_MODE 
@@ -86,31 +84,48 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// 💡 FIX: This function is completely rewritten for optimization.
 async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlistMap: Map<string, string>) {
-  let tempFile: string | null = null;
+  let tempVideoFile: string | null = null;
+  let tempThumbnailFile: string | null = null;
+
   try {
     console.log(`[Job ${job.id}] Starting YouTube upload...`);
     
     const videoUrl = job.data.videoUrl;
-    if (!videoUrl) throw new Error(`Video URL not found in job data`);
-    
-    const videoBuffer = await downloadVideoFromCloudinary(videoUrl);
-    tempFile = path.join('/tmp', `upload-${uuidv4()}.mp4`);
-    await fs.writeFile(tempFile, videoBuffer);
+    const thumbnailUrl = job.data.frameUrls?.[0];
 
-    // Get playlist ID first so we can include it in metadata
-    const playlistId = await getOrCreatePlaylist(youtube, job, playlistMap);
+    if (!videoUrl || !thumbnailUrl) {
+      throw new Error(`[Job ${job.id}] Video or Thumbnail URL not found in job data`);
+    }
+
+    // 💡 FIX: Download video and thumbnail in parallel to save time.
+    console.log(`[Job ${job.id}] Downloading assets from Cloudinary in parallel...`);
+    const [videoBuffer, imageBuffer] = await Promise.all([
+      downloadVideoFromCloudinary(videoUrl),
+      fetch(thumbnailUrl).then(res => {
+        if (!res.ok) throw new Error(`Failed to fetch thumbnail: ${res.statusText}`);
+        return res.arrayBuffer().then(Buffer.from);
+      })
+    ]);
+
+    // Create temporary local files for both assets.
+    tempVideoFile = path.join('/tmp', `upload-${uuidv4()}.mp4`);
+    tempThumbnailFile = path.join('/tmp', `thumbnail-${uuidv4()}.png`);
+    await fs.writeFile(tempVideoFile, videoBuffer);
+    await fs.writeFile(tempThumbnailFile, imageBuffer);
+    console.log(`[Job ${job.id}] Assets saved to temporary files.`);
     
-    // Generate metadata with playlist link
+    const playlistId = await getOrCreatePlaylist(youtube, job, playlistMap);
     const metadata = generateVideoMetadata(job, playlistId);
     
-    // Get the first frame URL as thumbnail (question frame)
-    const thumbnailUrl = job.data.frameUrls?.[0];
+    // Upload the video from its local file.
+    const youtubeVideoId = await uploadToYouTube(tempVideoFile, metadata, youtube);
     
-    const youtubeVideoId = await uploadToYouTube(tempFile, metadata, youtube, thumbnailUrl);
+    // Set the thumbnail from its local file.
+    await setThumbnailWithRetry(youtubeVideoId, tempThumbnailFile, youtube);
     
     await addVideoToPlaylist(youtubeVideoId, job, youtube, playlistMap, playlistId);
-    
     await markJobCompleted(job.id, youtubeVideoId, metadata);
     await cleanupCloudinaryAssets(job.data);
     
@@ -126,13 +141,19 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
     });
     return null;
   } finally {
-    if (tempFile) {
-      await fs.unlink(tempFile).catch(e => console.warn(`Failed to delete temp file ${tempFile}:`, e));
+    // Clean up both temporary files.
+    if (tempVideoFile) {
+      await fs.unlink(tempVideoFile).catch(e => console.warn(`Failed to delete temp video file ${tempVideoFile}:`, e));
+    }
+    if (tempThumbnailFile) {
+      await fs.unlink(tempThumbnailFile).catch(e => console.warn(`Failed to delete temp thumbnail file ${tempThumbnailFile}:`, e));
     }
   }
 }
 
-async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtube_v3.Youtube, thumbnailUrl?: string): Promise<string> {
+// 💡 FIX: This function is simplified. It no longer handles thumbnails.
+async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtube_v3.Youtube): Promise<string> {
+    console.log(`Uploading video from ${videoPath} to YouTube...`);
     const response = await youtube.videos.insert({
         part: ['snippet', 'status'],
         requestBody: {
@@ -142,7 +163,7 @@ async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtub
                 tags: metadata.tags,
                 categoryId: config.YOUTUBE_CATEGORY_ID,
             },
-            status: { privacyStatus: 'unlisted', selfDeclaredMadeForKids: false },
+            status: { privacyStatus: 'public', selfDeclaredMadeForKids: false },
         },
         media: { body: require('fs').createReadStream(videoPath) },
     });
@@ -150,49 +171,46 @@ async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtub
     if (!response.data.id) {
         throw new Error("YouTube API did not return a video ID.");
     }
-
-    // Upload custom thumbnail if provided
-    if (thumbnailUrl) {
-        try {
-            await uploadThumbnailToYouTube(response.data.id, thumbnailUrl, youtube);
-            console.log(`✅ Custom thumbnail uploaded for video ${response.data.id}`);
-        } catch (error) {
-            console.warn(`⚠️ Failed to upload thumbnail for video ${response.data.id}:`, error);
-            // Don't fail the entire upload if thumbnail fails
-        }
-    }
-
+    console.log(`Video upload started successfully. Video ID: ${response.data.id}`);
     return response.data.id;
 }
 
-async function uploadThumbnailToYouTube(videoId: string, thumbnailUrl: string, youtube: youtube_v3.Youtube): Promise<void> {
-    // Download the thumbnail image from Cloudinary
-    const response = await fetch(thumbnailUrl);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch thumbnail from ${thumbnailUrl}: ${response.statusText}`);
-    }
-    
-    const imageBuffer = Buffer.from(await response.arrayBuffer());
-    
-    // Create a temporary file for the thumbnail
-    const tempThumbnailPath = path.join(require('os').tmpdir(), `thumbnail-${videoId}-${Date.now()}.png`);
-    await fs.writeFile(tempThumbnailPath, imageBuffer);
-    
+// 💡 FIX: New helper function for delays.
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// 💡 FIX: New "manager" function for robustly setting the thumbnail.
+async function setThumbnailWithRetry(videoId: string, thumbnailPath: string, youtube: youtube_v3.Youtube) {
+  // Using tuned parameters for a ~30s timeout environment: 3 attempts, 2s delay.
+  const retries = 3;
+  const delay = 2000;
+
+  for (let i = 0; i < retries; i++) {
     try {
-        // Upload thumbnail to YouTube
-        await youtube.thumbnails.set({
-            videoId: videoId,
-            media: {
-                body: require('fs').createReadStream(tempThumbnailPath),
-                mimeType: 'image/png'
-            }
-        });
-    } finally {
-        // Clean up temp file
-        await fs.unlink(tempThumbnailPath).catch(e => 
-            console.warn(`Failed to delete temp thumbnail file ${tempThumbnailPath}:`, e)
-        );
+      await uploadThumbnailToYouTube(videoId, thumbnailPath, youtube);
+      console.log(`[Video ${videoId}] ✅ Custom thumbnail uploaded on attempt ${i + 1}.`);
+      return; // Success, exit the loop.
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (i < retries - 1) {
+        console.warn(`[Video ${videoId}] ⚠️ Thumbnail upload attempt ${i + 1} failed. Retrying in ${delay / 1000}s... Error: ${errorMessage}`);
+        await sleep(delay);
+      } else {
+        console.error(`[Video ${videoId}] ❌ Failed to upload thumbnail after ${retries} attempts. The video will use a default thumbnail. Error: ${errorMessage}`);
+        // Do not throw error, allow the job to complete.
+      }
     }
+  }
+}
+
+// 💡 FIX: This "worker" function now accepts a file path, not a URL.
+async function uploadThumbnailToYouTube(videoId: string, thumbnailPath: string, youtube: youtube_v3.Youtube): Promise<void> {
+    await youtube.thumbnails.set({
+        videoId: videoId,
+        media: {
+            body: require('fs').createReadStream(thumbnailPath),
+            mimeType: 'image/png'
+        }
+    });
 }
 
 async function addVideoToPlaylist(
@@ -203,7 +221,6 @@ async function addVideoToPlaylist(
   playlistId?: string
 ): Promise<void> {
   try {
-    // Use provided playlistId or get/create one
     const finalPlaylistId = playlistId || await getOrCreatePlaylist(youtube, job, playlistMap);
     await youtube.playlistItems.insert({
       part: ['snippet'],
@@ -224,29 +241,19 @@ function generateVideoMetadata(job: QuizJob, playlistId?: string) {
   const { question } = job.data;
   const topic_display_name = job.topic_display_name || job.data.topic_display_name;
   
-  // Generate SEO-optimized, viral-worthy title
   const title = generateTitle(job.persona, topic_display_name);
-  
-  // Generate strategic hashtags for maximum reach
   const hashtags = generateHashtags(job.persona, job.topic);
-  
-  // Create engaging description with full question content and playlist link
   const description = generateDescription(question, topic_display_name, hashtags, playlistId);
-  
-  // Optimized tags for YouTube algorithm
   const tags = generateSEOTags(job.persona, job.topic, topic_display_name);
   
   return { title: title.slice(0, 100), description, tags };
 }
 
-/**
- * Generates viral-worthy, SEO-optimized titles with dynamic NEET year
- */
 function generateTitle(persona: string, topicName: string): string {
-  // Calculate target NEET year based on current date
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
+  const now = new Date(); // Current date: August 30, 2025
+  const currentYear = now.getFullYear(); // 2025
+  const currentMonth = now.getMonth(); // 7 (August)
+  // Since 7 is not < 4, neetYear will be 2025 + 1 = 2026. This is correct.
   const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
   
   const titleTemplates: Record<string, string[]> = {
@@ -274,32 +281,23 @@ function generateTitle(persona: string, topicName: string): string {
   return templates[Math.floor(Math.random() * templates.length)];
 }
 
-/**
- * Generates strategic hashtags for maximum reach with dynamic year
- */
 function generateHashtags(persona: string, category: string): string {
-  // Calculate target NEET year based on current date
   const now = new Date();
   const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
-  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
+  const currentMonth = now.getMonth();
+  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1; // Correctly calculates 2026
   
   const baseHashtags = `#shorts #viral #neet #neet${neetYear} #medicalentrance`;
-  
   const subjectHashtags: Record<string, string> = {
     neet_physics: '#physics #neetphysics #neetprep #mcq',
     neet_chemistry: '#chemistry #neetchemistry #neetprep #mcq',
     neet_biology: '#biology #neetbiology #neetprep #mcq'
   };
-  
   const viralBoosts = '#trending #fyp #foryou #challenge #quiz #education';
   
   return `${baseHashtags} ${subjectHashtags[persona] || ''} ${viralBoosts}`.trim();
 }
 
-/**
- * Creates engaging video descriptions with full question content
- */
 function generateDescription(question: any, topicName: string, hashtags: string, playlistId?: string): string {
   const hooks = [
     "🤔 Think you can solve this?",
@@ -307,14 +305,9 @@ function generateDescription(question: any, topicName: string, hashtags: string,
     "🧠 Only 10% get this right!",
     "🎯 Can you crack this NEET question?"
   ];
-  
   const hook = hooks[Math.floor(Math.random() * hooks.length)];
-  
-  // Build playlist link first to place it at the top
   const playlistLink = playlistId ? 
-    `📺 For more questions on ${topicName}, check out the full playlist:\nhttps://youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
-
-  // Build options string
+    `📺 For more questions on ${topicName}, check out the full playlist:\nhttps://www.youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
   const optionsText = question.options ? 
     Object.entries(question.options).map(([key, value]) => `${key}) ${value}`).join('\n') : '';
   
@@ -339,24 +332,19 @@ ${question.explanation || 'Watch the video for a detailed explanation!'}
 
 ${hashtags}`;
 }
-/**
- * Generates SEO-optimized tags for YouTube algorithm with dynamic year
- */
+
 function generateSEOTags(persona: string, category: string, topicName: string): string[] {
-  // Calculate target NEET year based on current date
   const now = new Date();
   const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
-  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
+  const currentMonth = now.getMonth();
+  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1; // Correctly calculates 2026
   
   const baseTags = ['neet', `neet ${neetYear}`, 'medical entrance', 'mcq', 'quiz', 'shorts', 'viral', 'education'];
-  
   const subjectTags: Record<string, string[]> = {
     neet_physics: ['physics', 'neet physics', 'physics mcq', 'neet physics questions'],
     neet_chemistry: ['chemistry', 'neet chemistry', 'chemistry mcq', 'neet chemistry questions'],
     neet_biology: ['biology', 'neet biology', 'biology mcq', 'neet biology questions']
   };
-  
   const categoryTag = category.toLowerCase();
   const topicTag = topicName.toLowerCase();
   
@@ -370,11 +358,8 @@ function generateSEOTags(persona: string, category: string, topicName: string): 
     'study tips'
   ];
   
-  // Remove duplicates and return unique tags
   return [...new Set(allTags)].filter(Boolean);
 }
-
-// Legacy functions removed - replaced with optimized SEO functions above
 
 async function cleanupCloudinaryAssets(jobData: any): Promise<void> {
   try {
@@ -403,10 +388,7 @@ async function cleanupCloudinaryAssets(jobData: any): Promise<void> {
 function extractPublicIdFromUrl(url: string): string | null {
   try {
     const match = url.match(/\/v[0-9]+\/(.+?)(?:\.[\w]+)?$/);
-    if (match && match[1]) {
-      return match[1];
-    }
-    return null;
+    return (match && match[1]) ? match[1] : null;
   } catch (error) {
     console.warn(`Failed to extract public_id from URL: ${url}`, error);
     return null;
@@ -414,4 +396,7 @@ function extractPublicIdFromUrl(url: string): string | null {
 }
 
 export const runtime = 'nodejs';
+// Note: You mentioned a 30s timeout. This setting attempts to override that to 300s (5 minutes).
+// Ensure your deployment platform (e.g., Vercel Pro/Enterprise) supports this override.
+// On Vercel Hobby, API routes timeout after 10-60s regardless of this setting.
 export const maxDuration = 300;

@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const description = formData.get('description') as string
     const tags = formData.get('tags') as string
     const category = formData.get('category') as string
-    const privacyStatus = formData.get('privacyStatus') as string || 'unlisted'
+    const privacyStatus = formData.get('privacyStatus') as string || 'public'
     const playlistId = formData.get('playlistId') as string
     const position = formData.get('position') as string
     const madeForKids = formData.get('madeForKids') === 'true'
