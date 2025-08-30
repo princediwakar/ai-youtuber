@@ -25,6 +25,7 @@ try {
 // Layout Router
 const layoutRouter = {
   multiple_choice: mcqLayout,
+  assertion_reason: mcqLayout,
   true_false: trueFalseLayout,
   default: mcqLayout,
 };

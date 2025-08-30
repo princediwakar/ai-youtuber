@@ -310,17 +310,15 @@ function generateDescription(question: any, topicName: string, hashtags: string,
   
   const hook = hooks[Math.floor(Math.random() * hooks.length)];
   
+  // Build playlist link first to place it at the top
+  const playlistLink = playlistId ? 
+    `📺 For more questions on ${topicName}, check out the full playlist:\nhttps://youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
+
   // Build options string
   const optionsText = question.options ? 
     Object.entries(question.options).map(([key, value]) => `${key}) ${value}`).join('\n') : '';
   
-  // Build playlist link if available
-  const playlistLink = playlistId ? 
-    `\n📺 Watch complete ${topicName} playlist: https://youtube.com/playlist?list=${playlistId}` : '';
-  
-  return `${hook} Challenge yourself with this ${topicName} question! 
-
-📚 QUESTION:
+  return `${hook}\n${playlistLink}📚 QUESTION:
 ${question.question}
 
 🔤 OPTIONS:
@@ -330,20 +328,17 @@ ${optionsText}
 The correct answer is revealed in the video!
 
 💡 EXPLANATION:
-${question.explanation || 'Watch the video for detailed explanation!'}
-
-🎯 BOOST YOUR NEET PREP:
-${playlistLink}
-💡 Comment your answer below - let's discuss!
-🔔 Follow for daily NEET MCQs
-📚 Subscribe for systematic chapter-wise practice
-⚡ Share with your NEET preparation friends!
+${question.explanation || 'Watch the video for a detailed explanation!'}
 
 🏆 Join 50,000+ NEET aspirants using our MCQs to crack medical entrance!
 
+🎯 BOOST YOUR PREP:
+💡 Comment your answer below - let's discuss!
+🔔 Subscribe for daily NEET MCQs & PYQs!
+⚡ Share with your NEET preparation friends!
+
 ${hashtags}`;
 }
-
 /**
  * Generates SEO-optimized tags for YouTube algorithm with dynamic year
  */

@@ -45,34 +45,90 @@ function drawQuestionText(
   return startY + lines.length * lineHeight;
 }
 
+/**
+ * ✨ NEW: Draws Assertion and Reason text blocks with proper formatting and spacing.
+ */
+function drawAssertionReasonText(
+    ctx: CanvasRenderingContext2D, 
+    canvas: Canvas, 
+    question: any, // Contains assertion and reason properties
+    theme: Theme,
+    startY: number,
+    fontSize: number
+): number {
+    ctx.fillStyle = theme.text.primary;
+    ctx.textAlign = 'left'; // Align left for a cleaner block look
+    ctx.textBaseline = 'top';
+    
+    const textMaxWidth = canvas.width - 160;
+    const textStartX = (canvas.width - textMaxWidth) / 2;
+    const lineHeight = fontSize * 1.4;
+    let currentY = startY;
+
+    // 1. Draw Assertion
+    ctx.font = `bold ${fontSize}px ${theme.fontFamily}`;
+    const assertionText = `Assertion (A): ${question.assertion}`;
+    const assertionLines = wrapText(ctx, assertionText, textMaxWidth);
+    assertionLines.forEach((line, index) => {
+        ctx.fillText(line, textStartX, currentY + index * lineHeight);
+    });
+    currentY += assertionLines.length * lineHeight;
+
+    // Add vertical space between Assertion and Reason
+    currentY += 40; // 40px gap is a good starting point
+
+    // 2. Draw Reason
+    const reasonText = `Reason (R): ${question.reason}`;
+    const reasonLines = wrapText(ctx, reasonText, textMaxWidth);
+    reasonLines.forEach((line, index) => {
+        ctx.fillText(line, textStartX, currentY + index * lineHeight);
+    });
+    currentY += reasonLines.length * lineHeight;
+
+    return currentY; // Return the final Y position after drawing
+}
+
 // Dynamic MCQ question frame with optimized layout
 export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   const { question } = job.data;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
+
+  // ✨ MODIFIED: Determine the full text for measurement purposes
+  const layoutQuestionText = question.question_type === 'assertion_reason'
+    ? `Assertion (A): ${question.assertion}\n\nReason (R): ${question.reason}`
+    : question.question;
   
-  // Calculate optimal layout
+  // Calculate optimal layout based on the full text
   const measurements = calculateOptimalLayout(
     ctx, 
-    question.question, 
+    layoutQuestionText, 
     question.options, 
     canvas.width, 
     canvas.height, 
     theme.fontFamily
   );
+
+  // ✨ FIX: Adjust measurement for the hardcoded 40px gap in drawAssertionReasonText
+  if (question.question_type === 'assertion_reason') {
+    measurements.questionHeight += 40;
+    measurements.totalContentHeight += 40;
+  }
   
   const positions = calculateDynamicPositions(measurements, canvas.height);
   
-  // Draw question with optimized font size and position
-  const actualQuestionEndY = drawQuestionText(
-    ctx, 
-    canvas, 
-    question.question, 
-    theme, 
-    positions.questionStartY, 
-    measurements.questionFontSize
-  );
+  // ✨ MODIFIED: Conditionally draw either standard question or assertion/reason
+  let actualQuestionEndY;
+  if (question.question_type === 'assertion_reason') {
+      actualQuestionEndY = drawAssertionReasonText(
+          ctx, canvas, question, theme, positions.questionStartY, measurements.questionFontSize
+      );
+  } else {
+      actualQuestionEndY = drawQuestionText(
+          ctx, canvas, question.question, theme, positions.questionStartY, measurements.questionFontSize
+      );
+  }
   
   // Render options with dynamic positioning, ensuring proper spacing from actual question end
   const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
@@ -87,29 +143,42 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
   
+  // ✨ MODIFIED: Determine the full text for measurement purposes
+  const layoutQuestionText = question.question_type === 'assertion_reason'
+    ? `Assertion (A): ${question.assertion}\n\nReason (R): ${question.reason}`
+    : question.question;
+
   // Calculate optimal layout (same as question frame)
   const measurements = calculateOptimalLayout(
     ctx, 
-    question.question, 
+    layoutQuestionText,
     question.options, 
     canvas.width, 
     canvas.height, 
     theme.fontFamily
   );
+
+  // ✨ FIX: Adjust measurement for the hardcoded 40px gap in drawAssertionReasonText
+  if (question.question_type === 'assertion_reason') {
+    measurements.questionHeight += 40;
+    measurements.totalContentHeight += 40;
+  }
   
   const positions = calculateDynamicPositions(measurements, canvas.height);
   
-  // Draw question with optimized font size and position
-  const actualQuestionEndY = drawQuestionText(
-    ctx, 
-    canvas, 
-    question.question, 
-    theme, 
-    positions.questionStartY, 
-    measurements.questionFontSize
-  );
+  // ✨ MODIFIED: Conditionally draw either standard question or assertion/reason
+  let actualQuestionEndY;
+  if (question.question_type === 'assertion_reason') {
+      actualQuestionEndY = drawAssertionReasonText(
+          ctx, canvas, question, theme, positions.questionStartY, measurements.questionFontSize
+      );
+  } else {
+      actualQuestionEndY = drawQuestionText(
+          ctx, canvas, question.question, theme, positions.questionStartY, measurements.questionFontSize
+      );
+  }
   
-  // Render options with dynamic positioning and correct answer highlighted, ensuring proper spacing from actual question end
+  // Render options with dynamic positioning and correct answer highlighted
   const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
   renderOptions(ctx, canvas.width, actualOptionsStartY, job, theme, true, measurements.optionsFontSize);
   drawFooter(ctx, canvas.width, canvas.height, theme);
@@ -223,3 +292,4 @@ function renderOptions(
       optionY += dynamicButtonHeight + OPTION_SPACING;
   });
 }
+

@@ -17,8 +17,8 @@ function generateVariationMarkers(): { timeMarker: string; tokenMarker: string; 
   const timestamp = Date.now();
   const timeMarker = `T${timestamp}`;
   const tokenMarker = `TK${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-  
-  
+
+
   return { timeMarker, tokenMarker };
 }
 
@@ -30,18 +30,18 @@ function generateVariationMarkers(): { timeMarker: string; tokenMarker: string; 
 async function generatePrompt(jobConfig: any): Promise<string> {
   const { persona, topic } = jobConfig;
   const { timeMarker, tokenMarker } = generateVariationMarkers();
-  
+
   let prompt = '';
   const personaData = MasterPersonas[persona];
   const topicData = personaData?.subCategories?.find(sub => sub.key === topic);
-  
+
   // NEET Subject-Specific Generation: Three personas for better content management
   if (persona === 'neet_physics') {
     if (topicData) {
       prompt = `Generate a NEET 2026-style Physics MCQ on "${topicData.displayName}" from ${personaData.displayName}. 
 
 CRITICAL REQUIREMENTS:
-• Follow NEET's exact difficulty pattern - moderate to challenging level
+• Follow NEET's exact difficulty pattern - beginner to moderate level
 • Include quantitative elements and formula applications (NEET Physics style)
 • Use NCERT-based concepts with application twist (NEET's signature style)
 • Create distractors that test common physics misconceptions
@@ -94,12 +94,30 @@ EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characte
     // Fallback - should not occur with NEET-only setup
     throw new Error(`Unsupported persona: ${persona}. Only 'neet_physics', 'neet_chemistry', and 'neet_biology' are supported in NEET-focused mode.`);
   }
-  // Randomly choose question format (80% MCQ, 20% True/False)
-  const questionFormat = Math.random() < 0.8 ? 'multiple_choice' : 'true_false';
-  
+  // Randomly choose question format (70% MCQ, 15% T/F, 15% A/R)
+  const rand = Math.random();
+  const questionFormat = rand < 0.0 ? 'multiple_choice' : (rand < 0 ? 'true_false' : 'assertion_reason');
+
   if (questionFormat === 'true_false') {
     return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", and "question_type" (set to "true_false"). Create a statement that can be definitively true or false. MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';
-  } else {
+  } else if (questionFormat === 'assertion_reason') { // ✨ NEW BLOCK
+    return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "assertion", "reason", "options", "answer", "explanation", and "question_type" (set to "assertion_reason"). 
+
+MANDATORY JSON STRUCTURE:
+• "assertion": A statement of fact.
+• "reason": A statement explaining the assertion.
+• "options": This MUST be the following object with concise options:
+    {
+        "A": "Both are true, R explains A.",
+        "B": "Both are true, R doesn't explain A.",
+        "C": "A is true, R is false.",
+        "D": "A is false, but R is true."
+    }
+• "answer": A single letter "A", "B", "C", or "D".
+• "explanation": Max 2 short sentences (under 150 characters) explaining the correct relationship between A and R. No fluff!`;
+  }
+
+  else {
     return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", and "question_type" (set to "multiple_choice"). MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';
   }
 }
@@ -131,40 +149,40 @@ export async function generateAndStoreQuiz(jobConfig: any): Promise<any | null> 
     if (!questionData) {
       throw new Error('Failed to parse or validate AI response.');
     }
-    
+
     const finalQuestion: Question = {
-        ...questionData,
-        topic: jobConfig.topic,
+      ...questionData,
+      topic: jobConfig.topic,
     };
 
     // Construct the payload for database insertion with strong typing.
     // Ensure all fields are strings, not objects
     const topicKey = typeof jobConfig.topic === 'string' ? jobConfig.topic : jobConfig.topic?.key || 'unknown';
-    
+
     const personaData = MasterPersonas[jobConfig.persona];
     const topicData = personaData?.subCategories?.find(sub => sub.key === topicKey);
-    
+
     const jobPayload = {
-        persona: jobConfig.persona,
-        generation_date: jobConfig.generationDate,
-        topic: topicKey,
-        topic_display_name: topicData?.displayName || topicKey,
-        question_format: finalQuestion.question_type || 'multiple_choice',
-        step: 2, // Next step is frame creation
-        status: 'frames_pending',
-        data: { 
-            question: finalQuestion,
-            variation_markers: {
-                time_marker: timeMarker,
-                token_marker: tokenMarker,
-                generation_timestamp: Date.now(),
-                content_hash: generateContentHash(finalQuestion)
-            }
+      persona: jobConfig.persona,
+      generation_date: jobConfig.generationDate,
+      topic: topicKey,
+      topic_display_name: topicData?.displayName || topicKey,
+      question_format: finalQuestion.question_type || 'multiple_choice',
+      step: 2, // Next step is frame creation
+      status: 'frames_pending',
+      data: {
+        question: finalQuestion,
+        variation_markers: {
+          time_marker: timeMarker,
+          token_marker: tokenMarker,
+          generation_timestamp: Date.now(),
+          content_hash: generateContentHash(finalQuestion)
         }
+      }
     };
 
     const jobId = await createQuizJob(jobPayload);
-    
+
     console.log(`[Job ${jobId}] ✅ Created job for persona "${jobConfig.persona}" [${timeMarker}-${tokenMarker}]`);
     return { id: jobId, ...jobConfig, variationMarkers: { timeMarker, tokenMarker } };
 
@@ -185,7 +203,7 @@ function generateContentHash(question: any): string {
     options: question.options,
     answer: question.answer
   });
-  
+
   // Simple hash function (for production, use crypto.createHash)
   let hash = 0;
   for (let i = 0; i < contentString.length; i++) {
@@ -196,26 +214,55 @@ function generateContentHash(question: any): string {
   return `CH${Math.abs(hash).toString(36).toUpperCase()}`;
 }
 
+// function parseAndValidateResponse(content: string): Omit<Question, 'category' | 'topic'> | null {
+//   try {
+//     const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
+//     const data = JSON.parse(cleanedContent);
+//     if (!data.question || typeof data.question !== 'string' ||
+//       !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
+//       !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
+//       !data.explanation || typeof data.explanation !== 'string') {
+//       throw new Error('AI response missing required JSON fields or has invalid structure.');
+//     }
+
+//     // Enforce explanation length limit (150 characters max for good video readability)
+//     if (data.explanation.length > 150) {
+//       console.warn(`Explanation too long (${data.explanation.length} chars), truncating to 150 chars`);
+//       data.explanation = data.explanation.substring(0, 147) + '...';
+//     }
+
+//     return data;
+//   } catch (error) {
+//     console.error(`Failed to parse AI JSON response. Content: "${content}"`, error);
+//     return null;
+//   }
+// }
+
+
 function parseAndValidateResponse(content: string): Omit<Question, 'category' | 'topic'> | null {
-    try {
-        const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
-        const data = JSON.parse(cleanedContent);
-        if (!data.question || typeof data.question !== 'string' ||
-            !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
-            !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
-            !data.explanation || typeof data.explanation !== 'string') {
-            throw new Error('AI response missing required JSON fields or has invalid structure.');
-        }
-        
-        // Enforce explanation length limit (150 characters max for good video readability)
-        if (data.explanation.length > 150) {
-            console.warn(`Explanation too long (${data.explanation.length} chars), truncating to 150 chars`);
-            data.explanation = data.explanation.substring(0, 147) + '...';
-        }
-        
-        return data;
-    } catch (error) {
-        console.error(`Failed to parse AI JSON response. Content: "${content}"`, error);
-        return null; 
-    }
+  try {
+      const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      const data = JSON.parse(cleanedContent);
+
+      // ✨ Updated validation to check for either 'question' or 'assertion'/'reason'
+      const hasQuestion = data.question && typeof data.question === 'string';
+      const hasAssertionReason = data.assertion && typeof data.assertion === 'string' && data.reason && typeof data.reason === 'string';
+
+      if ((!hasQuestion && !hasAssertionReason) ||
+          !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
+          !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
+          !data.explanation || typeof data.explanation !== 'string') {
+          throw new Error('AI response missing required JSON fields or has invalid structure.');
+      }
+      // Enforce explanation length limit (150 characters max for good video readability)
+      if (data.explanation.length > 150) {
+          console.warn(`Explanation too long (${data.explanation.length} chars), truncating to 150 chars`);
+          data.explanation = data.explanation.substring(0, 147) + '...';
+      }
+      
+      return data;
+  } catch (error) {
+      console.error(`Failed to parse AI JSON response. Content: "${content}"`, error);
+      return null; 
+  }
 }
