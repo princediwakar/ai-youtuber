@@ -60,10 +60,9 @@ export default function QuizDashboard() {
   const testPipeline = async (step: number) => {
     setTesting(step);
     try {
-      const response = await fetch('/api/test-pipeline', {
+      const response = await fetch('/api/test-pipeline-manual', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.CRON_SECRET || 'test-secret'}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ step })
