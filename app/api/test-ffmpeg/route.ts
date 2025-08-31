@@ -16,6 +16,12 @@ export async function GET(request: NextRequest) {
     const exists = ffmpegPath ? existsSync(ffmpegPath) : false;
     console.log('FFmpeg binary exists:', exists);
     
+    // Test audio file accessibility
+    const audioPath = resolve(process.cwd(), 'public', 'audio', '1.mp3');
+    const audioExists = existsSync(audioPath);
+    console.log('Audio file path:', audioPath);
+    console.log('Audio file exists:', audioExists);
+    
     // Test basic ffmpeg command
     if (ffmpegPath && exists) {
       try {
@@ -48,6 +54,8 @@ export async function GET(request: NextRequest) {
           success: true, 
           ffmpegPath,
           exists,
+          audioPath,
+          audioExists,
           version: result.split('\n')[0] // First line usually has version
         });
       } catch (error) {
@@ -55,6 +63,8 @@ export async function GET(request: NextRequest) {
           success: false, 
           ffmpegPath,
           exists,
+          audioPath,
+          audioExists,
           error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
@@ -63,6 +73,8 @@ export async function GET(request: NextRequest) {
         success: false, 
         ffmpegPath,
         exists,
+        audioPath,
+        audioExists,
         error: 'FFmpeg binary not found'
       });
     }
