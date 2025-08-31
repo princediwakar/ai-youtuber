@@ -145,7 +145,7 @@ async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtub
                 tags: metadata.tags,
                 categoryId: config.YOUTUBE_CATEGORY_ID,
             },
-            status: { privacyStatus: 'unlisted', selfDeclaredMadeForKids: false },
+            status: { privacyStatus: 'public', selfDeclaredMadeForKids: false },
         },
         media: { body: require('fs').createReadStream(videoPath) },
     });
