@@ -27,6 +27,14 @@ function generateVariationMarkers(): { timeMarker: string; tokenMarker: string; 
  * @param jobConfig The configuration object for the quiz job.
  * @returns A promise resolving to the AI prompt string.
  */
+
+// No changes needed for imports or other functions
+
+/**
+ * Generates a highly specific AI prompt based on the job's persona and configuration.
+ * @param jobConfig The configuration object for the quiz job.
+ * @returns A promise resolving to the AI prompt string.
+ */
 async function generatePrompt(jobConfig: any): Promise<string> {
   const { persona, topic } = jobConfig;
   const { timeMarker, tokenMarker } = generateVariationMarkers();
@@ -35,72 +43,81 @@ async function generatePrompt(jobConfig: any): Promise<string> {
   const personaData = MasterPersonas[persona];
   const topicData = personaData?.subCategories?.find(sub => sub.key === topic);
 
-  // NEET Subject-Specific Generation: Three personas for better content management
+  // NEET Subject-Specific Generation
   if (persona === 'neet_physics') {
     if (topicData) {
-      prompt = `Generate a NEET 2026-style Physics MCQ on "${topicData.displayName}" from ${personaData.displayName}. 
+      prompt = `Generate a NEET 2026-style Physics MCQ on "${topicData.displayName}" from ${personaData.displayName}.
 
 CRITICAL REQUIREMENTS:
-• Follow NEET's exact difficulty pattern - beginner to moderate level
-• Include quantitative elements and formula applications (NEET Physics style)
-• Use NCERT-based concepts with application twist (NEET's signature style)
-• Create distractors that test common physics misconceptions
-• Focus on concept application and problem-solving, not just memory recall
-• Include units, dimensions, and numerical accuracy where applicable
+• PRIORITY: The question must be solvable mentally in 5-10 seconds. Focus on core concepts, not lengthy calculations.
+• Difficulty should be beginner to moderate, testing foundational knowledge.
+• If a formula is needed, it must be a direct, single-step application. Avoid multi-step problems.
+• Use NCERT-based concepts with a clever conceptual twist (NEET's signature style).
+• Create distractors that target common conceptual misunderstandings, not calculation errors.
+• Focus on conceptual application and direct problem-solving.
 
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2026 Physics style with clear conceptual depth, practical application, and precise scientific language. Include analytical thinking and problem-solving approach.
+PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to the conceptual and single-step formula questions from NEET 2022-2026. Avoid the lengthy, multi-step calculation-based questions.
 
 EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characters total). Focus ONLY on why the answer is correct. [${timeMarker}-${tokenMarker}]`;
     } else {
-      prompt = `Generate a NEET 2026 Physics MCQ on "${topic}" with authentic exam-level difficulty and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
+      prompt = `Generate a fast, conceptual NEET 2026 Physics MCQ on "${topic}" that can be answered in under 10 seconds. Focus on NCERT-aligned core concepts. [${timeMarker}-${tokenMarker}]`;
     }
-  } else if (persona === 'neet_chemistry') {
+  }
+
+  else if (persona === 'neet_chemistry') {
     if (topicData) {
-      prompt = `Generate a NEET 2026-style Chemistry MCQ on "${topicData.displayName}" from ${personaData.displayName}. 
+      prompt = `Generate a NEET 2026-style Chemistry MCQ on "${topicData.displayName}" from ${personaData.displayName}.
 
 CRITICAL REQUIREMENTS:
-• Follow NEET's exact difficulty pattern - moderate to challenging level
-• Include chemical equations, reactions, and molecular understanding
-• Use NCERT-based concepts with application twist (NEET's signature style)
-• Create distractors that test common chemistry misconceptions
-• Focus on concept application, reaction mechanisms, not just memory recall
-• Include quantitative aspects for Physical Chemistry when appropriate
+• PRIORITY: The question must be solvable mentally in 5-10 seconds. Focus on core concepts, reaction names, or properties, not complex stoichiometry.
+• Difficulty should be moderate, testing foundational knowledge.
+• Prioritize conceptual understanding (e.g., trends, definitions, reaction products) over complex calculations.
+• Use NCERT-based concepts with a clever conceptual twist (NEET's signature style).
+• Create distractors that target common chemical misconceptions.
+• Focus on conceptual application and chemical reasoning.
 
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2026 Chemistry style with clear conceptual depth, practical application, and precise scientific language. Include analytical thinking and chemical reasoning.
+PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to the conceptual and direct-recall questions from NEET 2022-2026. Avoid questions requiring extensive calculations.
 
 EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characters total). Focus ONLY on why the answer is correct. [${timeMarker}-${tokenMarker}]`;
-    } else {
-      prompt = `Generate a NEET 2026 Chemistry MCQ on "${topic}" with authentic exam-level difficulty and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
     }
-  } else if (persona === 'neet_biology') {
+
+    else {
+      prompt = `Generate a fast, conceptual NEET 2026 Chemistry MCQ on "${topic}" that can be answered in under 10 seconds. Focus on NCERT-aligned core concepts. [${timeMarker}-${tokenMarker}]`;
+    }
+  }
+
+  else if (persona === 'neet_biology') {
     if (topicData) {
-      prompt = `Generate a NEET 2026-style Biology MCQ on "${topicData.displayName}" from ${personaData.displayName}. 
+      prompt = `Generate a NEET 2026-style Biology MCQ on "${topicData.displayName}" from ${personaData.displayName}.
 
 CRITICAL REQUIREMENTS:
-• Follow NEET's exact difficulty pattern - moderate to challenging level
-• Include medical/healthcare relevance and clinical applications (NEET Biology specialty)
-• Use NCERT-based concepts with application twist (NEET's signature style)
-• Create distractors that test common biological misconceptions
-• Focus on concept application, physiological processes, not just memory recall
-• Include anatomical, physiological, and ecological understanding
+• PRIORITY: The question must be solvable mentally in 5-10 seconds. Focus on direct recall and core concepts.
+• Difficulty should be moderate to challenging, testing specific NCERT details.
+• Include medical/healthcare relevance where appropriate, but keep the question direct.
+• Use NCERT-based concepts with a clever conceptual twist (NEET's signature style).
+• Create distractors that are plausible and test common biological misconceptions.
+• Focus on direct concept application, physiological facts, and biological reasoning.
 
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to NEET 2022-2026 Biology style with clear conceptual depth, medical relevance, and precise scientific language. Include analytical thinking and biological reasoning.
+PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to the direct, knowledge-based questions from NEET 2022-2026 that test precise understanding of NCERT lines.
 
 EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characters total). Focus ONLY on why the answer is correct. [${timeMarker}-${tokenMarker}]`;
     } else {
-      prompt = `Generate a NEET 2026 Biology MCQ on "${topic}" with authentic exam-level difficulty, medical relevance, and NCERT alignment. Focus on application-based conceptual understanding. [${timeMarker}-${tokenMarker}]`;
+      prompt = `Generate a fast, conceptual NEET 2026 Biology MCQ on "${topic}" that can be answered in under 10 seconds. Focus on specific, NCERT-aligned facts. [${timeMarker}-${tokenMarker}]`;
     }
-  } else {
-    // Fallback - should not occur with NEET-only setup
+  }
+
+  else {
+    // Fallback
     throw new Error(`Unsupported persona: ${persona}. Only 'neet_physics', 'neet_chemistry', and 'neet_biology' are supported in NEET-focused mode.`);
   }
-  // Randomly choose question format (70% MCQ, 15% T/F, 15% A/R)
+  
+  // No changes to the format selection logic below this line
   const rand = Math.random();
-  const questionFormat = rand < 0.7 ? 'multiple_choice' : (rand < 85 ? 'true_false' : 'assertion_reason');
+  const questionFormat = rand < 0.7 ? 'multiple_choice' : (rand < 0.85 ? 'true_false' : 'assertion_reason');
 
   if (questionFormat === 'true_false') {
     return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", and "question_type" (set to "true_false"). Create a statement that can be definitively true or false. MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';
-  } else if (questionFormat === 'assertion_reason') { // ✨ NEW BLOCK
+  } else if (questionFormat === 'assertion_reason') {
     return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "assertion", "reason", "options", "answer", "explanation", and "question_type" (set to "assertion_reason"). 
 
 MANDATORY JSON STRUCTURE:
@@ -116,7 +133,6 @@ MANDATORY JSON STRUCTURE:
 • "answer": A single letter "A", "B", "C", or "D".
 • "explanation": Max 2 short sentences (under 150 characters) explaining the correct relationship between A and R. No fluff!`;
   }
-
   else {
     return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", and "question_type" (set to "multiple_choice"). MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';
   }
@@ -214,55 +230,31 @@ function generateContentHash(question: any): string {
   return `CH${Math.abs(hash).toString(36).toUpperCase()}`;
 }
 
-// function parseAndValidateResponse(content: string): Omit<Question, 'category' | 'topic'> | null {
-//   try {
-//     const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
-//     const data = JSON.parse(cleanedContent);
-//     if (!data.question || typeof data.question !== 'string' ||
-//       !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
-//       !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
-//       !data.explanation || typeof data.explanation !== 'string') {
-//       throw new Error('AI response missing required JSON fields or has invalid structure.');
-//     }
 
-//     // Enforce explanation length limit (150 characters max for good video readability)
-//     if (data.explanation.length > 150) {
-//       console.warn(`Explanation too long (${data.explanation.length} chars), truncating to 150 chars`);
-//       data.explanation = data.explanation.substring(0, 147) + '...';
-//     }
-
-//     return data;
-//   } catch (error) {
-//     console.error(`Failed to parse AI JSON response. Content: "${content}"`, error);
-//     return null;
-//   }
-// }
-
-
-function parseAndValidateResponse(content: string): Omit<Question, 'category' | 'topic'> | null {
+function parseAndValidateResponse(content: string): Omit<Question, 'topic'> | null {
   try {
-      const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
-      const data = JSON.parse(cleanedContent);
+    const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
+    const data = JSON.parse(cleanedContent);
 
-      // ✨ Updated validation to check for either 'question' or 'assertion'/'reason'
-      const hasQuestion = data.question && typeof data.question === 'string';
-      const hasAssertionReason = data.assertion && typeof data.assertion === 'string' && data.reason && typeof data.reason === 'string';
+    // ✨ Updated validation to check for either 'question' or 'assertion'/'reason'
+    const hasQuestion = data.question && typeof data.question === 'string';
+    const hasAssertionReason = data.assertion && typeof data.assertion === 'string' && data.reason && typeof data.reason === 'string';
 
-      if ((!hasQuestion && !hasAssertionReason) ||
-          !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
-          !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
-          !data.explanation || typeof data.explanation !== 'string') {
-          throw new Error('AI response missing required JSON fields or has invalid structure.');
-      }
-      // Enforce explanation length limit (150 characters max for good video readability)
-      if (data.explanation.length > 150) {
-          console.warn(`Explanation too long (${data.explanation.length} chars), truncating to 150 chars`);
-          data.explanation = data.explanation.substring(0, 147) + '...';
-      }
-      
-      return data;
+    if ((!hasQuestion && !hasAssertionReason) ||
+      !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
+      !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
+      !data.explanation || typeof data.explanation !== 'string') {
+      throw new Error('AI response missing required JSON fields or has invalid structure.');
+    }
+    // Enforce explanation length limit (150 characters max for good video readability)
+    if (data.explanation.length > 150) {
+      console.warn(`Explanation too long (${data.explanation.length} chars), truncating to 150 chars`);
+      data.explanation = data.explanation.substring(0, 147) + '...';
+    }
+
+    return data;
   } catch (error) {
-      console.error(`Failed to parse AI JSON response. Content: "${content}"`, error);
-      return null; 
+    console.error(`Failed to parse AI JSON response. Content: "${content}"`, error);
+    return null;
   }
 }

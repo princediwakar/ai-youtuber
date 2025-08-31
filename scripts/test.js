@@ -6,7 +6,7 @@ const https = require('https');
 const http = require('http');
 
 const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://youtube-playlist-uploader.vercel.app'
+  ? 'https://aiyoutuber.vercel.app'
   : 'http://localhost:3000';
 
 async function makeRequest(path, method = 'POST') {

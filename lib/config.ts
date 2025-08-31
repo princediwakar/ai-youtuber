@@ -6,9 +6,9 @@
 export const config = {
   // Job Processing Configuration - Optimized for 16 daily uploads
   GENERATE_BATCH_SIZE: 3,              // Reduced for faster individual processing
-  CREATE_FRAMES_CONCURRENCY: 4,       // Increased for parallel frame creation
-  ASSEMBLY_CONCURRENCY: 2,             // Increased for video assembly speed
-  UPLOAD_CONCURRENCY: 3,               // Increased for faster YouTube uploads
+  CREATE_FRAMES_CONCURRENCY: 2,       // Increased for parallel frame creation
+  ASSEMBLY_CONCURRENCY: 1,             // Increased for video assembly speed
+  UPLOAD_CONCURRENCY: 1,               // Single upload to avoid rate limits
   MAX_DAILY_UPLOADS: 20,               // Buffer above 16 target for safety
 
   // Video & Frame Dimensions

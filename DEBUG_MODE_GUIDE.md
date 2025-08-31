@@ -69,6 +69,6 @@ YouTube upload batch completed. Processed 5 jobs for: all personas (debug mode).
 2. Call `/api/jobs/generate-quiz` to generate content for all personas
 3. Process frames and video assembly as normal
 4. Call `/api/jobs/upload-quiz-videos` to upload everything
-5. Check results in `/quiz-dashboard`
+5. Check results in `/`
 
 Remember to set `DEBUG_MODE=false` or remove it entirely for production deployments!

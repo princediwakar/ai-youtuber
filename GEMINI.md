@@ -76,7 +76,7 @@ The application exposes several API endpoints under `/api/`.
     *   `suggest-category`: Suggests a YouTube category for a video.
     *   `upload`: Handles direct video uploads.
     *   `upload-optimized`: Handles uploads with additional optimizations.
-*   **/api/quiz-dashboard/**: Provides data for the quiz generation monitoring dashboard.
+*   **/api/dashboard/**: Provides data for the quiz generation monitoring dashboard.
 
 ## 7. Directory Structure
 
@@ -89,7 +89,7 @@ The project follows a standard Next.js project structure:
 │   │   ├── auth/         # NextAuth.js authentication
 │   │   ├── jobs/         # Quiz generation pipeline jobs
 │   │   └── youtube/      # YouTube API integration
-│   ├── quiz-dashboard/   # Quiz generation dashboard
+│   ├── dashboard/   # Quiz generation dashboard
 │   └── ...
 ├── database/             # Database schema
 │   └── schema.sql
@@ -159,7 +159,7 @@ The system uses a 4-step pipeline to automatically generate and upload education
 *   **Generation**: 2-11 AM daily (10 hours, 1 persona per hour)
 *   **Upload**: 6 AM-11 PM (student-optimized timing aligned with Indian study patterns)
 
-These jobs are orchestrated by external cron jobs (e.g., from cron-job.org) and the entire process can be monitored from the `/quiz-dashboard`.
+These jobs are orchestrated by external cron jobs (e.g., from cron-job.org) and the entire process can be monitored from the `/dashboard`.
 
 ## 10. Testing with Playwright MCP
 
@@ -200,4 +200,4 @@ The educational content is organized through a comprehensive persona system:
 
 ## 13. Deployment
 
-The production URL for this project is: https://youtube-playlist-uploader.vercel.app/
+The production URL for this project is: https://aiyoutuber.vercel.app/

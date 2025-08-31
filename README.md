@@ -1,21 +1,12 @@
 # YouTube Uploader & Educational Quiz Video Generator
 
-A comprehensive Next.js application that combines a universal YouTube uploader with automated educational quiz video generation, specifically designed for Indian students and competitive exam aspirants.
+A comprehensive Next.js application that serves as an automated educational quiz video generation, specifically designed for Indian students and competitive exam aspirants.
 
-![YouTube Uploader](https://img.shields.io/badge/YouTube-API-red.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-14-black.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue.svg)
 
 ## 🌟 Features
-
-### Universal YouTube Uploader
-- **Bulk Video Upload**: Upload multiple videos simultaneously with intelligent processing
-- **Smart Playlist Management**: Auto-create playlists or add to existing ones with duplicate detection
-- **AI-Powered Content Enhancement**: Automatic titles, descriptions, tags, and category suggestions
-- **YouTube Shorts Detection**: Automatic detection and optimization for vertical videos
-- **Advanced Upload Settings**: Custom privacy settings, content categorization, and navigation links
-- **Real-time Progress Tracking**: Live upload status with detailed progress indicators
 
 ### Educational Quiz Video Generator
 - **NEET-Focused Content**: Specialized quiz generation for Biology (60%), Chemistry (20%), and Physics (20%)
@@ -37,7 +28,7 @@ A comprehensive Next.js application that combines a universal YouTube uploader w
 1. **Clone and Install**
    ```bash
    git clone <repository-url>
-   cd Youtube-Uploader
+   cd ai-youtuber
    npm install
    ```
 
@@ -74,8 +65,8 @@ Visit `http://localhost:3000` to access the application.
 │   │   ├── auth/               # NextAuth.js authentication
 │   │   ├── jobs/               # Quiz generation pipeline
 │   │   ├── youtube/            # YouTube API integration
-│   │   └── quiz-dashboard/     # Dashboard data
-│   ├── quiz-dashboard/         # Quiz management UI
+│   │   └── dashboard/     # Dashboard data
+│   ├── dashboard/         # Quiz management UI
 │   └── page.tsx               # Main uploader interface
 ├── lib/                        # Core utilities and services
 │   ├── auth.ts                # NextAuth configuration
@@ -94,25 +85,6 @@ Visit `http://localhost:3000` to access the application.
 ```
 
 ## 🎯 Core Functionality
-
-### Universal YouTube Uploader
-
-**Upload Modes:**
-- **Playlist Mode**: Organize videos into playlists with automatic ordering
-- **Individual Mode**: Upload standalone videos (optimized for YouTube Shorts)
-
-**AI Enhancement Features:**
-- Content analysis for category suggestions
-- Intelligent title and description generation
-- Automatic tag generation based on content
-- Playlist navigation link insertion
-
-**Advanced Features:**
-- Duplicate detection for existing playlists
-- Batch processing with concurrency control
-- Real-time upload progress tracking
-- Thumbnail generation and preview
-- YouTube Shorts auto-detection
 
 ### Educational Quiz Generator
 
@@ -137,13 +109,6 @@ Visit `http://localhost:3000` to access the application.
 ### Authentication
 - `GET/POST /api/auth/*` - NextAuth.js authentication endpoints
 
-### YouTube Integration
-- `POST /api/youtube/upload` - Upload videos to YouTube
-- `GET /api/youtube/playlist` - List user playlists
-- `GET /api/youtube/playlist-videos` - Get playlist videos
-- `POST /api/youtube/analyze-video` - AI video analysis
-- `POST /api/youtube/suggest-category` - Content categorization
-
 ### Quiz Generation Pipeline
 - `POST /api/jobs/generate-quiz` - Create quiz questions
 - `POST /api/jobs/create-frames` - Generate video frames
@@ -151,7 +116,7 @@ Visit `http://localhost:3000` to access the application.
 - `POST /api/jobs/upload-quiz-videos` - Upload generated quizzes
 
 ### Dashboard & Monitoring
-- `GET /api/quiz-dashboard` - Quiz generation statistics
+- `GET /api/dashboard` - Quiz generation statistics
 - `GET /api/test-db` - Database connectivity test
 
 ## 🎨 Educational Content System
@@ -203,7 +168,7 @@ node setup-database.js  # Initialize database
 
 ## 🚀 Production Deployment
 
-**Live URL:** [https://youtube-playlist-uploader.vercel.app/](https://youtube-playlist-uploader.vercel.app/)
+**Live URL:** [https://aiyoutuber.vercel.app/](https://aiyoutuber.vercel.app/)
 
 **Deployment Platform:** Vercel with automatic deployments from main branch
 
@@ -217,7 +182,7 @@ node setup-database.js  # Initialize database
 
 ## 📈 Monitoring & Analytics
 
-- **Quiz Dashboard**: `/quiz-dashboard` - Real-time generation statistics
+- **Quiz Dashboard**: `/` - Real-time generation statistics
 - **Upload Tracking**: Built-in progress monitoring with detailed status
 - **Cache Management**: Intelligent caching for playlists and video data
 - **Error Handling**: Comprehensive error tracking and recovery

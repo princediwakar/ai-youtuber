@@ -79,7 +79,7 @@ npm run dev
 **4-step automated process:**
 1. Generate educational questions → 2. Create visual frames → 3. Assemble video → 4. Upload to YouTube
 
-Monitor via `/quiz-dashboard`
+Monitor via `/`
 
 **Upload Schedule:** Student-optimized timing (6:30 AM - 10:00 PM) with 16 daily uploads
 
@@ -87,7 +87,7 @@ Monitor via `/quiz-dashboard`
 
 **Core Application:**
 - `app/page.tsx` - Main uploader interface with advanced settings
-- `app/quiz-dashboard/page.tsx` - Quiz generation monitoring
+- `app/page.tsx` - Quiz generation monitoring
 - `app/layout.tsx` - Root layout with providers
 
 **Authentication & Database:**
@@ -145,7 +145,7 @@ Monitor via `/quiz-dashboard`
 
 ## Production
 
-**URL:** https://youtube-playlist-uploader.vercel.app/  
+**URL:** https://aiyoutuber.vercel.app/  
 **Platform:** Vercel with automatic deployments  
 **Database:** Neon PostgreSQL with connection pooling  
 **Media Storage:** Cloudinary for generated frame storage  
