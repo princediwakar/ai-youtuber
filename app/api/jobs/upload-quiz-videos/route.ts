@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPendingJobs, markJobCompleted, updateJob } from '@/lib/database';
+import { getPendingJobs, markJobCompleted, updateJob, autoRetryFailedJobs } from '@/lib/database';
 import { google, youtube_v3 } from 'googleapis';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -51,7 +51,10 @@ export async function POST(request: NextRequest) {
       console.log(`🚀 Found scheduled uploads for this hour: ${personasToUpload.join(', ')}`);
     }
 
-    // 3. Fetch pending jobs for the scheduled personas (or all if debug mode).
+    // 3. Auto-retry failed jobs with valid data
+    await autoRetryFailedJobs();
+    
+    // 4. Fetch pending jobs for the scheduled personas (or all if debug mode).
     const jobs = await getPendingJobs(4, config.UPLOAD_CONCURRENCY, personasToUpload.length > 0 ? personasToUpload : undefined);
     if (jobs.length === 0) {
       const message = config.DEBUG_MODE 

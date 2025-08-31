@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPendingJobs, updateJob } from '@/lib/database';
+import { getPendingJobs, updateJob, autoRetryFailedJobs } from '@/lib/database';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
@@ -54,6 +54,10 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Starting video assembly batch...');
+    
+    // Auto-retry failed jobs with valid data
+    await autoRetryFailedJobs();
+    
     const jobs = await getPendingJobs(3, config.ASSEMBLY_CONCURRENCY);
     
     if (jobs.length === 0) {

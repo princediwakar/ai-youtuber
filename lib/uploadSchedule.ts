@@ -24,8 +24,8 @@ const dailyPattern: HourlySchedule = {
     13: ['neet_chemistry'],                       
     // 12:30 PM: Lunch Break Revision - Quick MCQs during coaching break (Chemistry focus)
     
-    16: ['neet_physics'],                       
     15: ['neet_physics'],                       
+    16: ['neet_physics'],                       
     // 4:00 PM: Post-Coaching Session - Reinforce concepts learned (Physics focus)
     
     18: ['neet_biology'],   

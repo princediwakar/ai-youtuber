@@ -37,18 +37,19 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
     
     let query = `
       SELECT * FROM quiz_jobs 
-      WHERE step = $1 AND status LIKE '%pending%'
+      WHERE step = $1 AND (
+        status LIKE '%pending%' OR 
+        (status = 'failed' AND step > 1)
+      )
     `;
     const values: any[] = [step];
-    let paramIndex = 2; // The next available parameter index is $2.
+    let paramIndex = 2;
 
-    // If personas are provided, add the filter to the query.
     if (personas && personas.length > 0) {
       query += ` AND persona = ANY($${paramIndex++}::text[])`;
       values.push(personas);
     }
     
-    // Always add ordering and limit at the end, using the next available parameter index.
     query += ` ORDER BY created_at ASC LIMIT $${paramIndex++}`;
     values.push(limit);
 
@@ -141,6 +142,84 @@ export async function updateJob(
   try {
     await client.connect();
     await client.query(query, values);
+  } finally {
+    await client.end();
+  }
+}
+
+export async function resetFailedJobToRetry(jobId: string): Promise<void> {
+  const client = createClient();
+  try {
+    await client.connect();
+    
+    // Get the job to determine what step it should retry from
+    const job = await client.query('SELECT * FROM quiz_jobs WHERE id = $1', [jobId]);
+    if (job.rows.length === 0) return;
+    
+    const currentJob = job.rows[0];
+    const data = typeof currentJob.data === 'string' ? JSON.parse(currentJob.data) : currentJob.data;
+    
+    // Determine the appropriate status and step based on available data
+    let newStatus = 'frames_pending';
+    let newStep = 2;
+    
+    if (data.question) {
+      // If we have quiz data, try frames next
+      newStatus = 'frames_pending';
+      newStep = 2;
+    }
+    if (data.frameUrls && data.frameUrls.length > 0) {
+      // If we have frames, try assembly next
+      newStatus = 'assembly_pending'; 
+      newStep = 3;
+    }
+    if (data.videoUrl) {
+      // If we have video, try upload next
+      newStatus = 'upload_pending';
+      newStep = 4;
+    }
+    
+    await client.query(
+      'UPDATE quiz_jobs SET status = $1, step = $2, error_message = NULL, updated_at = NOW() WHERE id = $3',
+      [newStatus, newStep, jobId]
+    );
+    
+    console.log(`Reset failed job ${jobId} to ${newStatus} (step ${newStep})`);
+  } finally {
+    await client.end();
+  }
+}
+
+export async function autoRetryFailedJobs(): Promise<number> {
+  const client = createClient();
+  try {
+    await client.connect();
+    
+    // Get failed jobs that have valid data for retry
+    const failedJobs = await client.query(`
+      SELECT id, step, data FROM quiz_jobs 
+      WHERE status = 'failed' AND step > 1
+      ORDER BY created_at ASC
+    `);
+    
+    let resetCount = 0;
+    for (const job of failedJobs.rows) {
+      const data = typeof job.data === 'string' ? JSON.parse(job.data) : job.data;
+      
+      // Only retry if we have valid data from previous steps
+      if ((job.step === 2 && data.question) ||
+          (job.step === 3 && data.frameUrls && data.frameUrls.length > 0) ||
+          (job.step === 4 && data.videoUrl)) {
+        await resetFailedJobToRetry(job.id);
+        resetCount++;
+      }
+    }
+    
+    if (resetCount > 0) {
+      console.log(`🔄 Auto-retried ${resetCount} failed jobs with valid data`);
+    }
+    
+    return resetCount;
   } finally {
     await client.end();
   }

@@ -1,6 +1,6 @@
 //app/api/jobs/create-frames/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getPendingJobs, updateJob } from '@/lib/database';
+import { getPendingJobs, updateJob, autoRetryFailedJobs } from '@/lib/database';
 import { createFramesForJob } from '@/lib/frameService';
 import { config } from '@/lib/config';
 import { QuizJob } from '@/lib/types';
@@ -15,6 +15,9 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    // Auto-retry failed jobs with valid data
+    await autoRetryFailedJobs();
+    
     const jobs = await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY);
     if (jobs.length === 0) {
       return NextResponse.json({ success: true, message: 'No jobs pending frame creation.' });
