@@ -21,20 +21,20 @@ type DailySchedule = Record<number, HourlySchedule>;
 const dailyPattern: HourlySchedule = {
     // Morning batch (for 6:30 AM - 3 uploads)
     2: ['neet_biology'],      // Biology focus - 3 questions
-    6: ['neet_biology'],     // Biology focus - 3 questions
+    3: ['neet_biology'],     // Biology focus - 3 questions
     
     // Mid-morning batch (for 12:30 PM - 2 uploads)  
-    3: ['neet_chemistry'],    // Chemistry focus - 3 questions (1 extra for selection)
+    // 3: ['neet_chemistry'],    // Chemistry focus - 3 questions (1 extra for selection)
     
     // Afternoon batch (for 4:00 PM - 2 uploads)
-    4: ['neet_physics'],     // Physics focus - 3 questions (1 extra for selection)
-    14: ['neet_physics'],     // Physics focus - 3 questions (1 extra for selection)
+    // 4: ['neet_physics'],     // Physics focus - 3 questions (1 extra for selection)
+    // 14: ['neet_physics'],     // Physics focus - 3 questions (1 extra for selection)
     
     // Evening batch (for 6:00 PM - 3 uploads)
-    5: ['neet_biology'],     // Biology focus - 3 questions
+    7: ['neet_biology'],     // Biology focus - 3 questions
     
     // Prime time batch (for 8:00 PM - 3 uploads)
-    16: ['neet_biology'],     // Biology focus - 3 questions
+    15: ['neet_biology'],     // Biology focus - 3 questions
     
     // Night batch (for 10:00 PM - 3 uploads)
     21: ['neet_biology'],     // Biology focus - 3 questions
@@ -42,13 +42,13 @@ const dailyPattern: HourlySchedule = {
 
 // Upload schedule optimized for NEET student engagement patterns
 const uploadDailyPattern: HourlySchedule = {
-  6: ['neet_biology', 'neet_biology', 'neet_biology'],    // 6:30 AM - Morning motivation
+  6: ['neet_biology', 'neet_biology'],    // 6:30 AM - Morning motivation
   8: ['neet_biology', 'neet_biology'],                    // 8:00 AM - Start day strong
-  12: ['neet_chemistry', 'neet_chemistry'],               // 12:00 PM - Lunch break revision
-  16: ['neet_physics', 'neet_physics'],                   // 4:00 PM - Post-coaching
-  18: ['neet_biology', 'neet_biology', 'neet_biology'],   // 6:00 PM - Evening study launch
-  20: ['neet_biology', 'neet_biology', 'neet_biology'],   // 8:00 PM - Prime study hours
-  22: ['neet_biology', 'neet_chemistry', 'neet_physics'], // 10:00 PM - Night revision
+  12: ['neet_biology', 'neet_biology'],               // 12:00 PM - Lunch break revision
+  16: ['neet_biology', 'neet_biology'],                   // 4:00 PM - Post-coaching
+  18: ['neet_biology', 'neet_biology'],   // 6:00 PM - Evening study launch
+  20: ['neet_biology', 'neet_biology'],   // 8:00 PM - Prime study hours
+  22: ['neet_biology', 'neet_biology'], // 10:00 PM - Night revision
 };
 
 export const GenerationSchedule: DailySchedule = {
