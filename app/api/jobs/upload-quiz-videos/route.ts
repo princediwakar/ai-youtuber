@@ -9,7 +9,7 @@ import { findManagedPlaylists, getOrCreatePlaylist } from '@/lib/playlistManager
 import { QuizJob } from '@/lib/types';
 import { config } from '@/lib/config';
 import { getOAuth2Client } from '@/lib/googleAuth';
-import { UploadSchedule } from '@/lib/uploadSchedule';
+import { UploadSchedule } from '@/lib/schedule';
 
 // The in-memory cache for the playlist map is still useful to avoid re-fetching on every run.
 interface Cache {

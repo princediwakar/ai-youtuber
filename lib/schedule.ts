@@ -9,12 +9,13 @@
  * - Chemistry: 20% (1 generation) - Mid-morning  
  * - Physics: 20% (1 generation) - Afternoon
  */
+
 interface HourlySchedule {
-    [hour: number]: string[];
-  }
+  [hour: number]: string[]
+}
   
-  // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  type DailySchedule = Record<number, HourlySchedule>;
+// 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+type DailySchedule = Record<number, HourlySchedule>;
 
 // OPTIMIZED: Generate exactly what we need (16 uploads = ~6 generation batches)
 const dailyPattern: HourlySchedule = {
@@ -36,6 +37,18 @@ const dailyPattern: HourlySchedule = {
     16: ['neet_biology'],     // Biology focus - 3 questions
     
     // Night batch (for 10:00 PM - 3 uploads)
+    21: ['neet_biology'],     // Biology focus - 3 questions
+};
+
+// Upload schedule optimized for NEET student engagement patterns
+const uploadDailyPattern: HourlySchedule = {
+  6: ['neet_biology', 'neet_biology', 'neet_biology'],    // 6:30 AM - Morning motivation
+  8: ['neet_biology', 'neet_biology'],                    // 8:00 AM - Start day strong
+  12: ['neet_chemistry', 'neet_chemistry'],               // 12:00 PM - Lunch break revision
+  16: ['neet_physics', 'neet_physics'],                   // 4:00 PM - Post-coaching
+  18: ['neet_biology', 'neet_biology', 'neet_biology'],   // 6:00 PM - Evening study launch
+  20: ['neet_biology', 'neet_biology', 'neet_biology'],   // 8:00 PM - Prime study hours
+  22: ['neet_biology', 'neet_chemistry', 'neet_physics'], // 10:00 PM - Night revision
 };
 
 export const GenerationSchedule: DailySchedule = {
@@ -47,4 +60,14 @@ export const GenerationSchedule: DailySchedule = {
   4: dailyPattern, // Thursday
   5: dailyPattern, // Friday
   6: dailyPattern, // Saturday
+};
+
+export const UploadSchedule: DailySchedule = {
+  0: uploadDailyPattern, // Sunday
+  1: uploadDailyPattern, // Monday
+  2: uploadDailyPattern, // Tuesday
+  3: uploadDailyPattern, // Wednesday
+  4: uploadDailyPattern, // Thursday
+  5: uploadDailyPattern, // Friday
+  6: uploadDailyPattern, // Saturday
 };
