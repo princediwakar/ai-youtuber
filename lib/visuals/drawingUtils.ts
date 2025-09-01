@@ -18,6 +18,12 @@ export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: 
     ctx.fillText(`${personaDisplayName}`, width / 2, 90);
 };
 
+export const drawBackground = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
+    ctx.fillStyle = theme.page.background;
+    ctx.fillRect(0, 0, width, height);
+};
+
+
 export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
     ctx.fillStyle = theme.text.secondary; // ✨ Changed to use secondary text color
     ctx.font = `bold 48px ${theme.fontFamily}`; // ✨ Changed
@@ -25,7 +31,7 @@ export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height:
     ctx.textBaseline = 'bottom';
     // No need for globalAlpha, as the color itself has transparency
     ctx.font = `48px ${theme.fontFamily}`; // ✨ Changed
-    // ctx.fillText('@gibbiai', width / 2, height - 90);
+    ctx.fillText('@gibbiai', width / 2, height - 90);
 };
 
 export const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {

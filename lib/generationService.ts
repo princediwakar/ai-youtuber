@@ -47,62 +47,57 @@ async function generatePrompt(jobConfig: any): Promise<string> {
   const { timeMarker, tokenMarker } = generateVariationMarkers();
 
   let prompt = '';
-  // This correctly references your single persona from the personas file.
   const personaData = MasterPersonas[persona]; 
   const topicData = personaData?.subCategories?.find(sub => sub.key === topic);
 
-  // --- MODIFICATION START ---
-
   if (persona === 'english_vocab_builder') {
     if (topicData) {
-      // This is the primary prompt that uses your detailed sub-category information.
-      prompt = `You are an expert English teacher creating a quiz for a YouTube Shorts.
+      // Refined the prompt with much clearer instructions for hooks and CTAs.
+      prompt = `You are an expert English teacher creating a viral quiz for a YouTube Short.
 Generate a single, clear English vocabulary question on the topic: "${topicData.displayName}".
 
 CRITICAL REQUIREMENTS:
+• HOOK: A short, catchy hook (under 60 chars) to create curiosity. It MUST NOT simply rephrase the question. Good patterns include posing a challenge ("Think you're a word master?"), highlighting difficulty ("90% of people get this wrong..."), or stating a benefit ("Unlock a powerful new word!").
 • TARGET AUDIENCE: Intermediate English learners (B1-B2 level).
 • QUESTION STYLE: Must be direct and concise. For "Fill in the Blank," provide a clear sentence. For "Synonyms/Antonyms," directly ask for the synonym/antonym of a given word.
 • DIFFICULTY: The correct answer should be a useful, common word, but not too easy.
 • DISTRACTORS: The incorrect options (A, B, C, D) must be plausible and relate to common learner confusions.
 • EXPLANATION: The explanation MUST BE ULTRA-CONCISE (under 150 characters). Simply explain why the answer is correct in plain English.
+• CTA: A short call-to-action (under 60 chars) focused on channel growth or community interaction. It MUST NOT ask the user to comment their score. Good examples: "Like & follow for more!", "Did you know this? Challenge a friend!", "What word should I do next? Comment below!"
 
 Focus on creating a high-quality, engaging question that is perfect for a quick quiz format. [${timeMarker}-${tokenMarker}]`;
     } else {
-      // Fallback prompt if a specific sub-category topic isn't found.
-      prompt = `Generate a general intermediate (B1-B2 level) English vocabulary MCQ on the topic of "${topic}". The question must be clear and concise for a YouTube Short. The incorrect options must be plausible distractors. The explanation must be under 150 characters. [${timeMarker}-${tokenMarker}]`;
+      prompt = `Generate a general intermediate (B1-B2 level) English vocabulary MCQ on the topic of "${topic}". The question must be clear and concise for a YouTube Short. The incorrect options must be plausible distractors. The explanation must be under 150 characters. Also generate a short "hook" text and a short "cta" text. [${timeMarker}-${tokenMarker}]`;
     }
   } else {
-    // This error now correctly reflects that only one persona is supported.
     throw new Error(`Unsupported persona: ${persona}. Only 'english_vocab_builder' is supported.`);
   }
-
-  // --- MODIFICATION END ---
   
-  // No changes to the format selection logic below this line. It works perfectly.
   const rand = Math.random();
   const questionFormat = rand < 0.75 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason');
 
-  if (questionFormat === 'true_false') {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", and "question_type" (set to "true_false"). Create a statement that can be definitively true or false. MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';
-  } else if (questionFormat === 'assertion_reason') {
-    return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "assertion", "reason", "options", "answer", "explanation", and "question_type" (set to "assertion_reason"). 
-
-MANDATORY JSON STRUCTURE:
-• "assertion": A statement of fact.
-• "reason": A statement explaining the assertion.
-• "options": This MUST be the following object with concise options:
-    {
-        "A": "Both are true, R explains A.",
-        "B": "Both are true, R doesn't explain A.",
-        "C": "A is true, R is false.",
-        "D": "A is false, but R is true."
+  // --- MODIFICATION START ---
+  // Updated the JSON structure in all prompts to include "hook" and "cta"
+    // Updated the JSON structure in all prompts to include "hook" and "cta"
+    if (questionFormat === 'true_false') {
+      return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "hook", "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", "cta", and "question_type" (set to "true_false"). Explanation must be under 150 characters.';
+    } else if (questionFormat === 'assertion_reason') {
+      return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "hook", "assertion", "reason", "options", "answer", "explanation", "cta", and "question_type" (set to "assertion_reason"). 
+  
+  MANDATORY JSON STRUCTURE:
+  • "hook": A short, catchy hook text.
+  • "assertion": A statement of fact.
+  • "reason": A statement explaining the assertion.
+  • "options": Must be the standard A/B/C/D object.
+  • "answer": A single letter "A", "B", "C", or "D".
+  • "explanation": Max 2 short sentences (under 150 characters).
+  • "cta": A short call-to-action text.`;
     }
-• "answer": A single letter "A", "B", "C", or "D".
-• "explanation": Max 2 short sentences (under 150 characters) explaining the correct relationship between A and R. No fluff!`;
-  }
-  else {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", and "question_type" (set to "multiple_choice"). MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';
-  }
+    else {
+      return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "hook", "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", "cta", and "question_type" (set to "multiple_choice"). Explanation must be under 150 characters.';
+    }
+  
+  // --- MODIFICATION END ---
 }
 
 /**
@@ -203,17 +198,22 @@ function parseAndValidateResponse(content: string): Omit<Question, 'topic'> | nu
     const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
     const data = JSON.parse(cleanedContent);
 
-    // ✨ Updated validation to check for either 'question' or 'assertion'/'reason'
+    // --- MODIFICATION START ---
+    // Updated validation to check for hook, cta, and question/assertion
     const hasQuestion = data.question && typeof data.question === 'string';
     const hasAssertionReason = data.assertion && typeof data.assertion === 'string' && data.reason && typeof data.reason === 'string';
+    const hasHook = data.hook && typeof data.hook === 'string';
+    const hasCta = data.cta && typeof data.cta === 'string';
 
     if ((!hasQuestion && !hasAssertionReason) ||
+      !hasHook || !hasCta || // Check for hook and cta
       !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
       !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
       !data.explanation || typeof data.explanation !== 'string') {
-      throw new Error('AI response missing required JSON fields or has invalid structure.');
+      throw new Error('AI response missing required JSON fields (including hook/cta) or has invalid structure.');
     }
-    // Enforce explanation length limit (150 characters max for good video readability)
+    // --- MODIFICATION END ---
+    
     if (data.explanation.length > 150) {
       console.warn(`Explanation too long (${data.explanation.length} chars), truncating to 150 chars`);
       data.explanation = data.explanation.substring(0, 147) + '...';

@@ -163,9 +163,11 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   await Promise.all(downloadPromises);
 
   const durations = [
-    getFrameDuration(job.data.question, 1),
-    getFrameDuration(job.data.question, 2),
-    getFrameDuration(job.data.question, 3)
+      getFrameDuration(job.data.question, 1), // Hook
+      getFrameDuration(job.data.question, 2), // Question
+      getFrameDuration(job.data.question, 3), // Answer
+      getFrameDuration(job.data.question, 4), // Explanation
+      getFrameDuration(job.data.question, 5)  // CTA
   ];
   
   const inputFileContent = `ffconcat version 1.0\n` + durations.map((d, i) => 
@@ -226,20 +228,30 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
 
   return { videoUrl: result.secure_url, videoSize: videoBuffer.length };
 }
-
 function getFrameDuration(question: any, frameNumber: number): number {
-  if (frameNumber === 1) {
-    // Question frame: 4-7 seconds (balanced pace - readable but engaging)
-    const textLength = (question?.question?.length || 0) + Object.values(question?.options || {}).join(" ").length;
-    return Math.max(6, Math.min(8, Math.ceil(textLength / 15)));
-  } else if (frameNumber === 2) {
-    // Answer frame: 2.5 seconds (enough time to process the answer)
-    return 3;
-  } else {
-    // Explanation frame: 4-6 seconds (readable explanation)
-    return Math.max(4, Math.min(6, Math.ceil((question?.explanation?.length || 0) / 15)));
+  switch (frameNumber) {
+    case 1: // Hook Frame
+      return 2.5; // Short and snappy
+    
+    case 2: // Question Frame
+      const textLength = (question?.question?.length || 0) + Object.values(question?.options || {}).join(" ").length;
+      return Math.max(5, Math.min(7, Math.ceil(textLength / 15)));
+      
+    case 3: // Answer Frame
+      return 3; // Enough time to see the answer
+      
+    case 4: // Explanation Frame
+      return Math.max(4, Math.min(6, Math.ceil((question?.explanation?.length || 0) / 15)));
+      
+    case 5: // CTA Frame
+      return 3; // Standard duration for a call-to-action
+      
+    default:
+      return 4; // Fallback
   }
 }
+// --- MODIFICATION END ---
+
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;

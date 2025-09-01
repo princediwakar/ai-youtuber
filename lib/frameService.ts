@@ -4,7 +4,7 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import { config } from './config';
 import { themes } from './visuals/themes';
-import { Theme, QuizJob } from '@/lib/types'; // Using QuizJob type
+import { Theme, QuizJob } from '@/lib/types';
 import { PersonaThemeMap } from './visuals/themeMap';
 import * as mcqLayout from './visuals/layouts/mcqLayout';
 import * as trueFalseLayout from './visuals/layouts/trueFalseLayout';
@@ -14,6 +14,12 @@ import {
   cleanupJobFrames
 } from '@/lib/cloudinary';
 
+// --- FIX START ---
+// 1. Correctly import from the commonFrames file using a relative path
+import { renderHookFrame, renderCtaFrame } from '@/lib/visuals/layouts/commonFrames';
+// --- FIX END ---
+
+
 // Centralized font registration
 try {
   const fontPath = path.join(process.cwd(), 'public', 'fonts', 'Poppins-Bold.ttf');
@@ -22,7 +28,7 @@ try {
   console.error("CRITICAL: Failed to register font. Frames cannot be created.", error);
 }
 
-// Layout Router
+// Layout Router (no changes here)
 const layoutRouter = {
   multiple_choice: mcqLayout,
   assertion_reason: mcqLayout,
@@ -36,25 +42,30 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   const questionType = job.data.question.question_type || 'multiple_choice';
   const layout = layoutRouter[questionType as keyof typeof layoutRouter] || layoutRouter.default;
 
+  // --- FIX START ---
+  // 2. Call the common functions directly, and the specific functions via the 'layout' object
   const framesToRender = [
-    (canvas: Canvas) => layout.renderQuestionFrame(canvas, job, theme),
-    (canvas: Canvas) => layout.renderAnswerFrame(canvas, job, theme),
-    (canvas: Canvas) => layout.renderExplanationFrame(canvas, job, theme),
+    (canvas: Canvas) => renderHookFrame(canvas, job, theme),           // Direct call
+    (canvas: Canvas) => layout.renderQuestionFrame(canvas, job, theme),  // Layout-specific call
+    (canvas: Canvas) => layout.renderAnswerFrame(canvas, job, theme),    // Layout-specific call
+    (canvas: Canvas) => layout.renderExplanationFrame(canvas, job, theme),// Layout-specific call
+    (canvas: Canvas) => renderCtaFrame(canvas, job, theme),           // Direct call
   ];
+  // --- FIX END ---
 
   const renderedCanvases: Canvas[] = [];
   for (const [index, renderFunction] of framesToRender.entries()) {
       const canvas = createCanvas(config.VIDEO_WIDTH, config.VIDEO_HEIGHT);
       renderFunction(canvas);
       if (config.DEBUG_MODE) {
-        await saveDebugFrame(canvas, `${theme.name}-job-${job.id}-frame-${index + 1}.png`);
+        const frameType = ['hook', 'question', 'answer', 'explanation', 'cta'][index];
+        await saveDebugFrame(canvas, `${theme.name}-job-${job.id}-frame-${index + 1}-${frameType}.png`);
       }
       renderedCanvases.push(canvas);
   }
 
   const frameUrls = await uploadFrames(job.id, theme.name, renderedCanvases);
   
-  // Store theme name in job data for use in video assembly
   const { updateJob } = await import('@/lib/database');
   await updateJob(job.id, {
     data: { ...job.data, frameUrls, themeName: theme.name }
@@ -69,7 +80,7 @@ function selectThemeForPersona(persona: string): Theme {
   return themes[randomThemeName];
 }
 
-async function uploadFrames(jobId: string, themeName: string, canvases: Canvas[]): Promise<string[]> { // 💡 FIX: Changed jobId to string
+async function uploadFrames(jobId: string, themeName: string, canvases: Canvas[]): Promise<string[]> {
   const publicIds = generateFramePublicIds(jobId, themeName, canvases.length);
   try {
     const uploadPromises = canvases.map((canvas, index) => {
@@ -99,3 +110,4 @@ async function saveDebugFrame(canvas: Canvas, filename: string): Promise<void> {
     console.warn(`[DEBUG] Failed to save debug frame ${filename}:`, error);
   }
 }
+

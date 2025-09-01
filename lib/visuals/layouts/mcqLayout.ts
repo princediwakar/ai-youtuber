@@ -3,6 +3,7 @@ import { QuizJob } from '@/lib/types';
 import { Theme } from '@/lib/visuals/themes';
 import { 
     drawHeader, 
+    drawBackground,
     drawFooter, 
     wrapText, 
     drawRoundRect,
@@ -13,12 +14,7 @@ import {
     LayoutPositions 
 } from '../drawingUtils';
 
-// --- Updated to use the new theme structure ---
-const drawBackground = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
-    // Simplified to a solid background color from the new theme structure.
-    ctx.fillStyle = theme.page.background; // ✨ Changed
-    ctx.fillRect(0, 0, width, height);
-};
+
 
 // Dynamic question text drawing with optimized font size
 function drawQuestionText(
@@ -292,4 +288,5 @@ function renderOptions(
       optionY += dynamicButtonHeight + OPTION_SPACING;
   });
 }
+
 

@@ -235,10 +235,14 @@ export async function markJobCompleted(jobId: string, youtubeVideoId: string, me
     await client.connect();
     await client.query('BEGIN');
     
+    // --- MODIFICATION START ---
+    // Use `to_jsonb` to correctly store the video ID as a clean JSON string,
+    // and pass the raw string instead of a JSON.stringified() version.
     await client.query(
-      "UPDATE quiz_jobs SET status = 'completed', step = 5, data = jsonb_set(data, '{youtube_video_id}', $1) WHERE id = $2",
-      [JSON.stringify(youtubeVideoId), jobId]
+      "UPDATE quiz_jobs SET status = 'completed', step = 5, data = jsonb_set(data, '{youtube_video_id}', to_jsonb($1::text)) WHERE id = $2",
+      [youtubeVideoId, jobId]
     );
+    // --- MODIFICATION END ---
     
     await client.query(`
       INSERT INTO uploaded_videos (job_id, youtube_video_id, title, description, tags)
