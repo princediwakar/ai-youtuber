@@ -56,7 +56,7 @@ CREATE TABLE quiz_jobs (
 );
 
 COMMENT ON TABLE quiz_jobs IS 'Tracks the state of each content generation job from creation to completion.';
-COMMENT ON COLUMN quiz_jobs.persona IS 'The content persona, e.g., ''neet_physics'', ''neet_chemistry''.';
+COMMENT ON COLUMN quiz_jobs.persona IS 'The content persona, e.g., ''eng_vocabulary_builder''.';
 COMMENT ON COLUMN quiz_jobs.topic IS 'The machine-readable topic key from the persona config, e.g., ''physics_units_measurements''.';
 COMMENT ON COLUMN quiz_jobs.data IS 'Stores the AI-generated question, frame URLs, video URL, etc.';
 

@@ -1,4 +1,6 @@
-import { youtube_v3 } from 'googleapis'; // 💡 FIX: Removed the unused 'google' import.
+//playlistManager.ts
+
+import { youtube_v3 } from 'googleapis';
 import { MasterPersonas } from './personas';
 import { QuizJob } from './types';
 
@@ -18,20 +20,21 @@ export function generateCanonicalKey(...parts: string[]): string {
   return parts.map(sanitize).filter(Boolean).join('-');
 }
 
+// --- MODIFICATION START ---
+// The following four functions have been updated for the English Vocabulary persona.
+
 /**
- * Generates viral hashtags based on persona and topic for better discoverability
- * @param persona The educational persona (neet_physics, neet_chemistry, etc.)
+ * Generates relevant hashtags for English learning topics.
+ * @param persona The educational persona (e.g., english_vocab_builder)
  * @param topicDisplayName The display name of the topic
  * @returns Formatted hashtag string
  */
 function generateHashtags(persona: string, topicDisplayName: string): string {
   const baseHashtags: Record<string, string[]> = {
-    neet_physics: ['#NEET', '#NEETPhysics', '#Physics', '#NEETPrep', '#MedicalEntrance', '#PhysicsQuiz'],
-    neet_chemistry: ['#NEET', '#NEETChemistry', '#Chemistry', '#NEETPrep', '#MedicalEntrance', '#ChemistryQuiz'],
-    neet_biology: ['#NEET', '#NEETBiology', '#Biology', '#NEETPrep', '#MedicalEntrance', '#BiologyQuiz']
+    english_vocab_builder: ['#LearnEnglish', '#EnglishVocabulary', '#Vocabulary', '#EnglishQuiz', '#ESL'],
   };
 
-  const personalizedHashtags = baseHashtags[persona] || ['#NEET', '#Education', '#Quiz', '#StudyTips', '#ExamPrep', '#Learning'];
+  const personalizedHashtags = baseHashtags[persona] || ['#Education', '#Quiz', '#Learning'];
   
   // Add topic-specific hashtags
   const topicKey = topicDisplayName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
@@ -39,50 +42,38 @@ function generateHashtags(persona: string, topicDisplayName: string): string {
     personalizedHashtags.push(`#${topicKey}`);
   }
 
-  return personalizedHashtags.slice(0, 4).join(' ');
+  return personalizedHashtags.slice(0, 5).join(' ');
 }
 
 /**
- * Generates clean, teacher-like playlist titles using exact NEET format
+ * Generates clean, engaging playlist titles for English learners.
  * @param persona The educational persona
  * @param topicDisplayName The topic display name
- * @returns Clean playlist title in format: "NEET Physics: Topic MCQs | NEET YYYY"
+ * @returns Clean playlist title in format: "English Vocabulary: Topic | Daily Quizzes"
  */
 function generatePlaylistTitle(persona: string, topicDisplayName: string): string {
-  // Calculate target NEET year based on current date
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
-  
-  // If before May (month 4), use current year. If May or later, use next year
-  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
-  
   const titleTemplates: Record<string, string> = {
-    neet_physics: `NEET Physics: ${topicDisplayName} MCQs | NEET ${neetYear}`,
-    neet_chemistry: `NEET Chemistry: ${topicDisplayName} MCQs | NEET ${neetYear}`, 
-    neet_biology: `NEET Biology: ${topicDisplayName} MCQs | NEET ${neetYear}`
+    english_vocab_builder: `English Vocabulary: ${topicDisplayName} | Daily Quizzes`,
   };
 
-  return titleTemplates[persona] || `NEET: ${topicDisplayName} MCQs | NEET ${neetYear}`;
+  return titleTemplates[persona] || `English Learning: ${topicDisplayName} Quizzes`;
 }
 
 /**
- * Generates SEO-optimized keywords for playlist descriptions
+ * Generates SEO-optimized keywords for playlist descriptions.
  * @param persona The educational persona
  * @param topicDisplayName The topic display name
  * @returns Comma-separated keywords for better searchability
  */
 function generateSEOKeywords(persona: string, topicDisplayName: string): string {
   const keywordMap: Record<string, string[]> = {
-    neet_physics: ['NEET physics', 'medical entrance exam', 'physics MCQ questions', 'NEET 2026 preparation', 'physics concepts for NEET'],
-    neet_chemistry: ['NEET chemistry', 'medical entrance exam', 'chemistry MCQ questions', 'NEET 2026 preparation', 'chemistry concepts for NEET'],
-    neet_biology: ['NEET biology', 'medical entrance exam', 'biology MCQ questions', 'NEET 2026 preparation', 'biology concepts for NEET']
+    english_vocab_builder: ['learn english', 'english vocabulary', 'english quiz', 'ESL lessons', 'IELTS vocabulary', 'TOEFL words', 'speak english fluently'],
   };
 
-  const baseKeywords = keywordMap[persona] || ['NEET preparation', 'medical entrance exam', 'quiz questions', 'concept clarity', 'exam strategy'];
+  const baseKeywords = keywordMap[persona] || ['language learning', 'educational quiz', 'study english'];
   const topicKeyword = topicDisplayName.toLowerCase();
   
-  return [...baseKeywords, topicKeyword, 'chapter wise practice', 'previous year questions'].slice(0, 8).join(', ');
+  return [...baseKeywords, topicKeyword, 'daily english practice', 'vocabulary builder'].slice(0, 8).join(', ');
 }
 
 /**
@@ -151,33 +142,23 @@ export async function getOrCreatePlaylist(
   playlistMap: Map<string, string>
 ): Promise<string> {
   const { persona, topic, data } = jobData;
-  // Use display names from job properties first, then fallback to data properties  
   const topic_display_name = jobData.topic_display_name || data.topic_display_name;
-
   let canonicalKey: string;
   let playlistTitle: string;
 
-  // Get the topic information from persona config  
   const personaData = MasterPersonas[persona];
   let topicDisplayName = topic_display_name;
 
-  // Get topic from question data (this contains the actual topic)
   const topicKey = data.question?.topic || topic;
-  
-  // Use topic level for chapter-wise organization (how NEET teachers structure content)
   topicDisplayName = personaData?.subCategories?.find(cat => cat.key === topicKey)?.displayName || topic_display_name;
   
-  
   canonicalKey = generateCanonicalKey(persona, topicKey);
-  
-  // Generate teacher-style chapter playlist titles
   playlistTitle = generatePlaylistTitle(persona, topicDisplayName);
     
   if (playlistMap.has(canonicalKey)) {
     return playlistMap.get(canonicalKey)!;
   }
 
-  // Check if playlist creation is already in progress for this key
   if (playlistCreationLocks.has(canonicalKey)) {
     console.log(`Waiting for existing playlist creation for key "${canonicalKey}"...`);
     return await playlistCreationLocks.get(canonicalKey)!;
@@ -187,35 +168,34 @@ export async function getOrCreatePlaylist(
   
   const tag = `${MANAGER_TAG_PREFIX}${canonicalKey}${MANAGER_TAG_SUFFIX}`;
   
-  // Generate enhanced description with SEO keywords and hashtags
   const seoKeywords = generateSEOKeywords(persona, topicDisplayName);
   const hashtags = generateHashtags(persona, topicDisplayName);
-  const playlistDescription = `🚀 Master ${topicDisplayName} for NEET 2026! The most comprehensive MCQ collection to ace your medical entrance exam.
+  
+  // This description block is now fully tailored to English learners.
+  const playlistDescription = `🚀 Master ${topicDisplayName} to speak English fluently! This is your ultimate collection of daily vocabulary quizzes.
 
 ✅ What you'll get:
-• 100+ High-yield MCQs with explanations
-• NEET previous year questions (2019-2024)
-• Chapter-wise concept builders
+• 100+ high-frequency words with explanations
+• Quizzes on Synonyms, Antonyms, Idioms, Phrasal Verbs, and more
+• Clear examples to help you use words correctly
 • Quick 30-second revision videos
-• Exam strategy tips from toppers
 
 🎯 Why choose this playlist?
-• Based on latest NEET pattern
-• Created by expert ${personaData?.displayName || persona} faculty
-• Covers 100% NCERT syllabus
-• Proven to boost scores by 40+ marks
+• Perfect for all levels (Beginner to Advanced)
+• Helps you prepare for exams like IELTS, TOEFL, and TOEIC
+• Created by English language experts
+• Proven to expand your vocabulary and boost confidence
 
-💡 Study Plan: Watch daily → Practice → Track progress → Ace NEET!
-🔔 New videos uploaded daily at optimal study times
+💡 Study Plan: Watch daily → Comment your answer → Learn → Speak with confidence!
+🔔 New videos uploaded every day!
 
-🏆 Join 50,000+ NEET aspirants who trust our content!
+🏆 Join thousands of learners who are improving their English with us!
 
 Keywords: ${seoKeywords}
 ${hashtags}
 
 ${tag}`;
 
-  // Create a promise for this playlist creation and store it in the lock
   const creationPromise = createPlaylistWithLock(youtube, playlistTitle, playlistDescription, canonicalKey, playlistMap);
   playlistCreationLocks.set(canonicalKey, creationPromise);
   
@@ -223,7 +203,6 @@ ${tag}`;
     const playlistId = await creationPromise;
     return playlistId;
   } finally {
-    // Clean up the lock after creation is complete
     playlistCreationLocks.delete(canonicalKey);
   }
 }
@@ -248,7 +227,7 @@ async function createPlaylistWithLock(
     });
 
     const newPlaylistId = newPlaylist.data.id;
-    if (!newPlaylistId) throw new Error("YouTube API did not return an ID for the new playlist.");
+    if (!newPlaylistId) throw new Error("YouTube API did not return an ID for the new playlist.")
     
     playlistMap.set(canonicalKey, newPlaylistId);
     console.log(`Successfully created playlist with ID: ${newPlaylistId}`);
@@ -258,3 +237,5 @@ async function createPlaylistWithLock(
     throw new Error(`Failed to create playlist "${playlistTitle}".`);
   }
 }
+
+// --- MODIFICATION END ---

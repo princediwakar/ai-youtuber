@@ -1,130 +1,40 @@
 import { PersonaConfig } from './types';
 
 /**
- * The Master Personas: Comprehensive Indian educational content structure.
- * This object defines academic subjects and competitive exam preparation content.
+ * The Master Persona: A comprehensive, text-only vocabulary builder for automated short-form video quizzes.
+ * This persona is designed to be the sole focus, offering a wide variety of quiz formats
+ * that require no images, ensuring maximum compatibility and speed.
  *
- * Updated on: 2024-08-30
- * Rationale: The persona system has been updated to reflect the official NEET syllabus with a
- * chapter-wise breakdown. This granular structure is ideal for generating focused, short-form
- * video quizzes for platforms like YouTube Shorts and Instagram Reels.
+ * Updated on: 2025-08-31
+ * Rationale: Based on the "no images" constraint, the picture-based quiz has been removed.
+ * A new category, 'Word Forms', has been added to provide another layer of deep vocabulary
+ * testing in a purely text-based format.
  */
 export const MasterPersonas: PersonaConfig = {
-  neet_physics: {
-    displayName: 'NEET Physics',
+  english_vocab_builder: {
+    displayName: 'Vocabulary Builder 🏆',
     subCategories: [
-      // Class XI
-      { key: 'physics_units_measurements', displayName: 'Units and Measurements' },
-      { key: 'physics_motion_straight_line', displayName: 'Motion in a Straight Line' },
-      { key: 'physics_motion_plane', displayName: 'Motion in a Plane' },
-      { key: 'physics_laws_of_motion', displayName: 'Laws of Motion' },
-      { key: 'physics_work_energy_power', displayName: 'Work, Energy, and Power' },
-      { key: 'physics_system_particles_rotation', displayName: 'System of Particles & Rotational Motion' },
-      { key: 'physics_gravitation', displayName: 'Gravitation' },
-      { key: 'physics_mechanical_solids', displayName: 'Mechanical Properties of Solids' },
-      { key: 'physics_mechanical_fluids', displayName: 'Mechanical Properties of Fluids' },
-      { key: 'physics_thermal_properties', displayName: 'Thermal Properties of Matter' },
-      { key: 'physics_thermodynamics', displayName: 'Thermodynamics' },
-      { key: 'physics_kinetic_theory', displayName: 'Kinetic Theory of Gases' },
-      { key: 'physics_oscillations', displayName: 'Oscillations' },
-      { key: 'physics_waves', displayName: 'Waves' },
-      // Class XII
-      { key: 'physics_electric_charges_fields', displayName: 'Electric Charges and Fields' },
-      { key: 'physics_electrostatic_potential', displayName: 'Electrostatic Potential and Capacitance' },
-      { key: 'physics_current_electricity', displayName: 'Current Electricity' },
-      { key: 'physics_moving_charges_magnetism', displayName: 'Moving Charges and Magnetism' },
-      { key: 'physics_magnetism_matter', displayName: 'Magnetism and Matter' },
-      { key: 'physics_emi', displayName: 'Electromagnetic Induction' },
-      { key: 'physics_ac', displayName: 'Alternating Current' },
-      { key: 'physics_em_waves', displayName: 'Electromagnetic Waves' },
-      { key: 'physics_ray_optics', displayName: 'Ray Optics and Optical Instruments' },
-      { key: 'physics_wave_optics', displayName: 'Wave Optics' },
-      { key: 'physics_dual_nature', displayName: 'Dual Nature of Radiation and Matter' },
-      { key: 'physics_atoms', displayName: 'Atoms' },
-      { key: 'physics_nuclei', displayName: 'Nuclei' },
-      { key: 'physics_semiconductor_electronics', displayName: 'Semiconductor Electronics' },
+      // --- Core Vocabulary Skills ---
+      { key: 'eng_vocab_word_meaning', displayName: 'What Does This Word Mean? 📖' },
+      { key: 'eng_vocab_fill_blanks', displayName: 'Fill in the Blank! ✍️' },
+      { key: 'eng_spelling_bee', displayName: 'Can You Spell It? 🐝' },
+      { key: 'eng_vocab_word_forms', displayName: 'Which Word Form Fits? 🔄' }, // New & Text-Only
+
+      // --- Word Relationships ---
+      { key: 'eng_vocab_synonyms', displayName: 'Word Twins (Synonyms) 👯' },
+      { key: 'eng_vocab_antonyms', displayName: 'Opposites Attract (Antonyms) ↔️' },
+      { key: 'eng_vocab_shades_of_meaning', displayName: 'Shades of Meaning (e.g., walk vs. stroll) 🤔' },
+
+      // --- Practical & Contextual Vocabulary ---
+      { key: 'eng_vocab_confusing_words', displayName: 'Commonly Confused Words 😵' },
+      { key: 'eng_vocab_collocations', displayName: 'Perfect Pairs (Collocations) 🤝' },
+      { key: 'eng_vocab_thematic_words', displayName: 'Thematic Vocab (e.g., Business, Travel) ✈️' },
+      { key: 'eng_vocab_register', displayName: 'Formal vs. Casual Words 👔/👕' },
+
+      // --- Advanced Vocabulary & Fluency ---
+      { key: 'eng_vocab_phrasal_verbs', displayName: 'Phrasal Verbs (get up, put off) 🧩' },
+      { key: 'eng_vocab_idioms', displayName: 'Guess the Idiom! 🤯' },
+      { key: 'eng_vocab_prefixes_suffixes', displayName: 'Word Origins (Prefixes/Suffixes) ⚛️' },
     ],
   },
-  neet_chemistry: {
-    displayName: 'NEET Chemistry',
-    subCategories: [
-      // Class XI
-      { key: 'chem_basic_concepts', displayName: 'Some Basic Concepts of Chemistry' },
-      { key: 'chem_structure_atom', displayName: 'Structure of Atom' },
-      { key: 'chem_periodicity', displayName: 'Classification of Elements and Periodicity' },
-      { key: 'chem_bonding', displayName: 'Chemical Bonding and Molecular Structure' },
-      { key: 'chem_states_matter', displayName: 'States of Matter' },
-      { key: 'chem_thermodynamics', displayName: 'Thermodynamics' },
-      { key: 'chem_equilibrium', displayName: 'Equilibrium' },
-      { key: 'chem_redox', displayName: 'Redox Reactions' },
-      { key: 'chem_hydrogen', displayName: 'Hydrogen' },
-      { key: 'chem_s_block', displayName: 'The s-Block Elements' },
-      { key: 'chem_p_block_11', displayName: 'Some p-Block Elements (Class 11)' },
-      { key: 'chem_goc', displayName: 'Organic Chemistry: Basic Principles & Techniques' },
-      { key: 'chem_hydrocarbons', displayName: 'Hydrocarbons' },
-      { key: 'chem_environmental', displayName: 'Environmental Chemistry' },
-      // Class XII
-      { key: 'chem_solid_state', displayName: 'The Solid State' },
-      { key: 'chem_solutions', displayName: 'Solutions' },
-      { key: 'chem_electrochemistry', displayName: 'Electrochemistry' },
-      { key: 'chem_kinetics', displayName: 'Chemical Kinetics' },
-      { key: 'chem_surface', displayName: 'Surface Chemistry' },
-      { key: 'chem_metallurgy', displayName: 'General Principles of Isolation of Elements' },
-      { key: 'chem_p_block_12', displayName: 'The p-Block Elements (Class 12)' },
-      { key: 'chem_d_f_block', displayName: 'The d- and f-Block Elements' },
-      { key: 'chem_coordination', displayName: 'Coordination Compounds' },
-      { key: 'chem_haloalkanes', displayName: 'Haloalkanes and Haloarenes' },
-      { key: 'chem_alcohols', displayName: 'Alcohols, Phenols and Ethers' },
-      { key: 'chem_aldehydes_ketones', displayName: 'Aldehydes, Ketones, and Carboxylic Acids' },
-      { key: 'chem_amines', displayName: 'Organic Compounds Containing Nitrogen (Amines)' },
-      { key: 'chem_biomolecules', displayName: 'Biomolecules' },
-      { key: 'chem_polymers', displayName: 'Polymers' },
-      { key: 'chem_everyday_life', displayName: 'Chemistry in Everyday Life' },
-    ],
-  },
-  neet_biology: {
-    displayName: 'NEET Biology',
-    subCategories: [
-      // Class XI
-      { key: 'bio_living_world', displayName: 'The Living World' },
-      { key: 'bio_biological_classification', displayName: 'Biological Classification' },
-      { key: 'bio_plant_kingdom', displayName: 'Plant Kingdom' },
-      { key: 'bio_animal_kingdom', displayName: 'Animal Kingdom' },
-      { key: 'bio_morphology_plants', displayName: 'Morphology of Flowering Plants' },
-      { key: 'bio_anatomy_plants', displayName: 'Anatomy of Flowering Plants' },
-      { key: 'bio_structural_organisation_animals', displayName: 'Structural Organisation in Animals' },
-      { key: 'bio_cell_unit_life', displayName: 'Cell: The Unit of Life' },
-      { key: 'bio_biomolecules', displayName: 'Biomolecules (Biology)' },
-      { key: 'bio_cell_cycle', displayName: 'Cell Cycle and Cell Division' },
-      { key: 'bio_transport_plants', displayName: 'Transport in Plants' },
-      { key: 'bio_mineral_nutrition', displayName: 'Mineral Nutrition' },
-      { key: 'bio_photosynthesis', displayName: 'Photosynthesis in Higher Plants' },
-      { key: 'bio_respiration_plants', displayName: 'Respiration in Plants' },
-      { key: 'bio_plant_growth', displayName: 'Plant Growth and Development' },
-      { key: 'bio_digestion_absorption', displayName: 'Digestion and Absorption' },
-      { key: 'bio_breathing_exchange', displayName: 'Breathing and Exchange of Gases' },
-      { key: 'bio_body_fluids_circulation', displayName: 'Body Fluids and Circulation' },
-      { key: 'bio_excretory_products', displayName: 'Excretory Products and their Elimination' },
-      { key: 'bio_locomotion_movement', displayName: 'Locomotion and Movement' },
-      { key: 'bio_neural_control', displayName: 'Neural Control and Coordination' },
-      { key: 'bio_chemical_coordination', displayName: 'Chemical Coordination and Integration' },
-      // Class XII
-      { key: 'bio_reproduction_organisms', displayName: 'Reproduction in Organisms' },
-      { key: 'bio_sexual_reproduction_plants', displayName: 'Sexual Reproduction in Flowering Plants' },
-      { key: 'bio_human_reproduction', displayName: 'Human Reproduction' },
-      { key: 'bio_reproductive_health', displayName: 'Reproductive Health' },
-      { key: 'bio_genetics_inheritance', displayName: 'Principles of Inheritance and Variation' },
-      { key: 'bio_molecular_inheritance', displayName: 'Molecular Basis of Inheritance' },
-      { key: 'bio_evolution', displayName: 'Evolution' },
-      { key: 'bio_human_health_disease', displayName: 'Human Health and Disease' },
-      { key: 'bio_food_production', displayName: 'Strategies for Enhancement in Food Production' },
-      { key: 'bio_microbes_welfare', displayName: 'Microbes in Human Welfare' },
-      { key: 'bio_biotech_principles', displayName: 'Biotechnology: Principles and Processes' },
-      { key: 'bio_biotech_applications', displayName: 'Biotechnology and its Applications' },
-      { key: 'bio_organisms_populations', displayName: 'Organisms and Populations' },
-      { key: 'bio_ecosystem', displayName: 'Ecosystem' },
-      { key: 'bio_biodiversity_conservation', displayName: 'Biodiversity and Conservation' },
-      { key: 'bio_environmental_issues', displayName: 'Environmental Issues' },
-    ],
-  },  
 };

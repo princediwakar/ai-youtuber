@@ -1,17 +1,14 @@
-# Gemini Project: Universal YouTube Uploader & Educational Quiz Video Generator
+# Gemini Project: Automated YouTube Shorts English Vocabulary Quiz Generator
 
 This document provides context for the Gemini AI assistant to understand and work with this project.
 
-## 1. Project Context
+## 1\. Project Context
 
-This project consists of two main components:
+This project is an automated system that generates and uploads **English vocabulary quiz videos as YouTube Shorts**. The entire pipeline is designed to create engaging, short-form content for a **global audience of English language learners**.
 
-*   **Universal YouTube Uploader**: A web application that allows users to upload multiple videos to their YouTube channels with intelligent playlists, smart descriptions, and automatic content detection.
-*   **Educational Quiz Video Generation System**: An automated system that generates educational quiz videos for Indian students covering Class 10-12 subjects and competitive exams (NEET, JEE, SSC, Banking, UPSC) and uploads them to YouTube as Shorts.
+The system is deployed as a single Next.js application on Vercel.
 
-The two systems share the same codebase and are deployed as a single Next.js application on Vercel.
-
-## 2. Local Development Setup
+## 2\. Local Development Setup
 
 To get the project running locally, follow these steps:
 
@@ -19,7 +16,6 @@ To get the project running locally, follow these steps:
     ```bash
     npm install
     ```
-
 2.  **Set Up Environment Variables**:
     Copy the `.env.example` file to a new file named `.env.local` and fill in the required values.
     ```bash
@@ -34,51 +30,44 @@ To get the project running locally, follow these steps:
     ```bash
     npm run dev
     ```
+
 The application should now be running at `http://localhost:3000`.
 
-## 3. Project Configuration
+## 3\. Environment Variables
 
-*   **Neon Project ID**: `crimson-haze-61309062`
+The following environment variables are required in `.env.local`:
 
-## 4. Environment Variables
+  * `NEXTAUTH_URL`: The canonical URL of the application (e.g., `http://localhost:3000`).
+  * `NEXTAUTH_SECRET`: A secret string used for token hashing and signing.
+  * `GOOGLE_CLIENT_ID`: The client ID for Google OAuth.
+  * `GOOGLE_CLIENT_SECRET`: The client secret for Google OAuth.
+  * `CLOUDINARY_CLOUD_NAME`: Cloudinary cloud name for frame storage.
+  * `CLOUDINARY_API_KEY`: Cloudinary API key.
+  * `CLOUDINARY_API_SECRET`: Cloudinary API secret.
+  * `DEEPSEEK_API_KEY`: API key for the DeepSeek AI model.
+  * `CRON_SECRET`: A secret key to authorize cron job requests.
 
-The following environment variables are required for the application to run. These should be defined in the `.env.local` file.
+## 4\. Authentication Flow
 
-*   `NEXTAUTH_URL`: The canonical URL of the application. For local development, this is `http://localhost:3000`.
-*   `NEXTAUTH_SECRET`: A secret string used to hash tokens, sign cookies, and generate cryptographic keys.
-*   `GOOGLE_CLIENT_ID`: The client ID for Google OAuth, obtained from the Google Cloud Console.
-*   `GOOGLE_CLIENT_SECRET`: The client secret for Google OAuth.
+Authentication is handled by **NextAuth.js** using Google as the OAuth provider.
 
-## 5. Authentication Flow
+  * The configuration is located in `lib/auth.ts`.
+  * It requests access to the user's YouTube account (`youtube` and `youtube.upload` scopes).
+  * It uses a JSON Web Token (JWT) strategy with refresh token rotation to maintain the session.
 
-Authentication is handled by NextAuth.js, configured to use Google as the OAuth provider.
+## 5\. API Endpoint Overview
 
-*   The configuration is located in `lib/auth.ts`.
-*   It uses the Google Provider to authenticate users and requests access to their YouTube account (`youtube` and `youtube.upload` scopes).
-*   It implements a JSON Web Token (JWT) strategy with refresh token rotation to maintain the user's session and access to the YouTube API.
-*   Custom sign-in and error pages are defined in `pages/auth/`.
+The application's core logic is exposed under `/api/`.
 
-## 6. API Endpoint Overview
+  * **/api/auth/**: Handles NextAuth.js authentication routes.
+  * **/api/jobs/**: Manages the English vocabulary quiz video generation pipeline.
+      * `generate-quiz`: Creates new vocabulary quiz questions.
+      * `create-frames`: Generates video frames from questions.
+      * `assemble-video`: Compiles frames into a video file.
+      * `upload-quiz-videos`: Uploads the final video to YouTube.
+  * **/api/quiz-dashboard/**: Provides data for the generation monitoring dashboard.
 
-The application exposes several API endpoints under `/api/`.
-
-*   **/api/auth/**: Handles NextAuth.js authentication routes.
-*   **/api/jobs/**: Manages the educational quiz video generation pipeline.
-    *   `generate-quiz`: Creates new educational quiz questions for Class 10-12 and competitive exams.
-    *   `create-frames`: Generates video frames from questions.
-    *   `assemble-video`: Compiles frames into a video file.
-    *   `upload-quiz-videos`: Uploads the final video to YouTube.
-*   **/api/youtube/**: Interacts with the YouTube API for the uploader functionality.
-    *   `analyze-playlist`: Analyzes the content of a YouTube playlist.
-    *   `analyze-video`: Analyzes a single video's metadata.
-    *   `playlist`: Creates and fetches user's playlists.
-    *   `playlist-videos`: Fetches videos within a specific playlist.
-    *   `suggest-category`: Suggests a YouTube category for a video.
-    *   `upload`: Handles direct video uploads.
-    *   `upload-optimized`: Handles uploads with additional optimizations.
-*   **/api/dashboard/**: Provides data for the quiz generation monitoring dashboard.
-
-## 7. Directory Structure
+## 6\. Directory Structure
 
 The project follows a standard Next.js project structure:
 
@@ -87,81 +76,54 @@ The project follows a standard Next.js project structure:
 ├── app/                  # Main application code
 │   ├── api/              # API routes
 │   │   ├── auth/         # NextAuth.js authentication
-│   │   ├── jobs/         # Quiz generation pipeline jobs
-│   │   └── youtube/      # YouTube API integration
-│   ├── dashboard/   # Quiz generation dashboard
+│   │   └── jobs/         # Quiz generation pipeline jobs
+│   ├── page.tsx          # Monitoring Dashboard UI
 │   └── ...
 ├── database/             # Database schema
 │   └── schema.sql
 ├── lib/                  # Shared libraries
 │   ├── auth.ts           # NextAuth configuration
 │   ├── database.ts       # Database utilities
-│   ├── deepseek.ts       # DeepSeek API integration
-│   ├── personas.ts       # Educational content structure (10 academic personas)
-│   ├── generationService.ts # Academic content generation with exam-specific prompts
-│   ├── schedule.ts       # Generation schedule (50 daily questions)
-│   ├── uploadSchedule.ts # Student-optimized upload timing
-│   └── playlistManager.ts # Academic playlist organization
+│   ├── generationService.ts # Vocabulary quiz generation service
+│   ├── personas.ts       # Defines the 'english_vocab_builder' persona
+│   ├── schedule.ts       # Generation and upload schedules
+│   └── playlistManager.ts # Manages topic-based YouTube playlists
 ├── public/               # Static assets
 ├── .env.example          # Environment variables example
-├── next.config.js        # Next.js configuration
-├── package.json          # Dependencies
 └── ...
 ```
 
-## 8. Database Schema
+## 7\. Database Schema
 
-The database schema is defined in `database/schema.sql`. It consists of two tables:
+The database schema is defined in `database/schema.sql`. It consists of two main tables:
 
-*   `quiz_jobs`: Stores the state of the educational quiz generation jobs with academic persona information.
-*   `uploaded_videos`: Stores information about the educational videos uploaded to YouTube.
+  * `quiz_jobs`: Stores the state of each step in the English vocabulary quiz generation pipeline.
+  * `uploaded_videos`: Stores metadata about the videos successfully uploaded to YouTube.
 
-```sql
--- quiz_jobs table
-CREATE TABLE quiz_jobs (
-    id SERIAL PRIMARY KEY,
-    job_type VARCHAR(255) NOT NULL,
-    status VARCHAR(50) DEFAULT 'pending',
-    payload JSONB,
-    result JSONB,
-    error_message TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+## 8\. Quiz Generation and Upload Pipeline
 
--- uploaded_videos table
-CREATE TABLE uploaded_videos (
-    id SERIAL PRIMARY KEY,
-    job_id INTEGER REFERENCES quiz_jobs(id),
-    video_title VARCHAR(255) NOT NULL,
-    video_description TEXT,
-    youtube_video_id VARCHAR(255) NOT NULL,
-    upload_timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
+The system uses a 4-step, fully automated pipeline:
 
-## 9. Educational Quiz Generation and Upload Pipeline
+**Content Coverage:**
 
-The system uses a 4-step pipeline to automatically generate and upload educational quiz videos covering 10 academic personas:
-
-**Academic Content Coverage:**
-*   **Class 10-12 Subjects**: Mathematics, Physics, Chemistry, Biology
-*   **Competitive Exams**: NEET (Medical), JEE (Engineering), SSC/Banking, UPSC (Civil Services)
-*   **Foundation**: English Grammar, General Knowledge
+  * The system is built around a single, comprehensive persona: **`english_vocab_builder`**.
+  * This persona covers a wide variety of topics, including Synonyms, Antonyms, Phrasal Verbs, Idioms, Thematic Vocabulary, and more.
 
 **Pipeline Process:**
-1.  **Question Generation**: Cron jobs call the `/api/jobs/generate-quiz` endpoint to generate 50 educational quiz questions daily (5 per persona) using the DeepSeek API with exam-specific prompts.
-2.  **Frame Creation**: Cron jobs call the `/api/jobs/create-frames` endpoint to generate video frames using the Canvas API.
-3.  **Video Assembly**: Cron jobs call the `/api/jobs/assemble-video` endpoint to combine the frames into a video using FFmpeg.
-4.  **YouTube Upload**: Cron jobs call the `/api/jobs/upload-quiz-videos` endpoint to upload the generated videos to YouTube.
+
+1.  **Question Generation**: Cron jobs call `/api/jobs/generate-quiz` to create English vocabulary questions using the DeepSeek API.
+2.  **Frame Creation**: Cron jobs call `/api/jobs/create-frames` to generate video frames for the quiz using the Canvas API.
+3.  **Video Assembly**: Cron jobs call `/api/jobs/assemble-video` to compile the frames into a short video using FFmpeg.
+4.  **YouTube Upload**: Cron jobs call `/api/jobs/upload-quiz-videos` to upload the final video to YouTube with optimized metadata.
 
 **Scheduling:**
-*   **Generation**: 2-11 AM daily (10 hours, 1 persona per hour)
-*   **Upload**: 6 AM-11 PM (student-optimized timing aligned with Indian study patterns)
 
-These jobs are orchestrated by external cron jobs (e.g., from cron-job.org) and the entire process can be monitored from the `/dashboard`.
+  * **Generation**: **3 batches daily** (2 AM, 10 AM, 6 PM) to create a steady buffer of content (9 quizzes/day).
+  * **Upload**: **8 uploads daily**, spread throughout the day to maximize reach across global time zones.
 
-## 10. Testing with Playwright MCP
+The entire pipeline is monitored via the dashboard at the root URL (`/`).
+
+## 9\. Testing with Playwright MCP
 
 This project is configured with Playwright MCP for direct browser testing:
 
@@ -176,28 +138,25 @@ This project is configured with Playwright MCP for direct browser testing:
 }
 ```
 
-## 11. Development Workflow
+## 10\. Development Workflow
 
-To ensure the project is always in a good state, please follow this workflow:
+Please follow this workflow:
 
 1.  Make your changes to the codebase.
-2.  After any major change, and always before committing to GitHub, run the build command to ensure there are no build errors:
-
+2.  Before committing, run the build command to check for errors:
     ```bash
     npm run build
     ```
-3.  Once the build is successful, you can commit your changes.
+3.  Once the build succeeds, commit your changes.
 
-## 12. Educational Content Structure
+## 11\. Content Structure
 
-The educational content is organized through a comprehensive persona system:
+The content is organized around a single, comprehensive persona system:
 
-*   **10 Academic Personas**: Each persona represents a subject area or exam type
-*   **Hierarchical Structure**: Persona → Category → Subcategory for organized content
-*   **Exam-Specific Prompts**: AI prompts tailored for each educational context
-*   **Progressive Difficulty**: Content ranges from Class 10 basics to advanced competitive exam level
-*   **Indian Education Focus**: Aligned with CBSE, ICSE, and major competitive exam patterns
+  * **Single Persona**: `english_vocab_builder` is the sole focus.
+  * **Sub-categories**: The persona is divided into multiple sub-categories (e.g., Synonyms, Idioms) to provide a rich variety of quiz content.
+  * **Targeted Prompts**: AI prompts are tailored to generate high-quality, intermediate-level vocabulary questions.
 
-## 13. Deployment
+## 12\. Deployment
 
-The production URL for this project is: https://aiyoutuber.vercel.app/
+The production URL for this project is: [https://aiyoutuber.vercel.app/](https://aiyoutuber.vercel.app/)

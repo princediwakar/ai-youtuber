@@ -1,6 +1,6 @@
 /**
- * HIGH-VOLUME NEET MCQ CHANNEL CONFIGURATION
- * Optimized for 16 daily uploads targeting #1 NEET channel position.
+ * HIGH-VOLUME Vocab MCQ CHANNEL CONFIGURATION
+ * Optimized for 16 daily uploads targeting #1 Vocab channel position.
  * All settings tuned for maximum throughput while maintaining quality.
  */
 export const config = {

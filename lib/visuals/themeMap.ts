@@ -7,7 +7,7 @@
  */
 export const PersonaThemeMap: Record<string, string[]> = {
 
-  neet_preparation: ['EmeraldSea', 'CosmicDawn', 'CafeAuLait'],
+  english_vocab_builder: ['EmeraldSea', 'CosmicDawn', 'CafeAuLait'],
   
   // A default set of themes for any new persona not explicitly listed.
   default: ['CafeAuLait'],

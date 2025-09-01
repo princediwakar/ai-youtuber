@@ -1,3 +1,4 @@
+// app/api/jobs/upload-quiz-videos/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getPendingJobs, markJobCompleted, updateJob, autoRetryFailedJobs } from '@/lib/database';
 import { google, youtube_v3 } from 'googleapis';
@@ -117,7 +118,7 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
     await markJobCompleted(job.id, youtubeVideoId, metadata);
     await cleanupCloudinaryAssets(job.data);
     
-    console.log(`[Job ${job.id}] ✅ YouTube upload successful: https://youtu.be/${youtubeVideoId}`);
+    console.log(`[Job ${job.id}] ✅ YouTube upload successful: https://www.youtube.com/watch?v=${youtubeVideoId}`);
     return { id: job.id, youtube_video_id: youtubeVideoId };
 
   } catch (error) {
@@ -143,7 +144,7 @@ async function uploadToYouTube(videoPath: string, metadata: any, youtube: youtub
                 title: metadata.title,
                 description: metadata.description,
                 tags: metadata.tags,
-                categoryId: config.YOUTUBE_CATEGORY_ID,
+                categoryId: config.YOUTUBE_CATEGORY_ID, // Ensure this category (e.g., '27' for Education) is correct
             },
             status: { privacyStatus: 'public', selfDeclaredMadeForKids: false },
         },
@@ -242,87 +243,64 @@ function generateVideoMetadata(job: QuizJob, playlistId?: string) {
   return { title: title.slice(0, 100), description, tags };
 }
 
+// --- MODIFICATION START ---
+// All metadata functions below have been updated for the English Vocabulary persona.
+
 /**
- * Generates viral-worthy, SEO-optimized titles with dynamic NEET year
+ * Generates viral-worthy, SEO-optimized titles for English learning.
  */
 function generateTitle(persona: string, topicName: string): string {
-  // Calculate target NEET year based on current date
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
-  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
-  
   const titleTemplates: Record<string, string[]> = {
-    neet_physics: [
-      `🚀 NEET Physics Challenge | ${topicName}`,
-      `⚡ Can You Solve This NEET Physics? | ${topicName}`,
-      `🧠 NEET Physics Quiz That 90% Fail | ${topicName}`,
-      `🎯 NEET ${neetYear} Physics | ${topicName} MCQ`
+    english_vocab_builder: [
+      `🧠 English Vocabulary Quiz | ${topicName}`,
+      `🏆 Can You Answer This? | English Vocab Challenge`,
+      `🤔 9/10 Fail This Vocabulary Test | ${topicName}`,
+      `🇬🇧 Daily English Vocabulary Quiz | ${topicName}`,
     ],
-    neet_chemistry: [
-      `⚗️ NEET Chemistry Challenge | ${topicName}`,
-      `🔬 Can You Solve This NEET Chemistry? | ${topicName}`,
-      `🧪 NEET Chemistry Quiz That 90% Fail | ${topicName}`,
-      `🎯 NEET ${neetYear} Chemistry | ${topicName} MCQ`
-    ],
-    neet_biology: [
-      `🧬 NEET Biology Challenge | ${topicName}`,
-      `🔬 Can You Solve This NEET Biology? | ${topicName}`,
-      `🧠 NEET Biology Quiz That 90% Fail | ${topicName}`,
-      `🎯 NEET ${neetYear} Biology | ${topicName} MCQ`
-    ]
   };
   
-  const templates = titleTemplates[persona] || [`📚 NEET Quiz | ${topicName}`];
+  const templates = titleTemplates[persona] || [`📚 English Quiz | ${topicName}`];
   return templates[Math.floor(Math.random() * templates.length)];
 }
 
 /**
- * Generates strategic hashtags for maximum reach with dynamic year
+ * Generates strategic hashtags for the English learning niche.
  */
 function generateHashtags(persona: string, category: string): string {
-  // Calculate target NEET year based on current date
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
-  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
-  
-  const baseHashtags = `#shorts #viral #neet #neet${neetYear} #medicalentrance`;
+  const baseHashtags = `#shorts #viral #learnenglish #english #vocabulary`;
   
   const subjectHashtags: Record<string, string> = {
-    neet_physics: '#physics #neetphysics #neetprep #mcq',
-    neet_chemistry: '#chemistry #neetchemistry #neetprep #mcq',
-    neet_biology: '#biology #neetbiology #neetprep #mcq'
+    english_vocab_builder: '#englishquiz #vocab #esl #ielts #toefl #englishteacher',
   };
   
-  const viralBoosts = '#trending #fyp #foryou #challenge #quiz #education';
+  const viralBoosts = '#trending #fyp #challenge #quiz #education';
   
   return `${baseHashtags} ${subjectHashtags[persona] || ''} ${viralBoosts}`.trim();
 }
 
 /**
- * Creates engaging video descriptions with full question content
+ * Creates engaging video descriptions for English vocabulary quizzes.
  */
 function generateDescription(question: any, topicName: string, hashtags: string, playlistId?: string): string {
   const hooks = [
-    "🤔 Think you can solve this?",
-    "⚡ Test your NEET knowledge!",
+    "🤔 Think you know this word?",
+    "⚡ Test your English vocabulary!",
     "🧠 Only 10% get this right!",
-    "🎯 Can you crack this NEET question?"
+    "🎯 Can you master this English quiz?"
   ];
   
   const hook = hooks[Math.floor(Math.random() * hooks.length)];
   
   // Build playlist link first to place it at the top
   const playlistLink = playlistId ? 
-    `📺 For more questions on ${topicName}, check out the full playlist:\nhttps://youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
+    `📺 For more questions on ${topicName}, check out the full playlist:\nhttps://www.youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
 
   // Build options string
   const optionsText = question.options ? 
     Object.entries(question.options).map(([key, value]) => `${key}) ${value}`).join('\n') : '';
   
   return `${hook}\n${playlistLink}📚 QUESTION:
-${question.question}
+${question.question || question.assertion}
 
 🔤 OPTIONS:
 ${optionsText}
@@ -333,34 +311,27 @@ The correct answer is revealed in the video!
 💡 EXPLANATION:
 ${question.explanation || 'Watch the video for a detailed explanation!'}
 
-🏆 Join 50,000+ NEET aspirants using our MCQs to crack medical entrance!
+🏆 Join thousands of learners improving their English daily!
 
-🎯 BOOST YOUR PREP:
+🎯 BOOST YOUR LEARNING:
 💡 Comment your answer below - let's discuss!
-🔔 Subscribe for daily NEET MCQs & PYQs!
-⚡ Share with your NEET preparation friends!
+🔔 Subscribe for daily English quizzes!
+⚡ Share with your study partners!
 
 ${hashtags}`;
 }
+
 /**
- * Generates SEO-optimized tags for YouTube algorithm with dynamic year
+ * Generates SEO-optimized tags for the YouTube algorithm.
  */
 function generateSEOTags(persona: string, category: string, topicName: string): string[] {
-  // Calculate target NEET year based on current date
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth(); // 0-based (0 = January, 4 = May)
-  const neetYear = currentMonth < 4 ? currentYear : currentYear + 1;
-  
-  const baseTags = ['neet', `neet ${neetYear}`, 'medical entrance', 'mcq', 'quiz', 'shorts', 'viral', 'education'];
+  const baseTags = ['learn english', 'english vocabulary', 'english quiz', 'shorts', 'viral', 'education'];
   
   const subjectTags: Record<string, string[]> = {
-    neet_physics: ['physics', 'neet physics', 'physics mcq', 'neet physics questions'],
-    neet_chemistry: ['chemistry', 'neet chemistry', 'chemistry mcq', 'neet chemistry questions'],
-    neet_biology: ['biology', 'neet biology', 'biology mcq', 'neet biology questions']
+    english_vocab_builder: ['vocabulary', 'english lesson', 'esl', 'ielts vocabulary', 'toefl vocabulary', 'speak english'],
   };
   
-  const categoryTag = category.toLowerCase();
+  const categoryTag = category.toLowerCase().replace(/_/g, ' ');
   const topicTag = topicName.toLowerCase();
   
   const allTags = [
@@ -369,15 +340,15 @@ function generateSEOTags(persona: string, category: string, topicName: string): 
     categoryTag,
     topicTag,
     'challenge',
-    'test prep',
-    'study tips'
+    'english test',
+    'study english'
   ];
   
   // Remove duplicates and return unique tags
   return [...new Set(allTags)].filter(Boolean);
 }
 
-// Legacy functions removed - replaced with optimized SEO functions above
+// --- MODIFICATION END ---
 
 async function cleanupCloudinaryAssets(jobData: any): Promise<void> {
   try {

@@ -1,68 +1,63 @@
 /**
- * NEET-FOCUSED Generation Schedule for #1 NEET MCQ Channel Dominance
- * 
- * Strategy: 6 daily generations (18 total questions = 6 generations × 3 batch size) 
- * perfectly aligned with 16 daily upload slots (2 extras for quality selection).
- * 
- * Distribution aligned with NEET exam weightage:
- * - Biology: 60% (4 generations) - Morning, Evening, Prime time, Night
- * - Chemistry: 20% (1 generation) - Mid-morning  
- * - Physics: 20% (1 generation) - Afternoon
+ * English Vocabulary Quiz Generation & Upload Schedule
+ *
+ * Strategy: Establish a consistent "always-on" presence with 8 daily uploads.
+ * This high-frequency schedule caters to a global audience in different time zones,
+ * targeting learners during commutes, breaks, and study periods.
+ *
+ * Generation is scheduled 3 times a day to create a steady buffer of content,
+ * ensuring there are always high-quality quizzes ready for the next upload slot.
+ * (3 generations × 3 batch size = 9 quizzes generated daily for 8 upload slots).
  */
 
 interface HourlySchedule {
-  [hour: number]: string[]
+  [hour: number]: string[];
 }
   
 // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
 type DailySchedule = Record<number, HourlySchedule>;
 
-// OPTIMIZED: Generate exactly what we need (16 uploads = ~6 generation batches)
-const dailyPattern: HourlySchedule = {
-    // Morning batch (for 6:30 AM - 3 uploads)
-    2: ['neet_biology'],      // Biology focus - 3 questions
-    3: ['neet_biology'],     // Biology focus - 3 questions
+/**
+ * Generation Schedule: 3 batches spread out to create a content buffer.
+ */
+const generationDailyPattern: HourlySchedule = {
+    // Early morning generation for the day's first uploads
+    2: ['english_vocab_builder'],
     
-    // Mid-morning batch (for 12:30 PM - 2 uploads)  
-    // 3: ['neet_chemistry'],    // Chemistry focus - 3 questions (1 extra for selection)
+    // Mid-day generation for the afternoon and evening uploads
+    10: ['english_vocab_builder'],
     
-    // Afternoon batch (for 4:00 PM - 2 uploads)
-    // 4: ['neet_physics'],     // Physics focus - 3 questions (1 extra for selection)
-    // 14: ['neet_physics'],     // Physics focus - 3 questions (1 extra for selection)
-    
-    // Evening batch (for 6:00 PM - 3 uploads)
-    7: ['neet_biology'],     // Biology focus - 3 questions
-    
-    // Prime time batch (for 8:00 PM - 3 uploads)
-    15: ['neet_biology'],     // Biology focus - 3 questions
-    
-    // Night batch (for 10:00 PM - 3 uploads)
-    21: ['neet_biology'],     // Biology focus - 3 questions
+    // Evening generation for the late-night and next day's morning uploads
+    18: ['english_vocab_builder'],
 };
 
-// Upload schedule optimized for NEET student engagement patterns
+/**
+ * Upload Schedule: 8 daily uploads for consistent global engagement.
+ */
 const uploadDailyPattern: HourlySchedule = {
-  6: ['neet_biology', 'neet_biology'],    // 6:30 AM - Morning motivation
-  8: ['neet_biology', 'neet_biology'],                    // 8:00 AM - Start day strong
-  12: ['neet_biology', 'neet_biology'],               // 12:00 PM - Lunch break revision
-  16: ['neet_biology', 'neet_biology'],                   // 4:00 PM - Post-coaching
-  18: ['neet_biology', 'neet_biology'],   // 6:00 PM - Evening study launch
-  20: ['neet_biology', 'neet_biology'],   // 8:00 PM - Prime study hours
-  22: ['neet_biology', 'neet_biology'], // 10:00 PM - Night revision
+  8:  ['english_vocab_builder'], // Morning (e.g., US evening, Asia morning)
+  11: ['english_vocab_builder'], // Mid-morning Break
+  13: ['english_vocab_builder'], // Lunch Break
+  15: ['english_vocab_builder'], // Afternoon Break
+  17: ['english_vocab_builder'], // Evening Commute
+  19: ['english_vocab_builder'], // Post-Dinner Study
+  21: ['english_vocab_builder'], // Prime Evening Time
+  23: ['english_vocab_builder'], // Late Night / Other Timezones Prime Time
 };
 
 export const GenerationSchedule: DailySchedule = {
-  // The same consistent schedule applies to every day of the week.
-  0: dailyPattern, // Sunday
-  1: dailyPattern, // Monday
-  2: dailyPattern, // Tuesday
-  3: dailyPattern, // Wednesday
-  4: dailyPattern, // Thursday
-  5: dailyPattern, // Friday
-  6: dailyPattern, // Saturday
+  // A consistent schedule applies to every day of the week.
+  0: generationDailyPattern, // Sunday
+  1: generationDailyPattern, // Monday
+  2: generationDailyPattern, // Tuesday
+  3: generationDailyPattern, // Wednesday
+  4: generationDailyPattern, // Thursday
+  5: generationDailyPattern, // Friday
+  6: generationDailyPattern, // Saturday
 };
 
 export const UploadSchedule: DailySchedule = {
+  // A consistent schedule applies to every day of the week.
   0: uploadDailyPattern, // Sunday
   1: uploadDailyPattern, // Monday
   2: uploadDailyPattern, // Tuesday

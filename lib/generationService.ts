@@ -35,85 +35,52 @@ function generateVariationMarkers(): { timeMarker: string; tokenMarker: string; 
  * @param jobConfig The configuration object for the quiz job.
  * @returns A promise resolving to the AI prompt string.
  */
+// No changes needed for imports or other functions
+
+/**
+ * Generates a highly specific AI prompt based on the job's persona and configuration.
+ * @param jobConfig The configuration object for the quiz job.
+ * @returns A promise resolving to the AI prompt string.
+ */
 async function generatePrompt(jobConfig: any): Promise<string> {
   const { persona, topic } = jobConfig;
   const { timeMarker, tokenMarker } = generateVariationMarkers();
 
   let prompt = '';
-  const personaData = MasterPersonas[persona];
+  // This correctly references your single persona from the personas file.
+  const personaData = MasterPersonas[persona]; 
   const topicData = personaData?.subCategories?.find(sub => sub.key === topic);
 
-  // NEET Subject-Specific Generation
-  if (persona === 'neet_physics') {
+  // --- MODIFICATION START ---
+
+  if (persona === 'english_vocab_builder') {
     if (topicData) {
-      prompt = `Generate a NEET 2026-style Physics MCQ on "${topicData.displayName}" from ${personaData.displayName}.
+      // This is the primary prompt that uses your detailed sub-category information.
+      prompt = `You are an expert English teacher creating a quiz for a YouTube Shorts.
+Generate a single, clear English vocabulary question on the topic: "${topicData.displayName}".
 
 CRITICAL REQUIREMENTS:
-• PRIORITY: The question must be solvable mentally in 5-10 seconds. Focus on core concepts, not lengthy calculations.
-• Difficulty should be beginner to moderate, testing foundational knowledge.
-• If a formula is needed, it must be a direct, single-step application. Avoid multi-step problems.
-• Use NCERT-based concepts with a clever conceptual twist (NEET's signature style).
-• Create distractors that target common conceptual misunderstandings, not calculation errors.
-• Focus on conceptual application and direct problem-solving.
+• TARGET AUDIENCE: Intermediate English learners (B1-B2 level).
+• QUESTION STYLE: Must be direct and concise. For "Fill in the Blank," provide a clear sentence. For "Synonyms/Antonyms," directly ask for the synonym/antonym of a given word.
+• DIFFICULTY: The correct answer should be a useful, common word, but not too easy.
+• DISTRACTORS: The incorrect options (A, B, C, D) must be plausible and relate to common learner confusions.
+• EXPLANATION: The explanation MUST BE ULTRA-CONCISE (under 150 characters). Simply explain why the answer is correct in plain English.
 
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to the conceptual and single-step formula questions from NEET 2022-2026. Avoid the lengthy, multi-step calculation-based questions.
-
-EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characters total). Focus ONLY on why the answer is correct. [${timeMarker}-${tokenMarker}]`;
+Focus on creating a high-quality, engaging question that is perfect for a quick quiz format. [${timeMarker}-${tokenMarker}]`;
     } else {
-      prompt = `Generate a fast, conceptual NEET 2026 Physics MCQ on "${topic}" that can be answered in under 10 seconds. Focus on NCERT-aligned core concepts. [${timeMarker}-${tokenMarker}]`;
+      // Fallback prompt if a specific sub-category topic isn't found.
+      prompt = `Generate a general intermediate (B1-B2 level) English vocabulary MCQ on the topic of "${topic}". The question must be clear and concise for a YouTube Short. The incorrect options must be plausible distractors. The explanation must be under 150 characters. [${timeMarker}-${tokenMarker}]`;
     }
+  } else {
+    // This error now correctly reflects that only one persona is supported.
+    throw new Error(`Unsupported persona: ${persona}. Only 'english_vocab_builder' is supported.`);
   }
 
-  else if (persona === 'neet_chemistry') {
-    if (topicData) {
-      prompt = `Generate a NEET 2026-style Chemistry MCQ on "${topicData.displayName}" from ${personaData.displayName}.
-
-CRITICAL REQUIREMENTS:
-• PRIORITY: The question must be solvable mentally in 5-10 seconds. Focus on core concepts, reaction names, or properties, not complex stoichiometry.
-• Difficulty should be moderate, testing foundational knowledge.
-• Prioritize conceptual understanding (e.g., trends, definitions, reaction products) over complex calculations.
-• Use NCERT-based concepts with a clever conceptual twist (NEET's signature style).
-• Create distractors that target common chemical misconceptions.
-• Focus on conceptual application and chemical reasoning.
-
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to the conceptual and direct-recall questions from NEET 2022-2026. Avoid questions requiring extensive calculations.
-
-EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characters total). Focus ONLY on why the answer is correct. [${timeMarker}-${tokenMarker}]`;
-    }
-
-    else {
-      prompt = `Generate a fast, conceptual NEET 2026 Chemistry MCQ on "${topic}" that can be answered in under 10 seconds. Focus on NCERT-aligned core concepts. [${timeMarker}-${tokenMarker}]`;
-    }
-  }
-
-  else if (persona === 'neet_biology') {
-    if (topicData) {
-      prompt = `Generate a NEET 2026-style Biology MCQ on "${topicData.displayName}" from ${personaData.displayName}.
-
-CRITICAL REQUIREMENTS:
-• PRIORITY: The question must be solvable mentally in 5-10 seconds. Focus on direct recall and core concepts.
-• Difficulty should be moderate to challenging, testing specific NCERT details.
-• Include medical/healthcare relevance where appropriate, but keep the question direct.
-• Use NCERT-based concepts with a clever conceptual twist (NEET's signature style).
-• Create distractors that are plausible and test common biological misconceptions.
-• Focus on direct concept application, physiological facts, and biological reasoning.
-
-PREVIOUS YEAR PATTERN INSPIRATION: Frame questions similar to the direct, knowledge-based questions from NEET 2022-2026 that test precise understanding of NCERT lines.
-
-EXPLANATION MUST BE ULTRA-CONCISE: Maximum 2 short sentences (under 150 characters total). Focus ONLY on why the answer is correct. [${timeMarker}-${tokenMarker}]`;
-    } else {
-      prompt = `Generate a fast, conceptual NEET 2026 Biology MCQ on "${topic}" that can be answered in under 10 seconds. Focus on specific, NCERT-aligned facts. [${timeMarker}-${tokenMarker}]`;
-    }
-  }
-
-  else {
-    // Fallback
-    throw new Error(`Unsupported persona: ${persona}. Only 'neet_physics', 'neet_chemistry', and 'neet_biology' are supported in NEET-focused mode.`);
-  }
+  // --- MODIFICATION END ---
   
-  // No changes to the format selection logic below this line
+  // No changes to the format selection logic below this line. It works perfectly.
   const rand = Math.random();
-  const questionFormat = rand < 0.7 ? 'multiple_choice' : (rand < 0.85 ? 'true_false' : 'assertion_reason');
+  const questionFormat = rand < 0.75 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason');
 
   if (questionFormat === 'true_false') {
     return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", and "question_type" (set to "true_false"). Create a statement that can be definitively true or false. MANDATORY: Explanation must be under 150 characters total - maximum 2 short sentences explaining why the answer is correct. No fluff!';

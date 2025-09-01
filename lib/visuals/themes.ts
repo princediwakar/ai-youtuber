@@ -24,18 +24,20 @@ export interface Theme {
 // The full collection of renamed and restructured themes
 export const themes: Record<string, Theme> = {
   // Original 'lightCoffee'
+  // Original 'lightCoffee'
   CafeAuLait: {
     name: 'CafeAuLait',
     fontFamily: 'Poppins',
     page: { background: '#fff4e6' },
     text: {
-      primary: '#3c2f2f',
+      primary: '#3c2f2f', // This is our high-contrast dark brown
       secondary: 'rgba(60, 47, 47, 0.5)',
       onAccent: '#fff4e6',
     },
     button: {
       background: '#be9b7b',
-      text: '#fff4e6',
+      // ✅ FIX: Changed from light cream to the primary dark brown for max contrast.
+      text: '#3c2f2f', 
     },
     feedback: { correct: '#854442' },
   },
@@ -71,7 +73,8 @@ export const themes: Record<string, Theme> = {
       background: '#E07A5F',
       text: '#F4F1DE',
     },
-    feedback: { correct: '#81B29A' },
+    // ✅ FIX: Replaced light green with the high-contrast primary text color.
+    feedback: { correct: '#3D405B' },
   },
 
   // Original 'mistyRose'
@@ -114,15 +117,18 @@ export const themes: Record<string, Theme> = {
     fontFamily: 'Poppins',
     page: { background: '#FFF5CD' },
     text: {
-      primary: '#E78F81',
-      secondary: 'rgba(231, 143, 129, 0.7)',
-      onAccent: '#8B4538', // Derived dark color for accessibility
+      // ✅ FIX: Replaced light salmon text with the accessible dark brown color.
+      primary: '#8B4538',
+      // ✅ FIX: Adjusted secondary text to be a transparent version of the new primary.
+      secondary: 'rgba(139, 69, 56, 0.6)',
+      onAccent: '#FFF5CD', // Changed to lighter background for use on dark buttons
     },
     button: {
       background: '#B7E0FF',
-      text: '#8B4538', // Using the accessible text color
+      text: '#8B4538', // This accessible choice is now our primary text color.
     },
-    feedback: { correct: '#E78F81' },
+    // ✅ FIX: Replaced light salmon with the new high-contrast primary text color.
+    feedback: { correct: '#8B4538' },
   },
 
   // Original 'oceanicDeep'
@@ -139,6 +145,7 @@ export const themes: Record<string, Theme> = {
       background: '#26667F',
       text: '#DDF4E7',
     },
-    feedback: { correct: '#67C090' },
+    // ✅ FIX: Replaced light green with the high-contrast primary text color.
+    feedback: { correct: '#124170' },
   },
 };
