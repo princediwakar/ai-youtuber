@@ -36,8 +36,7 @@ export const themes: Record<string, Theme> = {
     },
     button: {
       background: '#be9b7b',
-      // ✅ FIX: Changed from light cream to the primary dark brown for max contrast.
-      text: '#3c2f2f', 
+      text: '#FFFFFF', 
     },
     feedback: { correct: '#854442' },
   },
@@ -106,7 +105,7 @@ export const themes: Record<string, Theme> = {
     },
     button: {
       background: '#9B177E',
-      text: '#FFEAD8',
+      text: '#FFFFFF',
     },
     feedback: { correct: '#2A1458' },
   },
