@@ -1,7 +1,7 @@
 import { Canvas, CanvasRenderingContext2D } from 'canvas';
 import { Theme } from '@/lib/visuals/themes';
 import { QuizJob } from '@/lib/types';
-import { drawHeader, drawFooter, drawBackground, wrapText, drawRoundRect } from '../drawingUtils';
+import { drawHeader, drawFooter, drawBackground, wrapText, drawRoundRect, drawOutlinedRoundRect } from '../drawingUtils';
 
 
 function drawStatementText(ctx: CanvasRenderingContext2D, canvas: Canvas, statement: string, theme: Theme): number {
@@ -46,19 +46,19 @@ function renderTrueFalseOptions(ctx: CanvasRenderingContext2D, width: number, st
     const x = startX + index * (boxWidth + spacing);
     const y = startY;
 
-    let bgColor = theme.button.background;
-    let textColor = theme.button.text;
-
-    if (showAnswer && option === correctAnswer) {
-      bgColor = theme.feedback.correct;
-      textColor = theme.text.onAccent;
+    const isCorrect = showAnswer && option === correctAnswer;
+    
+    if (isCorrect) {
+      // Correct answer: solid button
+      ctx.fillStyle = theme.feedback.correct;
+      drawRoundRect(ctx, x, y, boxWidth, boxHeight, 20);
+      ctx.fillStyle = theme.text.onAccent;
+    } else {
+      // Incorrect option or question frame: outlined button
+      ctx.strokeStyle = theme.text.primary;
+      drawOutlinedRoundRect(ctx, x, y, boxWidth, boxHeight, 20, 4);
+      ctx.fillStyle = theme.text.primary;
     }
-
-    drawRoundRect(ctx, x, y, boxWidth, boxHeight, 20);
-    ctx.fillStyle = bgColor;
-    ctx.fill();
-
-    ctx.fillStyle = textColor;
     ctx.font = `bold 52px ${theme.fontFamily}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

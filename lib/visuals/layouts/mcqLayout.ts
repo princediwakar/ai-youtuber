@@ -7,6 +7,7 @@ import {
     drawFooter, 
     wrapText, 
     drawRoundRect,
+    drawOutlinedRoundRect,
     calculateOptimalLayout,
     calculateDynamicPositions,
     measureQuestionContent,
@@ -262,18 +263,17 @@ function renderOptions(
       const dynamicButtonHeight = textBlockHeight + (PADDING * 2);
 
       const isCorrect = optionKey === answer;
-      if (isAnswerFrame) {
-          ctx.fillStyle = isCorrect ? theme.feedback.correct : theme.button.background;
-      } else {
-          ctx.fillStyle = theme.button.background;
-      }
       
-      drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
-      
-      if (isAnswerFrame) {
-        ctx.fillStyle = isCorrect ? theme.text.onAccent : theme.text.secondary;
+      if (isAnswerFrame && isCorrect) {
+          // Correct answer: solid button
+          ctx.fillStyle = theme.feedback.correct;
+          drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
+          ctx.fillStyle = theme.text.onAccent;
       } else {
-        ctx.fillStyle = theme.text.secondary;
+          // Incorrect options or question frame: outlined buttons
+          ctx.strokeStyle = theme.text.primary;
+          drawOutlinedRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30, 4);
+          ctx.fillStyle = theme.text.primary;
       }
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
