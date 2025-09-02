@@ -134,7 +134,7 @@ Visit `http://localhost:3000` to access the application dashboard.
 
 The system uses a single-persona approach for deep and consistent content:
 
-  - **English Vocabulary Builder**: A comprehensive persona covering all key aspects of practical vocabulary needed for fluency and exams like IELTS and TOEFL.
+  - **English Vocabulary Shots**: A comprehensive persona covering all key aspects of practical vocabulary needed for fluency and exams like IELTS and TOEFL.
 
 ### Visual Themes
 

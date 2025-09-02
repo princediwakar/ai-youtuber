@@ -100,6 +100,7 @@ async function uploadFrames(jobId: string, themeName: string, canvases: Canvas[]
   }
 }
 
+
 async function saveDebugFrame(canvas: Canvas, filename: string): Promise<void> {
   try {
     const debugDir = path.join(process.cwd(), 'debug-frames');

@@ -263,7 +263,7 @@ async function processJob(job: QuizJob) {
     }
     await fs.mkdir(tempDir, { recursive: true });
 
-    const { videoUrl, videoSize } = await assembleVideoWithConcat(frameUrls, job, tempDir);
+    const { videoUrl, videoSize } = await assembleVideoWithTransitions(frameUrls, job, tempDir);
     
     await updateJob(job.id, {
       step: 4,
@@ -287,200 +287,113 @@ async function processJob(job: QuizJob) {
   }
 }
 
-async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number}> {
+async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number}> {
   const ffmpegPath = getFFmpegPath();
-  console.log(`[Job ${job.id}] Using FFmpeg path: ${ffmpegPath}`);
-  
-  console.log(`[Job ${job.id}] Frame URLs to download:`, frameUrls);
-  console.log(`[Job ${job.id}] Downloading ${frameUrls.length} frames to: ${tempDir}`);
-  
-  const downloadPromises = frameUrls.map(async (url, index) => {
-    try {
-      console.log(`[Job ${job.id}] Downloading frame ${index + 1} from: ${url}`);
-      
-      // Test if URL is accessible
-      const testResponse = await fetch(url, { method: 'HEAD' });
-      console.log(`[Job ${job.id}] Frame ${index + 1} URL test - Status: ${testResponse.status}, Content-Type: ${testResponse.headers.get('content-type')}`);
-      
-      if (!testResponse.ok) {
-        throw new Error(`Frame URL not accessible: ${testResponse.status} ${testResponse.statusText}`);
-      }
-      
+  const transitionDuration = 1.0; // 1 second fade
+
+  console.log(`[Job ${job.id}] Assembling video with fade transitions...`);
+
+  // Download frames
+  const framePaths = await Promise.all(
+    frameUrls.map(async (url, index) => {
       const frameBuffer = await downloadImageFromCloudinary(url);
-      if (!frameBuffer || frameBuffer.length === 0) {
-        throw new Error(`Downloaded frame buffer is empty for URL: ${url}`);
-      }
-      
       const framePath = path.join(tempDir, `frame-${String(index + 1).padStart(3, '0')}.png`);
-      console.log(`[Job ${job.id}] Saving frame ${index + 1} to: ${framePath} (${frameBuffer.length} bytes)`);
-      
       await fs.writeFile(framePath, frameBuffer);
-      
-      // Verify file was written correctly
-      const savedFile = await fs.stat(framePath);
-      console.log(`[Job ${job.id}] Frame ${index + 1} saved successfully - File size: ${savedFile.size} bytes`);
-      
-      if (savedFile.size === 0) {
-        throw new Error(`Saved frame file is empty: ${framePath}`);
-      }
-      
       return framePath;
-    } catch (error) {
-      console.error(`[Job ${job.id}] Failed to download frame ${index + 1}:`, error.message);
-      throw new Error(`Frame ${index + 1} download failed: ${error.message}`);
-    }
-  });
-  
-  await Promise.all(downloadPromises);
-  
-  console.log(`[Job ${job.id}] All frames downloaded successfully`);
-  
-  // Verify all frame files exist
-  try {
-    const tempDirContentsAfterDownload = require('fs').readdirSync(tempDir);
-    console.log(`[Job ${job.id}] Temp directory contents after frame download:`, tempDirContentsAfterDownload);
-  } catch (err) {
-    console.log(`[Job ${job.id}] Could not read temp directory after download:`, err.message);
-  }
+    })
+  );
 
   const durations = [
-      getFrameDuration(job.data.question, 1), // Hook
-      getFrameDuration(job.data.question, 2), // Question
-      getFrameDuration(job.data.question, 3), // Answer
-      getFrameDuration(job.data.question, 4), // Explanation
-      getFrameDuration(job.data.question, 5)  // CTA
+    getFrameDuration(job.data.question, 1),
+    getFrameDuration(job.data.question, 2),
+    getFrameDuration(job.data.question, 3),
+    getFrameDuration(job.data.question, 4),
+    getFrameDuration(job.data.question, 5)
   ];
-  
-  const inputFileContent = `ffconcat version 1.0\n` + durations.map((d, i) => 
-    `file 'frame-${String(i + 1).padStart(3, '0')}.png'\nduration ${d}`
-  ).join('\n');
 
-  const inputFilePath = path.join(tempDir, 'inputs.txt');
-  await fs.writeFile(inputFilePath, inputFileContent);
-
-  const tempVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
-  const totalVideoDuration = durations.reduce((sum, duration) => sum + duration, 0);
-  const audioPath = getRandomAudioFile();
-  
-  // Debug temp directory
-  console.log(`[Job ${job.id}] Temp directory: ${tempDir}`);
-  console.log(`[Job ${job.id}] Output video path: ${tempVideoPath}`);
-  try {
-    const tempDirContents = require('fs').readdirSync(tempDir);
-    console.log(`[Job ${job.id}] Temp directory contents:`, tempDirContents);
-  } catch (err) {
-    console.log(`[Job ${job.id}] Could not read temp directory:`, err.message);
-  }
-  
-  let ffmpegArgs: string[];
-  
-  if (audioPath) {
-    console.log(`[Job ${job.id}] Using audio file: ${path.basename(audioPath)}`);
-    ffmpegArgs = [
-      '-f', 'concat', '-safe', '0', '-i', inputFilePath,
-      '-stream_loop', '-1', '-i', audioPath,
-      '-c:v', 'libx264', '-c:a', 'aac',
-      '-pix_fmt', 'yuv420p', '-vf', `scale=${config.VIDEO_WIDTH}:${config.VIDEO_HEIGHT}`,
-      '-r', '30', '-preset', 'fast',
-      '-t', totalVideoDuration.toString(),
-      '-y', tempVideoPath
-    ];
-  } else {
-    console.log(`[Job ${job.id}] Generating synthetic audio (audio files not accessible)`);
-    ffmpegArgs = [
-      '-f', 'concat', '-safe', '0', '-i', inputFilePath,
-      '-f', 'lavfi', '-i', 'sine=frequency=220:duration=' + totalVideoDuration,
-      '-c:v', 'libx264', '-c:a', 'aac',
-      '-pix_fmt', 'yuv420p', '-vf', `scale=${config.VIDEO_WIDTH}:${config.VIDEO_HEIGHT}`,
-      '-r', '30', '-preset', 'fast',
-      '-t', totalVideoDuration.toString(),
-      '-y', tempVideoPath
-    ];
-  }
-
-  console.log(`[Job ${job.id}] Running FFmpeg with args:`, ffmpegArgs);
-  
-  // Verify FFmpeg binary is executable before spawning
-  try {
-    const stats = require('fs').statSync(ffmpegPath);
-    console.log(`[Job ${job.id}] FFmpeg binary stats:`, {
-      size: stats.size,
-      isFile: stats.isFile(),
-      mode: stats.mode.toString(8),
-      executable: !!(stats.mode & parseInt('111', 8))
-    });
-  } catch (statError) {
-    console.error(`[Job ${job.id}] Cannot stat FFmpeg binary:`, statError.message);
-  }
-  
-  await new Promise<void>((resolve, reject) => {
-    let ffmpegProcess;
+  // Create individual video clips from static frames with fade in/out
+  const clipPromises = framePaths.map(async (framePath, index) => {
+    const duration = durations[index];
+    const clipPath = path.join(tempDir, `clip-${String(index + 1).padStart(3, '0')}.mp4`);
     
-    try {
-      ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, { 
-        cwd: tempDir,
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env, PATH: process.env.PATH }
-      });
-    } catch (spawnError) {
-      reject(new Error(`Failed to spawn FFmpeg: ${spawnError.message}. Path: ${ffmpegPath}. CWD: ${tempDir}`));
-      return;
+    // Fade logic: 
+    // Frame 1 (index 0): no fade-in, only fade-out
+    // Frame 2 (index 1): fade-in, no fade-out (to avoid transition to frame 3)
+    // Frame 3 (index 2): no fade-in (to avoid transition from frame 2), fade-out
+    // Frame 4+ (index 3+): fade-in and fade-out
+    let fadeFilter;
+    if (index === 0) {
+      fadeFilter = `fade=out:${Math.max(0, (duration - 1) * 30)}:30`;  // No fade-in for first frame
+    } else if (index === 1) {
+      fadeFilter = `fade=in:0:30`;  // Fade-in only, no fade-out to avoid transition to frame 3
+    } else if (index === 2) {
+      fadeFilter = `fade=out:${Math.max(0, (duration - 1) * 30)}:30`;  // No fade-in to avoid transition from frame 2
+    } else {
+      fadeFilter = `fade=in:0:30,fade=out:${Math.max(0, (duration - 1) * 30)}:30`;  // Normal transitions
     }
     
-    let stderr = '';
-    let stdout = '';
-    let hasStarted = false;
-    
-    ffmpegProcess.stdout?.on('data', (data: Buffer) => {
-      hasStarted = true;
-      stdout += data.toString();
-      console.log(`[FFmpeg Job ${job.id} stdout]: ${data.toString()}`);
+    const args = [
+      '-loop', '1',
+      '-i', framePath,
+      '-vf', fadeFilter,
+      '-c:v', 'libx264',
+      '-t', duration.toString(),
+      '-pix_fmt', 'yuv420p',
+      '-r', '30',
+      '-y', clipPath
+    ];
+
+    await new Promise<void>((resolve, reject) => {
+      const process = spawn(ffmpegPath, args, { cwd: tempDir });
+      process.on('close', (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`FFmpeg clip creation failed with code ${code}`));
+      });
+      process.on('error', reject);
     });
-    
-    ffmpegProcess.stderr?.on('data', (data: Buffer) => {
-      hasStarted = true;
-      stderr += data.toString();
-      console.log(`[FFmpeg Job ${job.id} stderr]: ${data.toString()}`);
-    });
-    
-    ffmpegProcess.on('close', (code: number) => {
-      console.log(`[Job ${job.id}] FFmpeg process closed with code: ${code}`);
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`FFmpeg exited with code ${code}. stderr: ${stderr}. stdout: ${stdout}`));
-      }
-    });
-    
-    ffmpegProcess.on('error', (err) => {
-      const errorContext = {
-        error: err.message,
-        code: err.code,
-        errno: err.errno,
-        path: ffmpegPath,
-        hasStarted,
-        platform: process.platform,
-        arch: process.arch
-      };
-      console.error(`[Job ${job.id}] FFmpeg spawn error:`, errorContext);
-      reject(new Error(`FFmpeg spawn error: ${err.message} (${err.code}). Path: ${ffmpegPath}. Context: ${JSON.stringify(errorContext)}`));
-    });
-    
-    // Additional timeout safety
-    setTimeout(() => {
-      if (!hasStarted) {
-        console.error(`[Job ${job.id}] FFmpeg did not start within 10 seconds, likely binary issue`);
-        try {
-          ffmpegProcess.kill();
-        } catch (e) {}
-        reject(new Error(`FFmpeg failed to start within 10 seconds. Binary may be corrupted or incompatible.`));
-      }
-    }, 10000);
+
+    return clipPath;
   });
 
-  const videoBuffer = await fs.readFile(tempVideoPath);
-  const themeName = job.data.themeName;
-  await saveDebugVideo(videoBuffer, job.id, themeName);
+  const clipPaths = await Promise.all(clipPromises);
+
+  // Create concat file for the clips
+  const concatContent = clipPaths.map(path => `file '${path.split('/').pop()}'`).join('\n');
+  const concatFilePath = path.join(tempDir, 'concat.txt');
+  await fs.writeFile(concatFilePath, concatContent);
+
+  const outputVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
+  const totalDuration = durations.reduce((acc, d) => acc + d, 0);
+  const audioPath = getRandomAudioFile();
+
+  const ffmpegArgs = [
+    '-f', 'concat',
+    '-safe', '0',
+    '-i', concatFilePath,
+    '-stream_loop', '-1',
+    '-i', audioPath,
+    '-c:v', 'libx264',
+    '-c:a', 'aac',
+    '-shortest',
+    '-t', totalDuration.toString(),
+    '-y', outputVideoPath
+  ];
+
+  console.log(`[Job ${job.id}] Running FFmpeg with args:`, ffmpegArgs);
+
+  await new Promise<void>((resolve, reject) => {
+    const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, { cwd: tempDir });
+    ffmpegProcess.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`FFmpeg exited with code ${code}`));
+    });
+    ffmpegProcess.on('error', (err) => reject(err));
+  });
+
+  const videoBuffer = await fs.readFile(outputVideoPath);
+  
+  // Save debug video locally if DEBUG_MODE is enabled
+  await saveDebugVideo(videoBuffer, job.id, job.data.themeName);
   
   const publicId = generateVideoPublicId(job.id);
   const result = await uploadVideoToCloudinary(videoBuffer, {
@@ -498,7 +411,7 @@ function getFrameDuration(question: any, frameNumber: number): number {
     
     case 2: // Question Frame
       const textLength = (question?.question?.length || 0) + Object.values(question?.options || {}).join(" ").length;
-      return Math.max(5, Math.min(7, Math.ceil(textLength / 15)));
+      return Math.max(4, Math.min(7, Math.ceil(textLength / 15)));
       
     case 3: // Answer Frame
       return 3; // Enough time to see the answer

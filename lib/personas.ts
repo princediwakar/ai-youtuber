@@ -12,7 +12,7 @@ import { PersonaConfig } from './types';
  */
 export const MasterPersonas: PersonaConfig = {
   english_vocab_builder: {
-    displayName: 'Vocabulary Builder 🏆',
+    displayName: 'Vocabulary Shots',
     subCategories: [
       // --- Core Vocabulary Skills ---
       { key: 'eng_vocab_word_meaning', displayName: 'What Does This Word Mean? 📖' },

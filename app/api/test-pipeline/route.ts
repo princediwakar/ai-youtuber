@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       1: '/api/jobs/generate-quiz',
       2: '/api/jobs/create-frames',
       3: '/api/jobs/assemble-video',
-      4: '/api/jobs/upload-quiz-videos'
+      // 4: '/api/jobs/upload-quiz-videos'
     };
 
     // Construct the full URL for the target endpoint.
