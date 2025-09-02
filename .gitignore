@@ -33,3 +33,6 @@ logs
 
 # Vercel
 .vercel
+
+debug-frames/
+generated-videos/

@@ -30,9 +30,10 @@ export async function POST(request: NextRequest) {
 
     // 1. Check the upload schedule to see what needs to be published now.
     const now = new Date();
-    const dayOfWeek = now.getDay();
-    const hourOfDay = now.getHours();
-
+    // Convert to IST (UTC + 5:30)
+    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+    const dayOfWeek = istTime.getDay(); // 0 for Sunday, 1 for Monday, etc.
+    const hourOfDay = istTime.getHours();
     let personasToUpload: string[] = [];
 
     if (config.DEBUG_MODE) {

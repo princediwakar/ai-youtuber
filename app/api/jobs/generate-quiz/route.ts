@@ -34,9 +34,10 @@ export async function POST(request: NextRequest) {
     } else {
       // 1. Check the schedule to see what needs to be generated right now.
       const now = new Date();
-      const dayOfWeek = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
-      const hourOfDay = now.getHours();
-
+      // Convert to IST (UTC + 5:30)
+      const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+      const dayOfWeek = istTime.getDay(); // 0 for Sunday, 1 for Monday, etc.
+      const hourOfDay = istTime.getHours();
       personasToGenerate = GenerationSchedule[dayOfWeek]?.[hourOfDay] || [];
 
       // 2. If no personas are scheduled for this hour, exit gracefully.
