@@ -43,28 +43,31 @@ function getFFmpegPath(): string {
   
   // Generate comprehensive fallback paths for Vercel
   const fallbackPaths = [
-    // Standard serverless paths
-    '/opt/nodejs/node_modules/ffmpeg-static/ffmpeg',
+    // Try the bin/linux/x64 structure first (most likely for ffmpeg-static)
+    '/var/task/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+    '/opt/nodejs/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+    path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'bin', 'linux', 'x64', 'ffmpeg'),
+    path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'ffmpeg-static', 'bin', 'linux', 'x64', 'ffmpeg'),
+    
+    // Standard direct paths (older ffmpeg-static versions)
     '/var/task/node_modules/ffmpeg-static/ffmpeg',
+    '/opt/nodejs/node_modules/ffmpeg-static/ffmpeg',
     '/var/runtime/node_modules/ffmpeg-static/ffmpeg',
     
     // Vercel-specific paths
     '/vercel/path0/node_modules/ffmpeg-static/ffmpeg',
     '/vercel/path1/node_modules/ffmpeg-static/ffmpeg', 
     '/vercel/path2/node_modules/ffmpeg-static/ffmpeg',
+    '/vercel/path0/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+    '/vercel/path1/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
     
     // Relative to current working directory
     path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
     path.join(process.cwd(), '.next', 'server', 'chunks', 'ffmpeg'),
     
     // Relative to __dirname
-    path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'ffmpeg-static', 'ffmpeg'),
     path.join(__dirname, '..', '..', '..', 'node_modules', 'ffmpeg-static', 'ffmpeg'),
-    path.join(__dirname, 'node_modules', 'ffmpeg-static', 'ffmpeg'),
-    
-    // Try different binary names in case of platform differences
-    '/var/task/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
-    '/opt/nodejs/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg'
+    path.join(__dirname, 'node_modules', 'ffmpeg-static', 'ffmpeg')
   ];
   
   console.log('Checking fallback paths...');
@@ -76,20 +79,26 @@ function getFFmpegPath(): string {
     }
   }
   
-  // Last resort: try system FFmpeg
+  // Last resort: try system FFmpeg with proper validation
   const systemPaths = [
     '/usr/bin/ffmpeg',
-    '/usr/local/bin/ffmpeg',
-    'ffmpeg' // Will work if ffmpeg is in PATH
+    '/usr/local/bin/ffmpeg'
   ];
   
   console.log('Checking system paths...');
   for (const systemPath of systemPaths) {
     try {
       console.log(`Checking system path: ${systemPath}`);
-      if (systemPath === 'ffmpeg' || existsSync(systemPath)) {
-        console.log(`✅ FFmpeg found at system path: ${systemPath}`);
-        return systemPath;
+      if (existsSync(systemPath)) {
+        // Test if binary is actually executable
+        const { execSync } = require('child_process');
+        try {
+          execSync(`${systemPath} -version`, { timeout: 5000 });
+          console.log(`✅ FFmpeg found and verified at system path: ${systemPath}`);
+          return systemPath;
+        } catch (execError) {
+          console.log(`❌ FFmpeg at ${systemPath} exists but is not executable:`, execError.message);
+        }
       }
     } catch (error) {
       console.log(`❌ Error checking system path ${systemPath}:`, error.message);
@@ -97,15 +106,66 @@ function getFFmpegPath(): string {
     }
   }
   
-  // Final attempt: list what's actually in common locations
+  // Final attempt: debug what's actually available
   const dirsToCheck = ['/var/task', '/opt/nodejs', process.cwd()];
   for (const dir of dirsToCheck) {
     try {
       if (existsSync(dir)) {
-        console.log(`Contents of ${dir}:`, require('fs').readdirSync(dir));
+        console.log(`Contents of ${dir}:`, require('fs').readdirSync(dir).slice(0, 20)); // Limit output
+        
         const nodeModulesPath = path.join(dir, 'node_modules');
         if (existsSync(nodeModulesPath)) {
-          console.log(`Contents of ${nodeModulesPath}:`, require('fs').readdirSync(nodeModulesPath));
+          const nodeModulesContents = require('fs').readdirSync(nodeModulesPath);
+          console.log(`node_modules packages count: ${nodeModulesContents.length}`);
+          
+          // Check if ffmpeg-static exists
+          if (nodeModulesContents.includes('ffmpeg-static')) {
+            console.log(`✅ ffmpeg-static package found in ${nodeModulesPath}`);
+            const ffmpegStaticPath = path.join(nodeModulesPath, 'ffmpeg-static');
+            const ffmpegStaticContents = require('fs').readdirSync(ffmpegStaticPath);
+            console.log(`ffmpeg-static contents:`, ffmpegStaticContents);
+            
+            // Check for binary files
+            for (const item of ffmpegStaticContents) {
+              if (item.includes('ffmpeg') || item === 'bin') {
+                const itemPath = path.join(ffmpegStaticPath, item);
+                try {
+                  const stat = require('fs').statSync(itemPath);
+                  console.log(`${item}: size=${stat.size}, isFile=${stat.isFile()}, mode=${stat.mode.toString(8)}`);
+                  
+                  if (item === 'bin' && stat.isDirectory()) {
+                    const binContents = require('fs').readdirSync(itemPath);
+                    console.log(`bin directory contents:`, binContents);
+                    
+                    // Check linux subdirectory
+                    const linuxPath = path.join(itemPath, 'linux');
+                    if (existsSync(linuxPath)) {
+                      const linuxContents = require('fs').readdirSync(linuxPath);
+                      console.log(`linux directory contents:`, linuxContents);
+                      
+                      const x64Path = path.join(linuxPath, 'x64');
+                      if (existsSync(x64Path)) {
+                        const x64Contents = require('fs').readdirSync(x64Path);
+                        console.log(`x64 directory contents:`, x64Contents);
+                        
+                        // Try the actual binary path
+                        const binaryPath = path.join(x64Path, 'ffmpeg');
+                        if (existsSync(binaryPath)) {
+                          const binaryStat = require('fs').statSync(binaryPath);
+                          console.log(`✅ FOUND BINARY: ${binaryPath}, size=${binaryStat.size}, executable=${!!(binaryStat.mode & parseInt('111', 8))}`);
+                          return binaryPath;
+                        }
+                      }
+                    }
+                  }
+                } catch (statError) {
+                  console.log(`Could not stat ${itemPath}:`, statError.message);
+                }
+              }
+            }
+          } else {
+            console.log(`❌ ffmpeg-static package NOT found in ${nodeModulesPath}`);
+          }
         }
       }
     } catch (error) {
@@ -134,13 +194,33 @@ function getRandomAudioFile(): string {
   const selectedAudio = AUDIO_FILES[randomIndex];
   const audioPath = path.join(process.cwd(), 'public', 'audio', selectedAudio);
   
-  // Verify audio file exists
+  console.log(`Selected audio file: ${selectedAudio}`);
+  console.log(`Full audio path: ${audioPath}`);
+  console.log(`Current working directory: ${process.cwd()}`);
+  
+  // Check if public/audio directory exists
+  const publicAudioDir = path.join(process.cwd(), 'public', 'audio');
   const { existsSync } = require('fs');
+  
+  if (existsSync(publicAudioDir)) {
+    console.log(`Audio directory exists: ${publicAudioDir}`);
+    try {
+      const audioFiles = require('fs').readdirSync(publicAudioDir);
+      console.log(`Available audio files:`, audioFiles);
+    } catch (err) {
+      console.log(`Could not read audio directory:`, err.message);
+    }
+  } else {
+    console.log(`Audio directory does not exist: ${publicAudioDir}`);
+  }
+  
+  // Verify audio file exists
   if (!existsSync(audioPath)) {
     console.warn(`Audio file not found at ${audioPath}, using embedded audio generation`);
     return null; // Will trigger embedded audio generation
   }
   
+  console.log(`Audio file found at: ${audioPath}`);
   return audioPath;
 }
 
@@ -235,13 +315,57 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   const ffmpegPath = getFFmpegPath();
   console.log(`[Job ${job.id}] Using FFmpeg path: ${ffmpegPath}`);
   
+  console.log(`[Job ${job.id}] Frame URLs to download:`, frameUrls);
+  console.log(`[Job ${job.id}] Downloading ${frameUrls.length} frames to: ${tempDir}`);
+  
   const downloadPromises = frameUrls.map(async (url, index) => {
-    const frameBuffer = await downloadImageFromCloudinary(url);
-    const framePath = path.join(tempDir, `frame-${String(index + 1).padStart(3, '0')}.png`);
-    await fs.writeFile(framePath, frameBuffer);
-    return framePath;
+    try {
+      console.log(`[Job ${job.id}] Downloading frame ${index + 1} from: ${url}`);
+      
+      // Test if URL is accessible
+      const testResponse = await fetch(url, { method: 'HEAD' });
+      console.log(`[Job ${job.id}] Frame ${index + 1} URL test - Status: ${testResponse.status}, Content-Type: ${testResponse.headers.get('content-type')}`);
+      
+      if (!testResponse.ok) {
+        throw new Error(`Frame URL not accessible: ${testResponse.status} ${testResponse.statusText}`);
+      }
+      
+      const frameBuffer = await downloadImageFromCloudinary(url);
+      if (!frameBuffer || frameBuffer.length === 0) {
+        throw new Error(`Downloaded frame buffer is empty for URL: ${url}`);
+      }
+      
+      const framePath = path.join(tempDir, `frame-${String(index + 1).padStart(3, '0')}.png`);
+      console.log(`[Job ${job.id}] Saving frame ${index + 1} to: ${framePath} (${frameBuffer.length} bytes)`);
+      
+      await fs.writeFile(framePath, frameBuffer);
+      
+      // Verify file was written correctly
+      const savedFile = await fs.stat(framePath);
+      console.log(`[Job ${job.id}] Frame ${index + 1} saved successfully - File size: ${savedFile.size} bytes`);
+      
+      if (savedFile.size === 0) {
+        throw new Error(`Saved frame file is empty: ${framePath}`);
+      }
+      
+      return framePath;
+    } catch (error) {
+      console.error(`[Job ${job.id}] Failed to download frame ${index + 1}:`, error.message);
+      throw new Error(`Frame ${index + 1} download failed: ${error.message}`);
+    }
   });
+  
   await Promise.all(downloadPromises);
+  
+  console.log(`[Job ${job.id}] All frames downloaded successfully`);
+  
+  // Verify all frame files exist
+  try {
+    const tempDirContentsAfterDownload = require('fs').readdirSync(tempDir);
+    console.log(`[Job ${job.id}] Temp directory contents after frame download:`, tempDirContentsAfterDownload);
+  } catch (err) {
+    console.log(`[Job ${job.id}] Could not read temp directory after download:`, err.message);
+  }
 
   const durations = [
       getFrameDuration(job.data.question, 1), // Hook
@@ -261,6 +385,16 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   const tempVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
   const totalVideoDuration = durations.reduce((sum, duration) => sum + duration, 0);
   const audioPath = getRandomAudioFile();
+  
+  // Debug temp directory
+  console.log(`[Job ${job.id}] Temp directory: ${tempDir}`);
+  console.log(`[Job ${job.id}] Output video path: ${tempVideoPath}`);
+  try {
+    const tempDirContents = require('fs').readdirSync(tempDir);
+    console.log(`[Job ${job.id}] Temp directory contents:`, tempDirContents);
+  } catch (err) {
+    console.log(`[Job ${job.id}] Could not read temp directory:`, err.message);
+  }
   
   let ffmpegArgs: string[];
   
