@@ -34,5 +34,5 @@ logs
 # Vercel
 .vercel
 
-# debug-frames/
-# generated-videos/
+debug-frames/
+generated-videos/

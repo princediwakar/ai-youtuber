@@ -57,13 +57,23 @@ async function generatePrompt(jobConfig: any): Promise<string> {
 Generate a single, clear English vocabulary question on the topic: "${topicData.displayName}".
 
 CRITICAL REQUIREMENTS:
-• HOOK: A short, catchy hook (under 60 chars) to create curiosity. It MUST NOT simply rephrase the question. Good patterns include posing a challenge ("Think you're a word master?"), highlighting difficulty ("90% of people get this wrong..."), or stating a benefit ("Unlock a powerful new word!").
+• HOOK: Keep it simple and direct (under 50 chars). Use these proven patterns:
+  - "Can you get this right?" 
+  - "Test your English!"
+  - "Quick word challenge!"
+  - "Do you know this word?"
+  - "English quiz time!"
 • TARGET AUDIENCE: Intermediate English learners (B1-B2 level).
 • QUESTION STYLE: Must be direct and concise. For "Fill in the Blank," provide a clear sentence. For "Synonyms/Antonyms," directly ask for the synonym/antonym of a given word.
 • DIFFICULTY: The correct answer should be a useful, common word, but not too easy.
 • DISTRACTORS: The incorrect options (A, B, C, D) must be plausible and relate to common learner confusions.
 • EXPLANATION: The explanation MUST BE ULTRA-CONCISE (under 150 characters). Simply explain why the answer is correct in plain English.
-• CTA: A short call-to-action (under 60 chars) focused on channel growth or community interaction. It MUST NOT ask the user to comment their score. Good examples: "Like & follow for more!", "Did you know this? Challenge a friend!", "What word should I do next? Comment below!"
+• CTA: Simple and friendly (under 40 chars). Use these patterns:
+  - "Follow for more!"
+  - "Like if you got it!"
+  - "More quizzes coming!"
+  - "Subscribe for daily words!"
+  - "Share with a friend!"
 
 Focus on creating a high-quality, engaging question that is perfect for a quick quiz format. [${timeMarker}-${tokenMarker}]`;
     } else {

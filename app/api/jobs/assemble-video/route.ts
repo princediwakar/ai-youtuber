@@ -366,18 +366,39 @@ async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, t
   const totalDuration = durations.reduce((acc, d) => acc + d, 0);
   const audioPath = getRandomAudioFile();
 
-  const ffmpegArgs = [
-    '-f', 'concat',
-    '-safe', '0',
-    '-i', concatFilePath,
-    '-stream_loop', '-1',
-    '-i', audioPath,
-    '-c:v', 'libx264',
-    '-c:a', 'aac',
-    '-shortest',
-    '-t', totalDuration.toString(),
-    '-y', outputVideoPath
-  ];
+  let ffmpegArgs;
+  
+  if (audioPath) {
+    // Use background music with reduced volume (0.3 = 30% volume)
+    ffmpegArgs = [
+      '-f', 'concat',
+      '-safe', '0',
+      '-i', concatFilePath,
+      '-stream_loop', '-1',
+      '-i', audioPath,
+      '-c:v', 'libx264',
+      '-c:a', 'aac',
+      '-filter:a', 'volume=0.3',
+      '-shortest',
+      '-t', totalDuration.toString(),
+      '-y', outputVideoPath
+    ];
+  } else {
+    // Generate ambient background audio with low volume
+    ffmpegArgs = [
+      '-f', 'concat',
+      '-safe', '0',
+      '-i', concatFilePath,
+      '-f', 'lavfi',
+      '-i', 'sine=frequency=220:duration=' + totalDuration + ',sine=frequency=330:duration=' + totalDuration + ',sine=frequency=440:duration=' + totalDuration,
+      '-filter_complex', '[1:a][2:a][3:a]amix=inputs=3:duration=shortest:weights=0.3 0.4 0.3,volume=0.08,aecho=0.6:0.7:1000:0.2,lowpass=f=800',
+      '-c:v', 'libx264',
+      '-c:a', 'aac',
+      '-shortest',
+      '-t', totalDuration.toString(),
+      '-y', outputVideoPath
+    ];
+  }
 
   console.log(`[Job ${job.id}] Running FFmpeg with args:`, ffmpegArgs);
 
