@@ -12,7 +12,7 @@ import {
 import { QuizJob } from '@/lib/types'; // 💡 FIX: Import the QuizJob type
 import { config } from '@/lib/config';
 
-// More robust FFmpeg path resolution for serverless environments
+// FFmpeg path resolution using @ffmpeg-installer/ffmpeg
 function getFFmpegPath(): string {
   const { existsSync } = require('fs');
   
@@ -24,50 +24,41 @@ function getFFmpegPath(): string {
   console.log('AWS_LAMBDA_FUNCTION_NAME:', process.env.AWS_LAMBDA_FUNCTION_NAME);
   
   try {
-    // First try: require ffmpeg-static directly
-    const staticPath = require('ffmpeg-static');
-    console.log('ffmpeg-static require result:', typeof staticPath, staticPath);
+    // First try: @ffmpeg-installer/ffmpeg
+    const ffmpeg = require('@ffmpeg-installer/ffmpeg');
+    console.log('@ffmpeg-installer/ffmpeg require result:', typeof ffmpeg.path, ffmpeg.path);
     
-    if (staticPath && typeof staticPath === 'string') {
-      console.log('Checking if staticPath exists:', staticPath);
-      if (existsSync(staticPath)) {
-        console.log(`✅ FFmpeg found via require: ${staticPath}`);
-        return staticPath;
+    if (ffmpeg.path && typeof ffmpeg.path === 'string') {
+      console.log('Checking if ffmpeg.path exists:', ffmpeg.path);
+      if (existsSync(ffmpeg.path)) {
+        console.log(`✅ FFmpeg found via @ffmpeg-installer/ffmpeg: ${ffmpeg.path}`);
+        return ffmpeg.path;
       } else {
-        console.log('❌ staticPath does not exist on filesystem');
+        console.log('❌ @ffmpeg-installer/ffmpeg path does not exist on filesystem');
       }
     }
   } catch (error) {
-    console.warn('❌ Could not require ffmpeg-static:', error.message);
+    console.warn('❌ Could not require @ffmpeg-installer/ffmpeg:', error.message);
   }
   
-  // Generate comprehensive fallback paths for Vercel
+  // Fallback paths for @ffmpeg-installer/ffmpeg
   const fallbackPaths = [
-    // Try the bin/linux/x64 structure first (most likely for ffmpeg-static)
-    '/var/task/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
-    '/opt/nodejs/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
-    path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'bin', 'linux', 'x64', 'ffmpeg'),
-    path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'ffmpeg-static', 'bin', 'linux', 'x64', 'ffmpeg'),
-    
-    // Standard direct paths (older ffmpeg-static versions)
-    '/var/task/node_modules/ffmpeg-static/ffmpeg',
-    '/opt/nodejs/node_modules/ffmpeg-static/ffmpeg',
-    '/var/runtime/node_modules/ffmpeg-static/ffmpeg',
+    // @ffmpeg-installer/ffmpeg paths in serverless environments
+    '/var/task/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
+    '/opt/nodejs/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
+    '/var/runtime/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
     
     // Vercel-specific paths
-    '/vercel/path0/node_modules/ffmpeg-static/ffmpeg',
-    '/vercel/path1/node_modules/ffmpeg-static/ffmpeg', 
-    '/vercel/path2/node_modules/ffmpeg-static/ffmpeg',
-    '/vercel/path0/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
-    '/vercel/path1/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+    '/vercel/path0/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
+    '/vercel/path1/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
+    '/vercel/path2/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
     
     // Relative to current working directory
-    path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
-    path.join(process.cwd(), '.next', 'server', 'chunks', 'ffmpeg'),
+    path.join(process.cwd(), 'node_modules', '@ffmpeg-installer', 'ffmpeg', 'ffmpeg'),
     
     // Relative to __dirname
-    path.join(__dirname, '..', '..', '..', 'node_modules', 'ffmpeg-static', 'ffmpeg'),
-    path.join(__dirname, 'node_modules', 'ffmpeg-static', 'ffmpeg')
+    path.join(__dirname, '..', '..', '..', '..', 'node_modules', '@ffmpeg-installer', 'ffmpeg', 'ffmpeg'),
+    path.join(__dirname, '..', '..', '..', 'node_modules', '@ffmpeg-installer', 'ffmpeg', 'ffmpeg')
   ];
   
   console.log('Checking fallback paths...');
@@ -118,53 +109,38 @@ function getFFmpegPath(): string {
           const nodeModulesContents = require('fs').readdirSync(nodeModulesPath);
           console.log(`node_modules packages count: ${nodeModulesContents.length}`);
           
-          // Check if ffmpeg-static exists
-          if (nodeModulesContents.includes('ffmpeg-static')) {
-            console.log(`✅ ffmpeg-static package found in ${nodeModulesPath}`);
-            const ffmpegStaticPath = path.join(nodeModulesPath, 'ffmpeg-static');
-            const ffmpegStaticContents = require('fs').readdirSync(ffmpegStaticPath);
-            console.log(`ffmpeg-static contents:`, ffmpegStaticContents);
+          // Check if @ffmpeg-installer/ffmpeg exists
+          if (nodeModulesContents.includes('@ffmpeg-installer')) {
+            console.log(`✅ @ffmpeg-installer directory found in ${nodeModulesPath}`);
+            const ffmpegInstallerPath = path.join(nodeModulesPath, '@ffmpeg-installer');
+            const ffmpegInstallerContents = require('fs').readdirSync(ffmpegInstallerPath);
+            console.log(`@ffmpeg-installer contents:`, ffmpegInstallerContents);
             
-            // Check for binary files
-            for (const item of ffmpegStaticContents) {
-              if (item.includes('ffmpeg') || item === 'bin') {
-                const itemPath = path.join(ffmpegStaticPath, item);
-                try {
-                  const stat = require('fs').statSync(itemPath);
-                  console.log(`${item}: size=${stat.size}, isFile=${stat.isFile()}, mode=${stat.mode.toString(8)}`);
-                  
-                  if (item === 'bin' && stat.isDirectory()) {
-                    const binContents = require('fs').readdirSync(itemPath);
-                    console.log(`bin directory contents:`, binContents);
+            if (ffmpegInstallerContents.includes('ffmpeg')) {
+              const ffmpegPackagePath = path.join(ffmpegInstallerPath, 'ffmpeg');
+              const ffmpegPackageContents = require('fs').readdirSync(ffmpegPackagePath);
+              console.log(`@ffmpeg-installer/ffmpeg contents:`, ffmpegPackageContents);
+              
+              // Check for binary files in the package
+              for (const item of ffmpegPackageContents) {
+                if (item.includes('ffmpeg') && !item.includes('.')) { // Likely the binary
+                  const itemPath = path.join(ffmpegPackagePath, item);
+                  try {
+                    const stat = require('fs').statSync(itemPath);
+                    console.log(`${item}: size=${stat.size}, isFile=${stat.isFile()}, mode=${stat.mode.toString(8)}`);
                     
-                    // Check linux subdirectory
-                    const linuxPath = path.join(itemPath, 'linux');
-                    if (existsSync(linuxPath)) {
-                      const linuxContents = require('fs').readdirSync(linuxPath);
-                      console.log(`linux directory contents:`, linuxContents);
-                      
-                      const x64Path = path.join(linuxPath, 'x64');
-                      if (existsSync(x64Path)) {
-                        const x64Contents = require('fs').readdirSync(x64Path);
-                        console.log(`x64 directory contents:`, x64Contents);
-                        
-                        // Try the actual binary path
-                        const binaryPath = path.join(x64Path, 'ffmpeg');
-                        if (existsSync(binaryPath)) {
-                          const binaryStat = require('fs').statSync(binaryPath);
-                          console.log(`✅ FOUND BINARY: ${binaryPath}, size=${binaryStat.size}, executable=${!!(binaryStat.mode & parseInt('111', 8))}`);
-                          return binaryPath;
-                        }
-                      }
+                    if (stat.isFile() && stat.size > 1000000) { // FFmpeg binary should be large
+                      console.log(`✅ FOUND BINARY: ${itemPath}, size=${stat.size}, executable=${!!(stat.mode & parseInt('111', 8))}`);
+                      return itemPath;
                     }
+                  } catch (statError) {
+                    console.log(`Could not stat ${itemPath}:`, statError.message);
                   }
-                } catch (statError) {
-                  console.log(`Could not stat ${itemPath}:`, statError.message);
                 }
               }
             }
           } else {
-            console.log(`❌ ffmpeg-static package NOT found in ${nodeModulesPath}`);
+            console.log(`❌ @ffmpeg-installer package NOT found in ${nodeModulesPath}`);
           }
         }
       }
