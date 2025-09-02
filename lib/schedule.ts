@@ -29,6 +29,11 @@ const generationDailyPattern: HourlySchedule = {
     
     // Evening generation for the late-night and next day's morning uploads
     18: ['english_vocab_builder'],
+    19: ['english_vocab_builder'],
+    20: ['english_vocab_builder'],
+    21: ['english_vocab_builder'],
+    22: ['english_vocab_builder'],
+    23: ['english_vocab_builder'],
 };
 
 /**
@@ -41,7 +46,9 @@ const uploadDailyPattern: HourlySchedule = {
   15: ['english_vocab_builder'], // Afternoon Break
   17: ['english_vocab_builder'], // Evening Commute
   19: ['english_vocab_builder'], // Post-Dinner Study
-  21: ['english_vocab_builder'], // Prime Evening Time
+  20: ['english_vocab_builder'], // Post-Dinner Study
+  21: ['english_vocab_builder'], // Post-Dinner Study
+  22: ['english_vocab_builder'], // Prime Evening Time
   23: ['english_vocab_builder'], // Late Night / Other Timezones Prime Time
 };
 

@@ -15,5 +15,10 @@
     "app/api/jobs/generate-quiz/route.ts": {
       "maxDuration": 120
     }
+  },
+  "build": {
+    "env": {
+      "FFMPEG_STATIC_DOWNLOAD_PATH": "/tmp/ffmpeg"
+    }
   }
 }

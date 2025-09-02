@@ -1,0 +1,13 @@
+# Vercel ignore file
+# Ensure FFmpeg binaries are NOT ignored
+!node_modules/ffmpeg-static/**
+!node_modules/ffmpeg-static/ffmpeg
+!node_modules/ffmpeg-static/bin/**
+
+# Standard ignores
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+generated-videos/
+*.log

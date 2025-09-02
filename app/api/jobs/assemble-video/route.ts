@@ -14,26 +14,107 @@ import { config } from '@/lib/config';
 
 // More robust FFmpeg path resolution for serverless environments
 function getFFmpegPath(): string {
-  const staticPath = require('ffmpeg-static');
-  if (staticPath && typeof staticPath === 'string') {
-    return staticPath;
+  const { existsSync } = require('fs');
+  
+  console.log('=== FFmpeg Path Resolution Debug ===');
+  console.log('process.cwd():', process.cwd());
+  console.log('__dirname:', __dirname);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('VERCEL:', process.env.VERCEL);
+  console.log('AWS_LAMBDA_FUNCTION_NAME:', process.env.AWS_LAMBDA_FUNCTION_NAME);
+  
+  try {
+    // First try: require ffmpeg-static directly
+    const staticPath = require('ffmpeg-static');
+    console.log('ffmpeg-static require result:', typeof staticPath, staticPath);
+    
+    if (staticPath && typeof staticPath === 'string') {
+      console.log('Checking if staticPath exists:', staticPath);
+      if (existsSync(staticPath)) {
+        console.log(`✅ FFmpeg found via require: ${staticPath}`);
+        return staticPath;
+      } else {
+        console.log('❌ staticPath does not exist on filesystem');
+      }
+    }
+  } catch (error) {
+    console.warn('❌ Could not require ffmpeg-static:', error.message);
   }
   
-  // Fallback paths for different environments
+  // Generate comprehensive fallback paths for Vercel
   const fallbackPaths = [
+    // Standard serverless paths
     '/opt/nodejs/node_modules/ffmpeg-static/ffmpeg',
     '/var/task/node_modules/ffmpeg-static/ffmpeg',
-    '/vercel/path0/node_modules/ffmpeg-static/ffmpeg'
+    '/var/runtime/node_modules/ffmpeg-static/ffmpeg',
+    
+    // Vercel-specific paths
+    '/vercel/path0/node_modules/ffmpeg-static/ffmpeg',
+    '/vercel/path1/node_modules/ffmpeg-static/ffmpeg', 
+    '/vercel/path2/node_modules/ffmpeg-static/ffmpeg',
+    
+    // Relative to current working directory
+    path.join(process.cwd(), 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+    path.join(process.cwd(), '.next', 'server', 'chunks', 'ffmpeg'),
+    
+    // Relative to __dirname
+    path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+    path.join(__dirname, '..', '..', '..', 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+    path.join(__dirname, 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+    
+    // Try different binary names in case of platform differences
+    '/var/task/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg',
+    '/opt/nodejs/node_modules/ffmpeg-static/bin/linux/x64/ffmpeg'
   ];
   
-  const { existsSync } = require('fs');
+  console.log('Checking fallback paths...');
   for (const fallbackPath of fallbackPaths) {
+    console.log(`Checking: ${fallbackPath}`);
     if (existsSync(fallbackPath)) {
+      console.log(`✅ FFmpeg found at fallback path: ${fallbackPath}`);
       return fallbackPath;
     }
   }
   
-  throw new Error('FFmpeg binary not found in any known location');
+  // Last resort: try system FFmpeg
+  const systemPaths = [
+    '/usr/bin/ffmpeg',
+    '/usr/local/bin/ffmpeg',
+    'ffmpeg' // Will work if ffmpeg is in PATH
+  ];
+  
+  console.log('Checking system paths...');
+  for (const systemPath of systemPaths) {
+    try {
+      console.log(`Checking system path: ${systemPath}`);
+      if (systemPath === 'ffmpeg' || existsSync(systemPath)) {
+        console.log(`✅ FFmpeg found at system path: ${systemPath}`);
+        return systemPath;
+      }
+    } catch (error) {
+      console.log(`❌ Error checking system path ${systemPath}:`, error.message);
+      continue;
+    }
+  }
+  
+  // Final attempt: list what's actually in common locations
+  const dirsToCheck = ['/var/task', '/opt/nodejs', process.cwd()];
+  for (const dir of dirsToCheck) {
+    try {
+      if (existsSync(dir)) {
+        console.log(`Contents of ${dir}:`, require('fs').readdirSync(dir));
+        const nodeModulesPath = path.join(dir, 'node_modules');
+        if (existsSync(nodeModulesPath)) {
+          console.log(`Contents of ${nodeModulesPath}:`, require('fs').readdirSync(nodeModulesPath));
+        }
+      }
+    } catch (error) {
+      console.log(`Could not list contents of ${dir}:`, error.message);
+    }
+  }
+  
+  const allPaths = [...fallbackPaths, ...systemPaths];
+  throw new Error(`FFmpeg binary not found in any location. Environment: ${process.env.VERCEL ? 'Vercel' : 'Other'}. Checked ${allPaths.length} paths: ${allPaths.join(', ')}`);
 }
 
 // Array of available audio files
@@ -207,12 +288,84 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     ];
   }
 
-  console.log(`[Job ${job.id}] Running FFmpeg...`);
+  console.log(`[Job ${job.id}] Running FFmpeg with args:`, ffmpegArgs);
+  
+  // Verify FFmpeg binary is executable before spawning
+  try {
+    const stats = require('fs').statSync(ffmpegPath);
+    console.log(`[Job ${job.id}] FFmpeg binary stats:`, {
+      size: stats.size,
+      isFile: stats.isFile(),
+      mode: stats.mode.toString(8),
+      executable: !!(stats.mode & parseInt('111', 8))
+    });
+  } catch (statError) {
+    console.error(`[Job ${job.id}] Cannot stat FFmpeg binary:`, statError.message);
+  }
+  
   await new Promise<void>((resolve, reject) => {
-    const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, { cwd: tempDir });
-    ffmpegProcess.stderr.on('data', (data: Buffer) => console.log(`[FFmpeg Job ${job.id}]: ${data.toString()}`));
-    ffmpegProcess.on('close', (code: number) => code === 0 ? resolve() : reject(new Error(`FFmpeg exited with code ${code}`)));
-    ffmpegProcess.on('error', (err) => reject(err));
+    let ffmpegProcess;
+    
+    try {
+      ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, { 
+        cwd: tempDir,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: { ...process.env, PATH: process.env.PATH }
+      });
+    } catch (spawnError) {
+      reject(new Error(`Failed to spawn FFmpeg: ${spawnError.message}. Path: ${ffmpegPath}. CWD: ${tempDir}`));
+      return;
+    }
+    
+    let stderr = '';
+    let stdout = '';
+    let hasStarted = false;
+    
+    ffmpegProcess.stdout?.on('data', (data: Buffer) => {
+      hasStarted = true;
+      stdout += data.toString();
+      console.log(`[FFmpeg Job ${job.id} stdout]: ${data.toString()}`);
+    });
+    
+    ffmpegProcess.stderr?.on('data', (data: Buffer) => {
+      hasStarted = true;
+      stderr += data.toString();
+      console.log(`[FFmpeg Job ${job.id} stderr]: ${data.toString()}`);
+    });
+    
+    ffmpegProcess.on('close', (code: number) => {
+      console.log(`[Job ${job.id}] FFmpeg process closed with code: ${code}`);
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`FFmpeg exited with code ${code}. stderr: ${stderr}. stdout: ${stdout}`));
+      }
+    });
+    
+    ffmpegProcess.on('error', (err) => {
+      const errorContext = {
+        error: err.message,
+        code: err.code,
+        errno: err.errno,
+        path: ffmpegPath,
+        hasStarted,
+        platform: process.platform,
+        arch: process.arch
+      };
+      console.error(`[Job ${job.id}] FFmpeg spawn error:`, errorContext);
+      reject(new Error(`FFmpeg spawn error: ${err.message} (${err.code}). Path: ${ffmpegPath}. Context: ${JSON.stringify(errorContext)}`));
+    });
+    
+    // Additional timeout safety
+    setTimeout(() => {
+      if (!hasStarted) {
+        console.error(`[Job ${job.id}] FFmpeg did not start within 10 seconds, likely binary issue`);
+        try {
+          ffmpegProcess.kill();
+        } catch (e) {}
+        reject(new Error(`FFmpeg failed to start within 10 seconds. Binary may be corrupted or incompatible.`));
+      }
+    }, 10000);
   });
 
   const videoBuffer = await fs.readFile(tempVideoPath);
