@@ -4,51 +4,6 @@ import { Theme } from '@/lib/visuals/themes';
 // Assuming drawingUtils is in the same directory based on layout file structure
 import { drawBackground, wrapText, drawFooter, drawHeader } from '@/lib/visuals/drawingUtils'; 
 
-/**
- * Renders the initial hook frame to grab viewer attention.
- * This frame displays a short, catchy text phrase.
- */
-export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
-  const { hook } = job.data.question;
-  const ctx = canvas.getContext('2d');
-  
-  // 1. Draw the standard background
-  drawBackground(ctx, canvas.width, canvas.height, theme);
-  drawHeader(ctx, canvas.width, theme, job);
-  
-  // 2. Set text properties for the hook text
-  ctx.fillStyle = theme.text.primary;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle'; // Center text vertically
-  
-  const textMaxWidth = canvas.width - 120; // 60px padding on each side
-  let fontSize = 90; // Start with a large font size
-  let lines: string[];
-
-  // 3. Dynamically reduce font size to fit the text within the canvas height
-  do {
-    ctx.font = `bold ${fontSize}px ${theme.fontFamily}`;
-    lines = wrapText(ctx, hook, textMaxWidth);
-    const lineHeight = fontSize * 1.3;
-    const totalTextHeight = lines.length * lineHeight;
-    
-    // Use more canvas space and keep font larger
-    if (totalTextHeight < canvas.height * 0.7 || fontSize <= 60) {
-      break;
-    }
-    fontSize -= 3; // Smaller decrements for better sizing
-  } while (fontSize > 60);
-
-  // 4. Draw the final, wrapped text onto the canvas
-  const lineHeight = fontSize * 1.3;
-  const totalHeight = lines.length * lineHeight;
-  const startY = (canvas.height - totalHeight) / 2 + lineHeight / 2;
-
-  lines.forEach((line, index) => {
-    ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight));
-  });
-  drawFooter(ctx, canvas.width, canvas.height, theme);
-}
 
 /**
  * Renders the final call-to-action (CTA) frame.

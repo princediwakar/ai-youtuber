@@ -12,7 +12,11 @@ import {
     calculateDynamicPositions,
     measureQuestionContent,
     ContentMeasurements,
-    LayoutPositions 
+    LayoutPositions,
+    applyShadow,
+    applyFillStyle,
+    clearShadow
+
 } from '../drawingUtils';
 
 
@@ -233,60 +237,65 @@ export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Them
 
 // Dynamic options rendering with variable font size
 function renderOptions(
-    ctx: CanvasRenderingContext2D, 
-    width: number, 
-    startY: number, 
-    job: QuizJob, 
-    theme: Theme, 
-    isAnswerFrame: boolean,
-    fontSize: number = 45
+  ctx: CanvasRenderingContext2D, 
+  width: number, 
+  startY: number, 
+  job: QuizJob, 
+  theme: Theme, 
+  isAnswerFrame: boolean,
+  fontSize: number = 45
 ) {
-  const { options, answer } = job.data.question;
+const { options, answer } = job.data.question;
 
-  const buttonWidth = width * 0.85;
-  const buttonX = (width - buttonWidth) / 2;
-  let optionY = startY;
+const buttonWidth = width * 0.85;
+const buttonX = (width - buttonWidth) / 2;
+let optionY = startY;
 
-  const PADDING = 40;
-  const LINE_HEIGHT = fontSize * 1.4;
-  const OPTION_SPACING = 40;
+const PADDING = 40;
+const LINE_HEIGHT = fontSize * 1.4;
+const OPTION_SPACING = 40;
 
-  Object.entries(options).forEach(([optionKey, optionText]) => {
-      const fullOptionText = `${optionKey}. ${optionText}`;
-      
-      ctx.font = `bold ${fontSize}px ${theme.fontFamily}`;
+Object.entries(options).forEach(([optionKey, optionText]) => {
+    const fullOptionText = `${optionKey}. ${optionText}`;
+    ctx.font = `bold ${fontSize}px ${theme.fontFamily}`;
 
-      const maxWidth = buttonWidth - (PADDING * 2);
-      const lines = wrapText(ctx, fullOptionText, maxWidth);
+    const maxWidth = buttonWidth - (PADDING * 2);
+    const lines = wrapText(ctx, fullOptionText, maxWidth);
 
-      const textBlockHeight = lines.length * LINE_HEIGHT;
-      const dynamicButtonHeight = textBlockHeight + (PADDING * 2);
+    const textBlockHeight = lines.length * LINE_HEIGHT;
+    const dynamicButtonHeight = textBlockHeight + (PADDING * 2);
+    const isCorrect = optionKey === answer;
+    
+    // 1. Apply shadow for a cool pop-out effect
+    applyShadow(ctx, theme.button.shadow);
 
-      const isCorrect = optionKey === answer;
-      
-      if (isAnswerFrame && isCorrect) {
-          // Correct answer: solid button
-          ctx.fillStyle = theme.feedback.correct;
-          drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
-          ctx.fillStyle = theme.text.onAccent;
-      } else {
-          // Incorrect options or question frame: outlined buttons
-          ctx.strokeStyle = theme.text.primary;
-          drawOutlinedRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30, 4);
-          ctx.fillStyle = theme.text.primary;
-      }
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
+    // 2. Determine the fill style (correct answer vs. normal button)
+    let fillStyle = theme.button.background;
+    if (isAnswerFrame && isCorrect) {
+        fillStyle = theme.feedback.correct;
+    }
 
-      const textStartY = optionY + PADDING;
-      lines.forEach((line, lineIndex) => {
-        const textX = buttonX + PADDING;
-        const textY = textStartY + (lineIndex * LINE_HEIGHT);
-        ctx.fillText(line, textX, textY);
-      });
+    // 3. Apply the gradient/solid color and draw the button
+    const bounds = { x: buttonX, y: optionY, w: buttonWidth, h: dynamicButtonHeight };
+    applyFillStyle(ctx, fillStyle, bounds);
+    drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
+    
+    // 4. Clear shadow before drawing text so the text isn't blurry
+    clearShadow(ctx);
+    
+    // 5. Set text color and draw the text
+    ctx.fillStyle = (isAnswerFrame && isCorrect) ? theme.text.onAccent : theme.button.text;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
 
-      optionY += dynamicButtonHeight + OPTION_SPACING;
-  });
+    const textStartY = optionY + PADDING;
+    lines.forEach((line, lineIndex) => {
+      const textX = buttonX + PADDING;
+      const textY = textStartY + (lineIndex * LINE_HEIGHT);
+      ctx.fillText(line, textX, textY);
+    });
+
+    optionY += dynamicButtonHeight + OPTION_SPACING;
+});
 }
-
 

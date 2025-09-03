@@ -289,7 +289,6 @@ async function processJob(job: QuizJob) {
 
 async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number}> {
   const ffmpegPath = getFFmpegPath();
-  const transitionDuration = 1.0; // 1 second fade
 
   console.log(`[Job ${job.id}] Assembling video with fade transitions...`);
 
@@ -308,29 +307,34 @@ async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, t
     getFrameDuration(job.data.question, 2),
     getFrameDuration(job.data.question, 3),
     getFrameDuration(job.data.question, 4),
-    getFrameDuration(job.data.question, 5)
   ];
 
-  // Create individual video clips from static frames with fade in/out
+  // Create individual video clips from static frames with smooth transitions
   const clipPromises = framePaths.map(async (framePath, index) => {
     const duration = durations[index];
     const clipPath = path.join(tempDir, `clip-${String(index + 1).padStart(3, '0')}.mp4`);
     
-    // Fade logic: 
-    // Frame 1 (index 0): no fade-in, only fade-out
-    // Frame 2 (index 1): fade-in, no fade-out (to avoid transition to frame 3)
-    // Frame 3 (index 2): no fade-in (to avoid transition from frame 2), fade-out
-    // Frame 4+ (index 3+): fade-in and fade-out
+    // Logical transition flow for 4-frame structure:
+    // Frame 1 (Question): Clean start, smooth fade out to answer
+    // Frame 2 (Answer): Fade in from question, fade out to explanation  
+    // Frame 3 (Explanation): Fade in from answer, fade out to CTA
+    // Frame 4 (CTA): Fade in from explanation, clean end
     let fadeFilter;
     if (index === 0) {
-      fadeFilter = `fade=out:${Math.max(0, (duration - 1) * 30)}:30`;  // No fade-in for first frame
+      // Question frame: clean start, fade out for smooth transition to answer
+      fadeFilter = `fade=out:${Math.max(0, (duration - 0.5) * 30)}:15`;
     } else if (index === 1) {
-      fadeFilter = `fade=in:0:30`;  // Fade-in only, no fade-out to avoid transition to frame 3
+      // Answer frame: fade in from question, fade out to explanation
+      fadeFilter = `fade=in:0:15,fade=out:${Math.max(0, (duration - 0.5) * 30)}:15`;
     } else if (index === 2) {
-      fadeFilter = `fade=out:${Math.max(0, (duration - 1) * 30)}:30`;  // No fade-in to avoid transition from frame 2
+      // Explanation frame: fade in from answer, fade out to CTA
+      fadeFilter = `fade=in:0:15,fade=out:${Math.max(0, (duration - 0.5) * 30)}:15`;
     } else {
-      fadeFilter = `fade=in:0:30,fade=out:${Math.max(0, (duration - 1) * 30)}:30`;  // Normal transitions
+      // CTA frame: fade in from explanation, clean end
+      fadeFilter = `fade=in:0:15`;
     }
+
+    
     
     const args = [
       '-loop', '1',
@@ -366,7 +370,7 @@ async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, t
   const totalDuration = durations.reduce((acc, d) => acc + d, 0);
   const audioPath = getRandomAudioFile();
 
-  let ffmpegArgs;
+  let ffmpegArgs: string[];
   
   if (audioPath) {
     // Use background music with reduced volume (0.3 = 30% volume)
@@ -427,20 +431,17 @@ async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, t
 }
 function getFrameDuration(question: any, frameNumber: number): number {
   switch (frameNumber) {
-    case 1: // Hook Frame
-      return 2.5; // Short and snappy
-    
-    case 2: // Question Frame
+    case 1: // Question Frame
       const textLength = (question?.question?.length || 0) + Object.values(question?.options || {}).join(" ").length;
       return Math.max(4, Math.min(7, Math.ceil(textLength / 15)));
       
-    case 3: // Answer Frame
+    case 2: // Answer Frame
       return 3; // Enough time to see the answer
       
-    case 4: // Explanation Frame
+    case 3: // Explanation Frame
       return Math.max(4, Math.min(6, Math.ceil((question?.explanation?.length || 0) / 15)));
       
-    case 5: // CTA Frame
+    case 4: // CTA Frame
       return 3; // Standard duration for a call-to-action
       
     default:

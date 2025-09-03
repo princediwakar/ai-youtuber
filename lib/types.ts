@@ -6,7 +6,6 @@
 // --- MODIFICATION START ---
 // Updated the Question interface to include all possible fields from the AI generation.
 export interface Question {
-  hook: string; // For the intro frame
   question?: string; // Optional, as assertion/reason questions don't use this
   assertion?: string; // For assertion/reason questions
   reason?: string; // For assertion/reason questions
@@ -66,25 +65,4 @@ export interface UploadedVideo {
   tags: string[];
   view_count: number;
   uploaded_at: Date;
-}
-
-// Represents the structure of a visual theme.
-export interface Theme {
-  name: string;
-  fontFamily: string;
-  page: {
-    background: string;
-  };
-  text: {
-    primary: string;    // For questions, main content
-    secondary: string;  // For footers, muted text
-    onAccent: string;   // For text on colored buttons/backgrounds
-  };
-  button: {
-    background: string;
-    text: string;
-  };
-  feedback: {
-    correct: string;    // Background for correct answers
-  };
 }

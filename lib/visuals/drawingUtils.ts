@@ -1,28 +1,88 @@
-//lib/visuals/drawingUtils.ts
+// lib/visuals/drawingUtils.ts
 import { CanvasRenderingContext2D } from 'canvas';
 import { QuizJob } from '@/lib/types';
 import { Theme } from '@/lib/visuals/themes';
 import { MasterPersonas } from '@/lib/personas';
 
-export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: Theme, job: QuizJob) => {
-    ctx.fillStyle = theme.text.primary; // ✨ Changed
-    ctx.font = `bold 48px ${theme.fontFamily}`; // ✨ Changed
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    
-    // Use category_display_name from the job data, with fallbacks
-    const personaDisplayName = 
-                               MasterPersonas[job.persona]?.displayName || 
-                               job.persona;
-    
-    ctx.fillText(`${personaDisplayName}`, width / 2, 90);
+/**
+ * ✨ NEW: A helper function to apply a shadow to the context.
+ * This adds depth to elements like buttons.
+ */
+export const applyShadow = (ctx: CanvasRenderingContext2D, color: string, blur: number = 15, offsetX: number = 0, offsetY: number = 8) => {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = blur;
+    ctx.shadowOffsetX = offsetX;
+    ctx.shadowOffsetY = offsetY;
 };
 
+/**
+ * ✨ NEW: A helper function to clear any active shadow from the context.
+ */
+export const clearShadow = (ctx: CanvasRenderingContext2D) => {
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+};
+
+/**
+ * ✨ NEW: A helper to apply either a solid color or a gradient fill style.
+ * @param bounds - An object {x, y, w, h} defining the area for the gradient.
+ */
+export const applyFillStyle = (ctx: CanvasRenderingContext2D, style: string | string[], bounds: { x: number, y: number, w: number, h: number }) => {
+    if (Array.isArray(style)) {
+        // Creates a top-to-bottom linear gradient within the given bounds
+        const gradient = ctx.createLinearGradient(bounds.x, bounds.y, bounds.x, bounds.y + bounds.h);
+        const step = 1 / (style.length - 1);
+        style.forEach((color, index) => {
+            gradient.addColorStop(index * step, color);
+        });
+        ctx.fillStyle = gradient;
+    } else {
+        ctx.fillStyle = style;
+    }
+};
+
+// 🎨 MODIFIED: drawHeader now creates a more visually appealing header bar.
+export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: Theme, job: QuizJob) => {
+    const headerPlateY = 60;
+    const headerPlateHeight = 90;
+
+    // Draw a semi-transparent, rounded rectangle behind the header text
+    // ctx.fillStyle = theme.header.background;
+    // drawRoundRect(ctx, 40, headerPlateY, width - 80, headerPlateHeight, 25);
+    
+    // Set text properties
+    ctx.fillStyle = theme.header.text;
+    ctx.font = `bold 48px ${theme.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle'; // Center text vertically inside the plate
+    
+    const personaDisplayName = MasterPersonas[job.persona]?.displayName || job.persona;
+    
+    // Draw the text in the middle of the header plate
+    ctx.fillText(personaDisplayName, width / 2, headerPlateY + headerPlateHeight / 2);
+};
+
+// 🎨 MODIFIED: drawBackground now supports gradients.
 export const drawBackground = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
-    ctx.fillStyle = theme.page.background;
+    if (Array.isArray(theme.page.background)) {
+        // Create a diagonal gradient from top-left to bottom-right
+        const gradient = ctx.createLinearGradient(0, 0, width, height);
+        const step = 1 / (theme.page.background.length - 1);
+        theme.page.background.forEach((color, index) => {
+            gradient.addColorStop(index * step, color);
+        });
+        ctx.fillStyle = gradient;
+    } else {
+        ctx.fillStyle = theme.page.background;
+    }
     ctx.fillRect(0, 0, width, height);
 };
 
+// ... (The rest of drawingUtils.ts remains the same, but we need to export the new helpers)
+// Make sure to add the new functions to your exports if you structure them in a way that requires it.
+// For this example, we'll assume they are available to the layout files.
 
 export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
     ctx.fillStyle = theme.text.secondary; // ✨ Changed to use secondary text color

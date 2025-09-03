@@ -4,10 +4,11 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import { config } from './config';
 import { themes } from './visuals/themes';
-import { Theme, QuizJob } from '@/lib/types';
+import { QuizJob } from '@/lib/types';
+import { Theme } from './visuals/themes';
 import { PersonaThemeMap } from './visuals/themeMap';
 import * as mcqLayout from './visuals/layouts/mcqLayout';
-import * as trueFalseLayout from './visuals/layouts/trueFalseLayout';
+// import * as trueFalseLayout from './visuals/layouts/trueFalseLayout'; // ✨ Removed - now using MCQ layout for all types
 import { 
   uploadImageToCloudinary, 
   generateFramePublicIds,
@@ -16,7 +17,7 @@ import {
 
 // --- FIX START ---
 // 1. Correctly import from the commonFrames file using a relative path
-import { renderHookFrame, renderCtaFrame } from '@/lib/visuals/layouts/commonFrames';
+import { renderCtaFrame } from '@/lib/visuals/layouts/commonFrames';
 // --- FIX END ---
 
 
@@ -28,11 +29,11 @@ try {
   console.error("CRITICAL: Failed to register font. Frames cannot be created.", error);
 }
 
-// Layout Router (no changes here)
+// Layout Router - consolidated to use MCQ layout for all question types
 const layoutRouter = {
   multiple_choice: mcqLayout,
   assertion_reason: mcqLayout,
-  true_false: trueFalseLayout,
+  true_false: mcqLayout,  // ✨ Now using MCQ layout for true/false questions too
   default: mcqLayout,
 };
 
@@ -45,7 +46,6 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   // --- FIX START ---
   // 2. Call the common functions directly, and the specific functions via the 'layout' object
   const framesToRender = [
-    // (canvas: Canvas) => renderHookFrame(canvas, job, theme),           // DISABLED: Hook frame temporarily paused
     (canvas: Canvas) => layout.renderQuestionFrame(canvas, job, theme),  // Layout-specific call
     (canvas: Canvas) => layout.renderAnswerFrame(canvas, job, theme),    // Layout-specific call
     (canvas: Canvas) => layout.renderExplanationFrame(canvas, job, theme),// Layout-specific call
@@ -58,7 +58,7 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
       const canvas = createCanvas(config.VIDEO_WIDTH, config.VIDEO_HEIGHT);
       renderFunction(canvas);
       if (config.DEBUG_MODE) {
-        const frameType = ['hook', 'question', 'answer', 'explanation', 'cta'][index];
+        const frameType = ['question', 'answer', 'explanation', 'cta'][index];
         await saveDebugFrame(canvas, `${theme.name}-job-${job.id}-frame-${index + 1}-${frameType}.png`);
       }
       renderedCanvases.push(canvas);

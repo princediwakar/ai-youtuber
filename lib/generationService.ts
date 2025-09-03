@@ -52,17 +52,11 @@ async function generatePrompt(jobConfig: any): Promise<string> {
 
   if (persona === 'english_vocab_builder') {
     if (topicData) {
-      // Refined the prompt with much clearer instructions for hooks and CTAs.
+      // Refined the prompt with much clearer instructions for  CTAs.
       prompt = `You are an expert English teacher creating a viral quiz for a YouTube Short.
 Generate a single, clear English vocabulary question on the topic: "${topicData.displayName}".
 
 CRITICAL REQUIREMENTS:
-• HOOK: Create curiosity and urgency (under 55 chars). Use these high-engagement patterns:
-  - "Only 1 in 10 know this word!"
-  - "Think you're ready for this?"
-  - "This word stumps most people!"
-  - "Can you beat 90% of learners?"
-  - "Advanced word challenge!"
 • TARGET AUDIENCE: Intermediate English learners (B1-B2 level).
 • QUESTION STYLE: Must be direct and concise. For "Fill in the Blank," provide a clear sentence. For "Synonyms/Antonyms," directly ask for the synonym/antonym of a given word.
 • DIFFICULTY: The correct answer should be a useful, common word, but not too easy.
@@ -77,7 +71,7 @@ CRITICAL REQUIREMENTS:
 
 Focus on creating a high-quality, engaging question that is perfect for a quick quiz format. [${timeMarker}-${tokenMarker}]`;
     } else {
-      prompt = `Generate a general intermediate (B1-B2 level) English vocabulary MCQ on the topic of "${topic}". The question must be clear and concise for a YouTube Short. The incorrect options must be plausible distractors. The explanation must be under 150 characters. Also generate a short "hook" text and a short "cta" text. [${timeMarker}-${tokenMarker}]`;
+      prompt = `Generate a general intermediate (B1-B2 level) English vocabulary MCQ on the topic of "${topic}". The question must be clear and concise for a YouTube Short. The incorrect options must be plausible distractors. The explanation must be under 150 characters. [${timeMarker}-${tokenMarker}]`;
     }
   } else {
     throw new Error(`Unsupported persona: ${persona}. Only 'english_vocab_builder' is supported.`);
@@ -87,15 +81,14 @@ Focus on creating a high-quality, engaging question that is perfect for a quick 
   const questionFormat = rand < 0.75 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason');
 
   // --- MODIFICATION START ---
-  // Updated the JSON structure in all prompts to include "hook" and "cta"
-    // Updated the JSON structure in all prompts to include "hook" and "cta"
+  // Updated the JSON structure in all prompts to include "cta"
+    // Updated the JSON structure in all prompts to include "cta"
     if (questionFormat === 'true_false') {
-      return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "hook", "question", "options" (an object with keys "True", "False"), "answer" (either "True" or "False"), "explanation", "cta", and "question_type" (set to "true_false"). Explanation must be under 150 characters.';
+      return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A": "True", "B": "False"), "answer" (either "A" or "B"), "explanation", "cta", and "question_type" (set to "true_false"). Explanation must be under 150 characters.';
     } else if (questionFormat === 'assertion_reason') {
-      return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "hook", "assertion", "reason", "options", "answer", "explanation", "cta", and "question_type" (set to "assertion_reason"). 
+      return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "assertion", "reason", "options", "answer", "explanation", "cta", and "question_type" (set to "assertion_reason"). 
   
   MANDATORY JSON STRUCTURE:
-  • "hook": A short, catchy hook text.
   • "assertion": A statement of fact.
   • "reason": A statement explaining the assertion.
   • "options": Must be the standard A/B/C/D object.
@@ -104,7 +97,7 @@ Focus on creating a high-quality, engaging question that is perfect for a quick 
   • "cta": A short call-to-action text.`;
     }
     else {
-      return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "hook", "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", "cta", and "question_type" (set to "multiple_choice"). Explanation must be under 150 characters.';
+      return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", "cta", and "question_type" (set to "multiple_choice"). Explanation must be under 150 characters.';
     }
   
   // --- MODIFICATION END ---
@@ -209,18 +202,17 @@ function parseAndValidateResponse(content: string): Omit<Question, 'topic'> | nu
     const data = JSON.parse(cleanedContent);
 
     // --- MODIFICATION START ---
-    // Updated validation to check for hook, cta, and question/assertion
+    // Updated validation to check for  cta, and question/assertion
     const hasQuestion = data.question && typeof data.question === 'string';
     const hasAssertionReason = data.assertion && typeof data.assertion === 'string' && data.reason && typeof data.reason === 'string';
-    const hasHook = data.hook && typeof data.hook === 'string';
     const hasCta = data.cta && typeof data.cta === 'string';
 
     if ((!hasQuestion && !hasAssertionReason) ||
-      !hasHook || !hasCta || // Check for hook and cta
+      !hasCta || // Check for  cta
       !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
       !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
       !data.explanation || typeof data.explanation !== 'string') {
-      throw new Error('AI response missing required JSON fields (including hook/cta) or has invalid structure.');
+      throw new Error('AI response missing required JSON fields (including cta) or has invalid structure.');
     }
     // --- MODIFICATION END ---
     

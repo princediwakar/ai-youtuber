@@ -7,8 +7,8 @@
  */
 export const PersonaThemeMap: Record<string, string[]> = {
 
-  english_vocab_builder: ['EmeraldSea', 'CosmicDawn', 'CafeAuLait'],
-  
+  english_vocab_builder: ['CafeAuLait', 'VintageScroll', 'SakuraGrove', 'CanyonSunset', 'MintyFresh', 'SunsetBeach'],
+  // Removed dark themes (EnchantedForest, EmeraldSea, CosmicDawn) for better mobile visibility
   // A default set of themes for any new persona not explicitly listed.
   default: ['CafeAuLait'],
 };
