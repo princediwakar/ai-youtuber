@@ -57,12 +57,12 @@ async function generatePrompt(jobConfig: any): Promise<string> {
 Generate a single, clear English vocabulary question on the topic: "${topicData.displayName}".
 
 CRITICAL REQUIREMENTS:
-• HOOK: Keep it simple and direct (under 50 chars). Use these proven patterns:
-  - "Can you get this right?" 
-  - "Test your English!"
-  - "Quick word challenge!"
-  - "Do you know this word?"
-  - "English quiz time!"
+• HOOK: Create curiosity and urgency (under 55 chars). Use these high-engagement patterns:
+  - "Only 1 in 10 know this word!"
+  - "Think you're ready for this?"
+  - "This word stumps most people!"
+  - "Can you beat 90% of learners?"
+  - "Advanced word challenge!"
 • TARGET AUDIENCE: Intermediate English learners (B1-B2 level).
 • QUESTION STYLE: Must be direct and concise. For "Fill in the Blank," provide a clear sentence. For "Synonyms/Antonyms," directly ask for the synonym/antonym of a given word.
 • DIFFICULTY: The correct answer should be a useful, common word, but not too easy.

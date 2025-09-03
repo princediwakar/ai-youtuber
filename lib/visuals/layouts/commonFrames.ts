@@ -29,22 +29,23 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
   do {
     ctx.font = `bold ${fontSize}px ${theme.fontFamily}`;
     lines = wrapText(ctx, hook, textMaxWidth);
-    const lineHeight = fontSize * 1.2;
+    const lineHeight = fontSize * 1.3;
     const totalTextHeight = lines.length * lineHeight;
     
-    // If text fits or font is at minimum, break the loop
-    if (totalTextHeight < canvas.height * 0.6 || fontSize <= 50) {
+    // Use more canvas space and keep font larger
+    if (totalTextHeight < canvas.height * 0.7 || fontSize <= 60) {
       break;
     }
-    fontSize -= 4; // Decrease font size and re-measure
-  } while (fontSize > 50);
+    fontSize -= 3; // Smaller decrements for better sizing
+  } while (fontSize > 60);
 
   // 4. Draw the final, wrapped text onto the canvas
-  const lineHeight = fontSize * 1.2;
-  const startY = (canvas.height - (lines.length - 1) * lineHeight) / 2;
+  const lineHeight = fontSize * 1.3;
+  const totalHeight = lines.length * lineHeight;
+  const startY = (canvas.height - totalHeight) / 2 + lineHeight / 2;
 
   lines.forEach((line, index) => {
-    ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight) - (lines.length / 2 * lineHeight / 2));
+    ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight));
   });
   drawFooter(ctx, canvas.width, canvas.height, theme);
 }

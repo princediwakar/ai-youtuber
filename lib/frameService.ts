@@ -45,7 +45,7 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   // --- FIX START ---
   // 2. Call the common functions directly, and the specific functions via the 'layout' object
   const framesToRender = [
-    (canvas: Canvas) => renderHookFrame(canvas, job, theme),           // Direct call
+    // (canvas: Canvas) => renderHookFrame(canvas, job, theme),           // DISABLED: Hook frame temporarily paused
     (canvas: Canvas) => layout.renderQuestionFrame(canvas, job, theme),  // Layout-specific call
     (canvas: Canvas) => layout.renderAnswerFrame(canvas, job, theme),    // Layout-specific call
     (canvas: Canvas) => layout.renderExplanationFrame(canvas, job, theme),// Layout-specific call
