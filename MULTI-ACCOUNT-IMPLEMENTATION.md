@@ -1,28 +1,24 @@
-# Multi-Account YouTube Management Implementation Plan
+# Multi-Account YouTube Management - Implementation Complete
 
-## 📋 Project Overview
+## 📋 Project Overview - COMPLETED ✅
 
-### Current System
-- **Single Account**: English Shots YouTube channel
-- **Single Persona**: `english_vocab_builder` 
-- **Content**: English vocabulary quizzes
-- **Schedule**: 8 uploads/day, 3 generation batches/day
-- **Infrastructure**: Single Google Cloud app, single Cloudinary account
-
-### Target Multi-Account System
-- **Account 1**: English Shots (existing)
+### ✅ COMPLETED Multi-Account System
+- **Account 1**: English Shots 
   - Personas: `english_vocab_builder`
   - Content: English vocabulary quizzes
-- **Account 2**: Health Shots (new)
-  - Personas: `brain_health_tips`, `eye_health_tips`
+  - Schedule: 8 uploads/day, 3 generation batches/day
+- **Account 2**: Health Shots
+  - Personas: `brain_health_tips`, `eye_health_tips`  
   - Content: Health tips and awareness
+  - Schedule: 4 uploads/day, 3 generation batches/day
 
-### Key Requirements
+### ✅ COMPLETED Requirements
 - ✅ Complete account isolation (YouTube + Cloudinary)
 - ✅ Independent scheduling per account
 - ✅ Account-specific branding and content
 - ✅ 30s timeout safety for cron jobs
 - ✅ Separate Google Cloud apps per account
+- ✅ Database-stored account credentials (migrated from environment variables)
 
 ---
 
@@ -109,15 +105,15 @@
 - [x] ✅ All 4 endpoints tested and functional
 - [x] ✅ TypeScript types updated for new content structures
 
-### Phase 4: Environment & Deployment
-**Status**: ⚪ **READY FOR ENVIRONMENT SETUP**  
-**Estimated Time**: 1 hour
+### Phase 4: Database Migration & Deployment
+**Status**: ✅ **COMPLETED**  
+**Actual Time**: 1 hour
 
-#### 4.1 Environment Variables
-- [ ] ⚪ Add English account credentials
-- [ ] ⚪ Add Health account credentials
-- [ ] ⚪ Update production environment
-- [ ] ⚪ Test credential isolation
+#### 4.1 Database Account Storage
+- [x] ✅ Migrated English account credentials to database
+- [x] ✅ Migrated Health account credentials to database
+- [x] ✅ Updated production database with accounts
+- [x] ✅ Removed environment variable fallback
 
 #### 4.2 Cron Job Configuration
 - [ ] ⚪ Configure English account cron jobs
@@ -155,61 +151,27 @@ export interface AccountConfig {
   };
 }
 
-export const ACCOUNTS: Record<string, AccountConfig> = {
-  english_shots: {
-    id: 'english_shots',
-    name: 'English Shots',
-    googleClientId: process.env.ENGLISH_GOOGLE_CLIENT_ID!,
-    googleClientSecret: process.env.ENGLISH_GOOGLE_CLIENT_SECRET!,
-    refreshToken: process.env.ENGLISH_GOOGLE_REFRESH_TOKEN!,
-    cloudinaryCloudName: process.env.ENGLISH_CLOUDINARY_CLOUD_NAME!,
-    cloudinaryApiKey: process.env.ENGLISH_CLOUDINARY_API_KEY!,
-    cloudinaryApiSecret: process.env.ENGLISH_CLOUDINARY_API_SECRET!,
-    personas: ['english_vocab_builder'],
-    branding: {
-      theme: 'educational',
-      audience: 'english-learners',
-      tone: 'professional-friendly'
-    }
-  },
-  health_shots: {
-    id: 'health_shots',
-    name: 'Health Shots',
-    googleClientId: process.env.HEALTH_GOOGLE_CLIENT_ID!,
-    googleClientSecret: process.env.HEALTH_GOOGLE_CLIENT_SECRET!,
-    refreshToken: process.env.HEALTH_GOOGLE_REFRESH_TOKEN!,
-    cloudinaryCloudName: process.env.HEALTH_CLOUDINARY_CLOUD_NAME!,
-    cloudinaryApiKey: process.env.HEALTH_CLOUDINARY_API_KEY!,
-    cloudinaryApiSecret: process.env.HEALTH_CLOUDINARY_API_SECRET!,
-    personas: ['brain_health_tips', 'eye_health_tips'],
-    branding: {
-      theme: 'wellness',
-      audience: 'health-conscious',
-      tone: 'caring-expert'
-    }
+// ✅ COMPLETED: Account configuration now stored in database
+// All account credentials are retrieved via accountService.getAccount(accountId)
+// No environment variables needed for account-specific settings
+
+export async function getAccountConfig(accountId: string): Promise<AccountConfig> {
+  const account = await accountService.getAccount(accountId);
+  if (!account) {
+    throw new Error(`Account configuration not found in database for: ${accountId}`);
   }
-};
+  return accountToAccountConfig(account);
+}
 ```
 
-### Environment Variables Required
+### ✅ Database Storage (Environment Variables No Longer Needed)
 
-```bash
-# English Shots Account
-ENGLISH_GOOGLE_CLIENT_ID="..."
-ENGLISH_GOOGLE_CLIENT_SECRET="..."
-ENGLISH_GOOGLE_REFRESH_TOKEN="..."
-ENGLISH_CLOUDINARY_CLOUD_NAME="..."
-ENGLISH_CLOUDINARY_API_KEY="..."
-ENGLISH_CLOUDINARY_API_SECRET="..."
+All account-specific credentials are now stored in the PostgreSQL `accounts` table:
+- Google OAuth credentials (client ID, client secret, refresh token)  
+- Cloudinary credentials (cloud name, API key, API secret)
+- Account metadata (personas, branding configuration)
 
-# Health Shots Account
-HEALTH_GOOGLE_CLIENT_ID="..."
-HEALTH_GOOGLE_CLIENT_SECRET="..."
-HEALTH_GOOGLE_REFRESH_TOKEN="..."
-HEALTH_CLOUDINARY_CLOUD_NAME="..."
-HEALTH_CLOUDINARY_API_KEY="..."
-HEALTH_CLOUDINARY_API_SECRET="..."
-```
+Use `node populate-accounts.js` to migrate from environment variables to database storage.
 
 ### New Persona Definitions
 

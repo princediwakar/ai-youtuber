@@ -221,15 +221,30 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    // Parse request body to get accountId (optional)
+    let accountId: string | undefined;
+    try {
+      const body = await request.json();
+      accountId = body.accountId;
+    } catch {
+      // No body or invalid JSON - process all accounts
+    }
+
     console.log('Starting video assembly batch...');
     
     // Auto-retry failed jobs with valid data
     await autoRetryFailedJobs();
     
-    const jobs = await getPendingJobs(3, config.ASSEMBLY_CONCURRENCY);
+    // Get jobs for specific account if provided
+    const jobs = accountId ? 
+      (await getPendingJobs(3, config.ASSEMBLY_CONCURRENCY)).filter(job => job.account_id === accountId) :
+      await getPendingJobs(3, config.ASSEMBLY_CONCURRENCY);
     
     if (jobs.length === 0) {
-      return NextResponse.json({ success: true, message: 'No jobs pending video assembly' });
+      const message = accountId ? 
+        `No jobs pending video assembly for account ${accountId}` :
+        'No jobs pending video assembly';
+      return NextResponse.json({ success: true, message });
     }
 
     const processPromises = jobs.map(job => processJob(job));

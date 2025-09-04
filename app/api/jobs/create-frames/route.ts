@@ -15,12 +15,28 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
+    // Parse request body to get accountId (optional)
+    let accountId: string | undefined;
+    try {
+      const body = await request.json();
+      accountId = body.accountId;
+    } catch {
+      // No body or invalid JSON - process all accounts
+    }
+
     // Auto-retry failed jobs with valid data
     await autoRetryFailedJobs();
     
-    const jobs = await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY);
+    // Get jobs for specific account if provided
+    const jobs = accountId ? 
+      (await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY)).filter(job => job.account_id === accountId) :
+      await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY);
+      
     if (jobs.length === 0) {
-      return NextResponse.json({ success: true, message: 'No jobs pending frame creation.' });
+      const message = accountId ? 
+        `No jobs pending frame creation for account ${accountId}.` :
+        'No jobs pending frame creation.';
+      return NextResponse.json({ success: true, message });
     }
 
     console.log(`Found ${jobs.length} jobs for frame creation. Processing...`);

@@ -17,41 +17,6 @@ export interface AccountConfig {
   };
 }
 
-// Legacy fallback configuration (only used if database is not available)
-const FALLBACK_ACCOUNTS: Record<string, AccountConfig> = {
-  english_shots: {
-    id: 'english_shots',
-    name: 'English Shots',
-    googleClientId: process.env.ENGLISH_GOOGLE_CLIENT_ID || '',
-    googleClientSecret: process.env.ENGLISH_GOOGLE_CLIENT_SECRET || '',
-    refreshToken: process.env.ENGLISH_GOOGLE_REFRESH_TOKEN || '',
-    cloudinaryCloudName: process.env.ENGLISH_CLOUDINARY_CLOUD_NAME || '',
-    cloudinaryApiKey: process.env.ENGLISH_CLOUDINARY_API_KEY || '',
-    cloudinaryApiSecret: process.env.ENGLISH_CLOUDINARY_API_SECRET || '',
-    personas: ['english_vocab_builder'],
-    branding: {
-      theme: 'educational',
-      audience: 'english-learners',
-      tone: 'professional-friendly'
-    }
-  },
-  health_shots: {
-    id: 'health_shots',
-    name: 'Health Shots',
-    googleClientId: process.env.HEALTH_GOOGLE_CLIENT_ID || '',
-    googleClientSecret: process.env.HEALTH_GOOGLE_CLIENT_SECRET || '',
-    refreshToken: process.env.HEALTH_GOOGLE_REFRESH_TOKEN || '',
-    cloudinaryCloudName: process.env.HEALTH_CLOUDINARY_CLOUD_NAME || '',
-    cloudinaryApiKey: process.env.HEALTH_CLOUDINARY_API_KEY || '',
-    cloudinaryApiSecret: process.env.HEALTH_CLOUDINARY_API_SECRET || '',
-    personas: ['brain_health_tips', 'eye_health_tips'],
-    branding: {
-      theme: 'wellness',
-      audience: 'health-conscious',
-      tone: 'caring-expert'
-    }
-  }
-};
 
 // Convert Account to AccountConfig format
 function accountToAccountConfig(account: Account): AccountConfig {
@@ -72,94 +37,57 @@ function accountToAccountConfig(account: Account): AccountConfig {
 export async function getAccountConfig(accountId: string): Promise<AccountConfig> {
   const callId = Math.random().toString(36).substring(2, 8);
   console.log(`[getAccountConfig:${callId}] Attempting to fetch account: ${accountId}`);
-  try {
-    const account = await accountService.getAccount(accountId);
-    console.log(`[getAccountConfig:${callId}] Database query result for ${accountId}:`, account ? 'Found' : 'Not found');
-    if (account) {
-      const config = accountToAccountConfig(account);
-      console.log(`[getAccountConfig:${callId}] Successfully converted to config. Personas: ${config.personas?.join(', ')}`);
-      return config;
-    }
-  } catch (error) {
-    console.error(`[getAccountConfig:${callId}] Failed to fetch account ${accountId} from database, falling back to environment variables:`, error);
+  
+  const account = await accountService.getAccount(accountId);
+  console.log(`[getAccountConfig:${callId}] Database query result for ${accountId}:`, account ? 'Found' : 'Not found');
+  
+  if (!account) {
+    throw new Error(`Account configuration not found in database for: ${accountId}`);
   }
-
-  // Fallback to environment variables
-  console.log(`[getAccountConfig:${callId}] Using fallback environment variables for ${accountId}`);
-  const config = FALLBACK_ACCOUNTS[accountId];
-  if (!config) {
-    throw new Error(`Account configuration not found for: ${accountId}`);
-  }
-  console.log(`[getAccountConfig:${callId}] Fallback config personas: ${config.personas?.join(', ')}`);
+  
+  const config = accountToAccountConfig(account);
+  console.log(`[getAccountConfig:${callId}] Successfully converted to config. Personas: ${config.personas?.join(', ')}`);
   return config;
 }
 
-// Synchronous version for backward compatibility (uses cache if available)
+// Synchronous version - deprecated, use async version instead
 export function getAccountConfigSync(accountId: string): AccountConfig {
-  const config = FALLBACK_ACCOUNTS[accountId];
-  if (!config) {
-    throw new Error(`Account configuration not found for: ${accountId}`);
-  }
-  return config;
+  throw new Error(`getAccountConfigSync is deprecated. Use getAccountConfig (async) instead for account: ${accountId}`);
 }
 
 export async function getAccountForPersona(persona: string): Promise<AccountConfig> {
-  try {
-    const account = await accountService.getAccountForPersona(persona);
-    if (account) {
-      return accountToAccountConfig(account);
-    }
-  } catch (error) {
-    console.error('Failed to fetch account for persona from database, falling back to environment variables:', error);
+  const account = await accountService.getAccountForPersona(persona);
+  
+  if (!account) {
+    throw new Error(`No account found in database for persona: ${persona}`);
   }
-
-  // Fallback to environment variables
-  for (const account of Object.values(FALLBACK_ACCOUNTS)) {
-    if (account.personas.includes(persona)) {
-      return account;
-    }
-  }
-  throw new Error(`No account found for persona: ${persona}`);
+  
+  return accountToAccountConfig(account);
 }
 
-// Synchronous version for backward compatibility
+// Synchronous version - deprecated, use async version instead
 export function getAccountForPersonaSync(persona: string): AccountConfig {
-  for (const account of Object.values(FALLBACK_ACCOUNTS)) {
-    if (account.personas.includes(persona)) {
-      return account;
-    }
-  }
-  throw new Error(`No account found for persona: ${persona}`);
+  throw new Error(`getAccountForPersonaSync is deprecated. Use getAccountForPersona (async) instead for persona: ${persona}`);
 }
 
 export async function getAllAccounts(): Promise<AccountConfig[]> {
-  try {
-    const accounts = await accountService.getAllAccounts();
-    return accounts.map(accountToAccountConfig);
-  } catch (error) {
-    console.error('Failed to fetch accounts from database, falling back to environment variables:', error);
-    return Object.values(FALLBACK_ACCOUNTS);
-  }
+  const accounts = await accountService.getAllAccounts();
+  return accounts.map(accountToAccountConfig);
 }
 
-// Synchronous version for backward compatibility
+// Synchronous version - deprecated, use async version instead
 export function getAllAccountsSync(): AccountConfig[] {
-  return Object.values(FALLBACK_ACCOUNTS);
+  throw new Error(`getAllAccountsSync is deprecated. Use getAllAccounts (async) instead`);
 }
 
 export async function getAccountIds(): Promise<string[]> {
-  try {
-    const accounts = await accountService.getAllAccounts();
-    return accounts.map(account => account.id);
-  } catch (error) {
-    console.error('Failed to fetch account IDs from database, falling back to environment variables:', error);
-    return Object.keys(FALLBACK_ACCOUNTS);
-  }
+  const accounts = await accountService.getAllAccounts();
+  return accounts.map(account => account.id);
 }
 
-// Synchronous version for backward compatibility
+// Synchronous version - deprecated, use async version instead
 export function getAccountIdsSync(): string[] {
-  return Object.keys(FALLBACK_ACCOUNTS);
+  throw new Error(`getAccountIdsSync is deprecated. Use getAccountIds (async) instead`);
 }
 
 // Export the service for direct access

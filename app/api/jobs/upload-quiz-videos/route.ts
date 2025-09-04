@@ -29,104 +29,155 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // Parse request body to get accountId (optional)
-    let accountId = 'english_shots'; // Default for backward compatibility
+    // Parse request body to get accountId (required for targeted processing)
+    let accountId: string | undefined;
     try {
       const body = await request.json();
-      accountId = body.accountId || accountId;
+      accountId = body.accountId;
     } catch {
-      // No body or invalid JSON - use default
+      // No body or invalid JSON - process all accounts (backward compatibility)
     }
 
-    // Validate account exists
+    // Validate account exists if accountId is provided
     let account;
-    try {
-      account = await getAccountConfig(accountId);
-      console.log(`[upload-quiz-videos] Retrieved account ${accountId}:`, {
-        name: account.name,
-        personas: account.personas,
-        personasType: typeof account.personas,
-        personasLength: account.personas?.length
-      });
-    } catch (error) {
-      return NextResponse.json({ 
-        success: false, 
-        error: `Invalid accountId: ${accountId}` 
-      }, { status: 400 });
+    if (accountId) {
+      try {
+        account = await getAccountConfig(accountId);
+        console.log(`[upload-quiz-videos] Retrieved account ${accountId}:`, {
+          name: account.name,
+          personas: account.personas,
+          personasType: typeof account.personas,
+          personasLength: account.personas?.length
+        });
+      } catch (error) {
+        return NextResponse.json({ 
+          success: false, 
+          error: `Invalid accountId: ${accountId}` 
+        }, { status: 400 });
+      }
     }
 
-    // 1. Check the account-specific upload schedule to see what needs to be published now.
-    const now = new Date();
-    // Convert to IST (UTC + 5:30)
-    const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-    const dayOfWeek = istTime.getDay(); // 0 for Sunday, 1 for Monday, etc.
-    const hourOfDay = istTime.getHours();
+    // Handle schedule logic based on whether accountId is provided
     let personasToUpload: string[] = [];
-
-    if (config.DEBUG_MODE) {
-      // In debug mode, bypass schedule and allow account-specific personas
-      console.log(`🐛 DEBUG MODE: Bypassing ${account.name} upload schedule, allowing account personas`);
-      personasToUpload = Array.isArray(account.personas) ? account.personas : []; // Ensure it's an array
-      if (personasToUpload.length === 0) {
-        console.log(`⚠️  DEBUG MODE: Account ${accountId} has no personas defined`);
-        return NextResponse.json({ success: true, message: 'No personas defined for account in debug mode', accountId });
-      }
+    
+    if (!accountId) {
+      // No accountId provided - process all accounts (backward compatibility)
+      console.log('No accountId provided - processing all pending jobs');
     } else {
-      personasToUpload = getScheduledPersonasForUpload(accountId, dayOfWeek, hourOfDay) || [];
-      
-      // 2. If no personas are scheduled for this hour, exit gracefully.
-      if (personasToUpload.length === 0) {
-        const message = `No ${account.name} uploads scheduled for this hour (${hourOfDay}:00).`;
-        console.log(message);
-        return NextResponse.json({ success: true, message, accountId });
+      // AccountId provided - check schedule for that specific account
+      const now = new Date();
+      // Convert to IST (UTC + 5:30)
+      const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+      const dayOfWeek = istTime.getDay(); // 0 for Sunday, 1 for Monday, etc.
+      const hourOfDay = istTime.getHours();
+
+      if (config.DEBUG_MODE) {
+        // In debug mode, bypass schedule and allow account-specific personas
+        console.log(`🐛 DEBUG MODE: Bypassing ${account!.name} upload schedule, allowing account personas`);
+        personasToUpload = Array.isArray(account!.personas) ? account!.personas : []; // Ensure it's an array
+        if (personasToUpload.length === 0) {
+          console.log(`⚠️  DEBUG MODE: Account ${accountId} has no personas defined`);
+          return NextResponse.json({ success: true, message: 'No personas defined for account in debug mode', accountId });
+        }
+      } else {
+        personasToUpload = getScheduledPersonasForUpload(accountId, dayOfWeek, hourOfDay) || [];
+        
+        // 2. If no personas are scheduled for this hour, exit gracefully.
+        if (personasToUpload.length === 0) {
+          const message = `No ${account!.name} uploads scheduled for this hour (${hourOfDay}:00).`;
+          console.log(message);
+          return NextResponse.json({ success: true, message, accountId });
+        }
+        
+        console.log(`🚀 Found scheduled ${account!.name} uploads for this hour: ${personasToUpload.join(', ')}`);
       }
-      
-      console.log(`🚀 Found scheduled ${account.name} uploads for this hour: ${personasToUpload.join(', ')}`);
     }
 
-    console.log(`📋 Personas to upload: ${personasToUpload.join(', ')} (${personasToUpload.length} personas)`);
+    if (accountId) {
+      console.log(`📋 Personas to upload: ${personasToUpload.join(', ')} (${personasToUpload.length} personas)`);
 
-    // Ensure personasToUpload is always an array
-    if (!Array.isArray(personasToUpload)) {
-      console.error(`❌ personasToUpload is not an array:`, personasToUpload);
-      return NextResponse.json({ success: false, error: 'Invalid personas configuration' }, { status: 500 });
+      // Ensure personasToUpload is always an array when accountId is provided
+      if (!Array.isArray(personasToUpload)) {
+        console.error(`❌ personasToUpload is not an array:`, personasToUpload);
+        return NextResponse.json({ success: false, error: 'Invalid personas configuration' }, { status: 500 });
+      }
     }
 
     // 3. Auto-retry failed jobs with valid data
     await autoRetryFailedJobs();
     
-    // 4. Fetch pending jobs for the scheduled personas.
-    const jobs = await getPendingJobs(4, config.UPLOAD_CONCURRENCY, personasToUpload.length > 0 ? personasToUpload : undefined);
+    // 4. Fetch pending jobs - filter by account and personas if specified
+    let jobs = await getPendingJobs(4, config.UPLOAD_CONCURRENCY, personasToUpload.length > 0 ? personasToUpload : undefined);
+    
+    // Filter by accountId if provided
+    if (accountId) {
+      jobs = jobs.filter(job => job.account_id === accountId);
+    }
+    
     if (jobs.length === 0) {
-      const message = config.DEBUG_MODE 
-        ? `No videos ready for ${account.name} upload (debug mode - account personas allowed).`
-        : `No videos ready for ${account.name} upload for scheduled personas.`;
+      let message: string;
+      if (!accountId) {
+        message = 'No videos ready for upload.';
+      } else if (config.DEBUG_MODE) {
+        message = `No videos ready for ${account!.name} upload (debug mode - account personas allowed).`;
+      } else {
+        message = `No videos ready for ${account!.name} upload for scheduled personas.`;
+      }
       return NextResponse.json({ success: true, message, accountId });
     }
     
     const cache = await getCache();
-    const oauth2Client = await getOAuth2Client(accountId); // Use account-specific OAuth client
-    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
     
-    if (!cache.playlistMap) {
-      cache.playlistMap = await findManagedPlaylists(youtube);
-      await setCache(cache);
+    // Process jobs by account - group by account_id to handle OAuth clients properly
+    const jobsByAccount = new Map<string, QuizJob[]>();
+    jobs.forEach(job => {
+      const jobAccountId = job.account_id || 'english_shots'; // fallback for legacy jobs
+      if (!jobsByAccount.has(jobAccountId)) {
+        jobsByAccount.set(jobAccountId, []);
+      }
+      jobsByAccount.get(jobAccountId)!.push(job);
+    });
+
+    let totalSuccessfulJobs = 0;
+    const processedAccounts: string[] = [];
+
+    for (const [jobAccountId, accountJobs] of jobsByAccount.entries()) {
+      try {
+        const oauth2Client = await getOAuth2Client(jobAccountId);
+        const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+        
+        if (!cache.playlistMap) {
+          cache.playlistMap = await findManagedPlaylists(youtube);
+          await setCache(cache);
+        }
+
+        const processPromises = accountJobs.map(job => processUpload(job, youtube, cache.playlistMap!, jobAccountId));
+        const results = await Promise.allSettled(processPromises);
+        
+        const successfulJobs = results.filter(r => r.status === 'fulfilled' && r.value).length;
+        totalSuccessfulJobs += successfulJobs;
+        processedAccounts.push(jobAccountId);
+        
+        console.log(`Account ${jobAccountId}: Processed ${successfulJobs}/${accountJobs.length} jobs`);
+      } catch (error) {
+        console.error(`Failed to process jobs for account ${jobAccountId}:`, error);
+      }
     }
 
-    const processPromises = jobs.map(job => processUpload(job, youtube, cache.playlistMap!, accountId));
-    const results = await Promise.allSettled(processPromises);
+    const message = accountId 
+      ? (config.DEBUG_MODE 
+          ? `${account!.name} personas (debug mode)` 
+          : personasToUpload.join(', '))
+      : `All accounts: ${processedAccounts.join(', ')}`;
+      
+    console.log(`YouTube upload batch completed. Processed ${totalSuccessfulJobs} jobs for: ${message}.`);
     
-    const successfulJobs = results.filter(r => r.status === 'fulfilled' && r.value).length;
-
-    const personaMessage = config.DEBUG_MODE 
-      ? `${account.name} personas (debug mode)` 
-      : personasToUpload.join(', ');
-    console.log(`${account.name} YouTube upload batch completed. Processed ${successfulJobs} jobs for: ${personaMessage}.`);
     return NextResponse.json({ 
       success: true, 
-      processed: successfulJobs, 
-      accountId,
-      accountName: account.name
+      processed: totalSuccessfulJobs, 
+      accountId: accountId || 'multiple',
+      accountName: accountId ? account!.name : 'Multiple Accounts',
+      processedAccounts
     });
 
   } catch (error) {
@@ -161,7 +212,7 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
     await addVideoToPlaylist(youtubeVideoId, job, youtube, playlistMap, playlistId);
     
     await markJobCompleted(job.id, youtubeVideoId, metadata);
-    await cleanupCloudinaryAssets(job.data, accountId);
+    await cleanupCloudinaryAssets(job.data, job.account_id || accountId);
     
     console.log(`[Job ${job.id}] ✅ YouTube upload successful: https://www.youtube.com/watch?v=${youtubeVideoId}`);
     return { id: job.id, youtube_video_id: youtubeVideoId };
@@ -468,27 +519,27 @@ function generateSEOTags(accountId: string, persona: string, category: string, t
   return [...new Set(allTags)].filter(Boolean);
 }
 
-async function cleanupCloudinaryAssets(jobData: any, accountId: string): Promise<void> {
+async function cleanupCloudinaryAssets(jobData: any, jobAccountId: string): Promise<void> {
   try {
     const cleanupPromises = [];
     if (jobData.videoUrl) {
       const videoPublicId = extractPublicIdFromUrl(jobData.videoUrl);
       if (videoPublicId) {
-        cleanupPromises.push(deleteVideoFromCloudinary(videoPublicId, accountId).catch(err => console.warn(`Failed to delete video ${videoPublicId} for ${accountId}:`, err)));
+        cleanupPromises.push(deleteVideoFromCloudinary(videoPublicId, jobAccountId).catch(err => console.warn(`Failed to delete video ${videoPublicId} for ${jobAccountId}:`, err)));
       }
     }
     if (jobData.frameUrls && Array.isArray(jobData.frameUrls)) {
       jobData.frameUrls.forEach((frameUrl: string) => {
         const framePublicId = extractPublicIdFromUrl(frameUrl);
         if (framePublicId) {
-          cleanupPromises.push(deleteImageFromCloudinary(framePublicId, accountId).catch(err => console.warn(`Failed to delete frame ${framePublicId} for ${accountId}:`, err)));
+          cleanupPromises.push(deleteImageFromCloudinary(framePublicId, jobAccountId).catch(err => console.warn(`Failed to delete frame ${framePublicId} for ${jobAccountId}:`, err)));
         }
       });
     }
     await Promise.allSettled(cleanupPromises);
-    console.log(`🧹 Cleaned up Cloudinary assets for ${accountId} job`);
+    console.log(`🧹 Cleaned up Cloudinary assets for ${jobAccountId} job`);
   } catch (error) {
-    console.error(`Error during Cloudinary cleanup for ${accountId}:`, error);
+    console.error(`Error during Cloudinary cleanup for ${jobAccountId}:`, error);
   }
 }
 

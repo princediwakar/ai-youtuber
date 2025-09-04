@@ -34,21 +34,8 @@ npm run dev
   * `CRON_SECRET` - Secret for securing cron job API routes
   * `DEBUG_MODE` - Set to 'true' to save videos locally in `generated-videos/` folder
 
-**English Shots Account:**
-  * `ENGLISH_GOOGLE_CLIENT_ID` - Google OAuth client ID for English channel
-  * `ENGLISH_GOOGLE_CLIENT_SECRET` - Google OAuth client secret
-  * `ENGLISH_GOOGLE_REFRESH_TOKEN` - YouTube API refresh token
-  * `ENGLISH_CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for English content
-  * `ENGLISH_CLOUDINARY_API_KEY` - Cloudinary API key
-  * `ENGLISH_CLOUDINARY_API_SECRET` - Cloudinary API secret
-
-**Health Shots Account:**
-  * `HEALTH_GOOGLE_CLIENT_ID` - Google OAuth client ID for Health channel
-  * `HEALTH_GOOGLE_CLIENT_SECRET` - Google OAuth client secret
-  * `HEALTH_GOOGLE_REFRESH_TOKEN` - YouTube API refresh token
-  * `HEALTH_CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for Health content
-  * `HEALTH_CLOUDINARY_API_KEY` - Cloudinary API key
-  * `HEALTH_CLOUDINARY_API_SECRET` - Cloudinary API secret
+**Account Management:**
+All account credentials (Google OAuth, Cloudinary keys) are now stored in the database via the `accounts` table. No account-specific environment variables are needed.
 
 ## Architecture
 
@@ -152,13 +139,14 @@ Monitor both pipelines via the unified dashboard at `/`.
   * **Health Shots:** Brain & eye health tips (4 daily uploads, 3 generation batches)
 
 **✅ COMPLETED Architecture:** 
-  * **Accounts:** 2 independent YouTube channels with separate Google Cloud apps
+  * **Accounts:** 2 independent YouTube channels with database-stored credentials
   * **Content Generation:** Account-specific AI prompting and branding
   * **Storage:** Separate Cloudinary accounts for complete isolation
   * **API Design:** Single endpoints with `accountId` parameter (DRY principle)
   * **Scheduling:** Account-specific generation and upload schedules
+  * **Data Storage:** All account configurations stored in PostgreSQL `accounts` table
 
-**Implementation Status:** ✅ **COMPLETED** - Multi-account architecture fully operational
+**Implementation Status:** ✅ **COMPLETED** - Multi-account architecture with database storage fully operational
 **Usage:** Pass `{ "accountId": "english_shots" }` or `{ "accountId": "health_shots" }` in API calls
 
 ## Development Workflow
