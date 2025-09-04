@@ -2,7 +2,7 @@
  * Multi-Account YouTube Content Generation & Upload Schedule
  *
  * English Shots Strategy: 8 daily uploads with 3 generation batches for consistent global presence
- * Health Shots Strategy: 4 daily uploads focused on wellness audience prime times
+ * Health Shots Strategy: 6 daily uploads targeting key wellness moments with 4 generation batches
  *
  * Each account maintains independent schedules to optimize for their target audiences.
  */
@@ -43,18 +43,22 @@ const englishUploadPattern: HourlySchedule = {
 /**
  * Health Shots Account Schedules  
  * Focus: Health-conscious audiences during wellness-focused times
+ * Strategy: 6 daily uploads targeting key wellness moments throughout the day
  */
 const healthGenerationPattern: HourlySchedule = {
-  3: ['brain_health_tips', 'eye_health_tips'],   // Early morning generation
-  12: ['brain_health_tips', 'eye_health_tips'],  // Midday generation
-  20: ['brain_health_tips', 'eye_health_tips'],  // Evening generation
+  1: ['brain_health_tips'],      // Early morning generation for morning content
+  6: ['eye_health_tips'],        // Early generation for work-day content
+  13: ['brain_health_tips'],     // Midday generation for afternoon content
+  18: ['eye_health_tips'],       // Evening generation for night content
 };
 
 const healthUploadPattern: HourlySchedule = {
-  9:  ['brain_health_tips'],  // Morning wellness routine time
-  14: ['eye_health_tips'],    // Afternoon work break (eye strain awareness)
-  16: ['brain_health_tips'],  // Mid-afternoon focus time
-  22: ['eye_health_tips'],    // Evening wind-down (blue light awareness)
+  7:  ['brain_health_tips'],  // Morning routine time (brain food, focus prep)
+  10: ['eye_health_tips'],    // Mid-morning work break (screen time awareness)
+  12: ['brain_health_tips'],  // Lunch break (midday brain boost tips)
+  15: ['eye_health_tips'],    // Afternoon work break (eye strain relief)
+  18: ['brain_health_tips'],  // Post-work time (mental wellness, stress relief)
+  21: ['eye_health_tips'],    // Evening wind-down (blue light, sleep hygiene)
 };
 
 // Account-specific schedules
