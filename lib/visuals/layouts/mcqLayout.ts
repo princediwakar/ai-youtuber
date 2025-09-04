@@ -134,7 +134,7 @@ export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme):
   // Render options with dynamic positioning, ensuring proper spacing from actual question end
   const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
   renderOptions(ctx, canvas.width, actualOptionsStartY, job, theme, false, measurements.optionsFontSize);
-  drawFooter(ctx, canvas.width, canvas.height, theme);
+  drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
 // Dynamic MCQ answer frame with optimized layout
@@ -182,7 +182,7 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
   // Render options with dynamic positioning and correct answer highlighted
   const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
   renderOptions(ctx, canvas.width, actualOptionsStartY, job, theme, true, measurements.optionsFontSize);
-  drawFooter(ctx, canvas.width, canvas.height, theme);
+  drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
 // Dynamic explanation frame with optimized layout
@@ -232,7 +232,7 @@ export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Them
       ctx.fillText(line, textStartX, startY + index * lineHeight);
   });
 
-  drawFooter(ctx, canvas.width, canvas.height, theme);
+  drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
 // Dynamic options rendering with variable font size

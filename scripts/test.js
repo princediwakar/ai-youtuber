@@ -9,7 +9,7 @@ const BASE_URL = process.env.NODE_ENV === 'production'
   ? 'https://aiyoutuber.vercel.app'
   : 'http://localhost:3000';
 
-async function makeRequest(path, method = 'POST') {
+async function makeRequest(path, method = 'POST', body = null) {
   return new Promise((resolve, reject) => {
     const url = new URL(path, BASE_URL);
     const lib = url.protocol === 'https:' ? https : http;
@@ -22,6 +22,8 @@ async function makeRequest(path, method = 'POST') {
     if (process.env.CRON_SECRET) {
       headers['Authorization'] = `Bearer ${process.env.CRON_SECRET}`;
     }
+    
+    const bodyData = body ? JSON.stringify(body) : null;
     
     const options = {
       hostname: url.hostname,
@@ -45,17 +47,20 @@ async function makeRequest(path, method = 'POST') {
     });
 
     req.on('error', reject);
+    if (bodyData) {
+      req.write(bodyData);
+    }
     req.end();
   });
 }
 
-async function runPipeline() {
-  console.log('🚀 Starting Educational Quiz Generation Pipeline...\n');
+async function runPipeline(accountId = 'english_shots') {
+  console.log(`🚀 Starting Multi-Account Educational Quiz Pipeline for ${accountId}...\n`);
 
   try {
-    // Step 1: Generate Quiz
-    console.log('📝 Step 1: Generating quiz questions...');
-    const step1 = await makeRequest('/api/jobs/generate-quiz');
+    // Step 1: Generate Quiz with account ID
+    console.log(`📝 Step 1: Generating quiz questions for ${accountId}...`);
+    const step1 = await makeRequest('/api/jobs/generate-quiz', 'POST', { accountId });
     console.log(`Status: ${step1.status}`);
     console.log(`Response: ${JSON.stringify(step1.data, null, 2)}\n`);
 
@@ -74,7 +79,7 @@ async function runPipeline() {
     }
 
     // Step 3: Assemble Video
-    console.log('🎬 Step 3: Assembling video...');
+    console.log('🎬 Step 3: Assembling video without transitions...');
     const step3 = await makeRequest('/api/jobs/assemble-video');
     console.log(`Status: ${step3.status}`);
     console.log(`Response: ${JSON.stringify(step3.data, null, 2)}\n`);
@@ -93,7 +98,7 @@ async function runPipeline() {
       throw new Error(`Step 4 failed with status ${step4.status}`);
     }
 
-    console.log('✅ Pipeline completed successfully!');
+    console.log(`✅ Pipeline completed successfully for ${accountId}!`);
 
   } catch (error) {
     console.error('❌ Pipeline failed:', error.message);
@@ -101,4 +106,21 @@ async function runPipeline() {
   }
 }
 
-runPipeline();
+// Define available accounts
+const ACCOUNTS = ['english_shots', 'health_shots'];
+
+// Allow account ID to be passed as command line argument, or randomize by default
+let accountId = process.argv[2];
+
+if (accountId) {
+  if (!ACCOUNTS.includes(accountId)) {
+    console.error('❌ Invalid account ID. Use "english_shots" or "health_shots"');
+    process.exit(1);
+  }
+} else {
+  // Randomize account selection
+  accountId = ACCOUNTS[Math.floor(Math.random() * ACCOUNTS.length)];
+  console.log(`🎲 Randomly selected account: ${accountId}\n`);
+}
+
+runPipeline(accountId);

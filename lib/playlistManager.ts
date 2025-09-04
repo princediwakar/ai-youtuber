@@ -1,8 +1,7 @@
-//playlistManager.ts
-
 import { youtube_v3 } from 'googleapis';
 import { MasterPersonas } from './personas';
 import { QuizJob } from './types';
+import { getAccountConfig, getAccountForPersona } from './accounts';
 
 const MANAGER_TAG_PREFIX = '[managed-by:quiz-app; key:';
 const MANAGER_TAG_SUFFIX = ']';
@@ -12,29 +11,30 @@ const playlistCreationLocks = new Map<string, Promise<string>>();
 
 /**
  * Generates a consistent, URL-safe key from multiple identifying parts.
- * @param parts An array of strings to join into a key.
- * @returns A standardized canonical key string.
  */
 export function generateCanonicalKey(...parts: string[]): string {
   const sanitize = (str: string) => str.toLowerCase().trim().replace(/[\s&]+/g, '-');
   return parts.map(sanitize).filter(Boolean).join('-');
 }
 
-// --- MODIFICATION START ---
-// The following four functions have been updated for the English Vocabulary persona.
-
 /**
- * Generates relevant hashtags for English learning topics.
- * @param persona The educational persona (e.g., english_vocab_builder)
- * @param topicDisplayName The display name of the topic
- * @returns Formatted hashtag string
+ * Generates relevant hashtags based on account and persona.
  */
-function generateHashtags(persona: string, topicDisplayName: string): string {
-  const baseHashtags: Record<string, string[]> = {
-    english_vocab_builder: ['#LearnEnglish', '#EnglishVocabulary', '#Vocabulary', '#EnglishQuiz', '#ESL'],
+function generateHashtags(accountId: string, persona: string, topicDisplayName: string): string {
+  const account = getAccountConfig(accountId);
+  
+  const hashtagMap: Record<string, Record<string, string[]>> = {
+    english_shots: {
+      english_vocab_builder: ['#LearnEnglish', '#EnglishVocabulary', '#Vocabulary', '#EnglishQuiz', '#ESL']
+    },
+    health_shots: {
+      brain_health_tips: ['#BrainHealth', '#Memory', '#Focus', '#CognitiveHealth', '#Wellness'],
+      eye_health_tips: ['#EyeHealth', '#VisionCare', '#ScreenTime', '#EyeCare', '#HealthyEyes']
+    }
   };
 
-  const personalizedHashtags = baseHashtags[persona] || ['#Education', '#Quiz', '#Learning'];
+  const accountHashtags = hashtagMap[accountId] || {};
+  const personalizedHashtags = accountHashtags[persona] || ['#Health', '#Tips', '#Wellness'];
   
   // Add topic-specific hashtags
   const topicKey = topicDisplayName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
@@ -46,40 +46,148 @@ function generateHashtags(persona: string, topicDisplayName: string): string {
 }
 
 /**
- * Generates clean, engaging playlist titles for English learners.
- * @param persona The educational persona
- * @param topicDisplayName The topic display name
- * @returns Clean playlist title in format: "English Vocabulary: Topic | Daily Quizzes"
+ * Generates account-specific playlist titles.
  */
-function generatePlaylistTitle(persona: string, topicDisplayName: string): string {
-  const titleTemplates: Record<string, string> = {
-    english_vocab_builder: `English Vocabulary: ${topicDisplayName} | Daily Quizzes`,
+function generatePlaylistTitle(accountId: string, persona: string, topicDisplayName: string): string {
+  const titleTemplates: Record<string, Record<string, string>> = {
+    english_shots: {
+      english_vocab_builder: `English Vocabulary: ${topicDisplayName} | Daily Quizzes`
+    },
+    health_shots: {
+      brain_health_tips: `Brain Health: ${topicDisplayName} | Expert Tips`,
+      eye_health_tips: `Eye Health: ${topicDisplayName} | Vision Care Tips`
+    }
   };
 
-  return titleTemplates[persona] || `English Learning: ${topicDisplayName} Quizzes`;
+  const accountTemplates = titleTemplates[accountId] || {};
+  return accountTemplates[persona] || `${topicDisplayName} | Educational Content`;
 }
 
 /**
- * Generates SEO-optimized keywords for playlist descriptions.
- * @param persona The educational persona
- * @param topicDisplayName The topic display name
- * @returns Comma-separated keywords for better searchability
+ * Generates SEO-optimized keywords based on account focus.
  */
-function generateSEOKeywords(persona: string, topicDisplayName: string): string {
-  const keywordMap: Record<string, string[]> = {
-    english_vocab_builder: ['learn english', 'english vocabulary', 'english quiz', 'ESL lessons', 'IELTS vocabulary', 'TOEFL words', 'speak english fluently'],
+function generateSEOKeywords(accountId: string, persona: string, topicDisplayName: string): string {
+  const keywordMap: Record<string, Record<string, string[]>> = {
+    english_shots: {
+      english_vocab_builder: ['learn english', 'english vocabulary', 'english quiz', 'ESL lessons', 'IELTS vocabulary', 'TOEFL words', 'speak english fluently']
+    },
+    health_shots: {
+      brain_health_tips: ['brain health', 'memory improvement', 'cognitive function', 'mental wellness', 'focus techniques', 'brain exercises'],
+      eye_health_tips: ['eye health', 'vision care', 'screen time protection', 'eye exercises', 'digital eye strain', 'eye safety']
+    }
   };
 
-  const baseKeywords = keywordMap[persona] || ['language learning', 'educational quiz', 'study english'];
+  const accountKeywords = keywordMap[accountId] || {};
+  const baseKeywords = accountKeywords[persona] || ['health tips', 'wellness', 'educational content'];
   const topicKeyword = topicDisplayName.toLowerCase();
   
-  return [...baseKeywords, topicKeyword, 'daily english practice', 'vocabulary builder'].slice(0, 8).join(', ');
+  return [...baseKeywords, topicKeyword].slice(0, 8).join(', ');
+}
+
+/**
+ * Generates account-specific playlist descriptions.
+ */
+function generatePlaylistDescription(accountId: string, persona: string, topicDisplayName: string, canonicalKey: string): string {
+  const account = getAccountConfig(accountId);
+  const seoKeywords = generateSEOKeywords(accountId, persona, topicDisplayName);
+  const hashtags = generateHashtags(accountId, persona, topicDisplayName);
+  const tag = `${MANAGER_TAG_PREFIX}${canonicalKey}${MANAGER_TAG_SUFFIX}`;
+
+  if (accountId === 'english_shots') {
+    return `🚀 Master ${topicDisplayName} to speak English fluently! This is your ultimate collection of daily vocabulary quizzes.
+
+✅ What you'll get:
+• 100+ high-frequency words with explanations
+• Quizzes on Synonyms, Antonyms, Idioms, Phrasal Verbs, and more
+• Clear examples to help you use words correctly
+• Quick 30-second revision videos
+
+🎯 Why choose this playlist?
+• Perfect for all levels (Beginner to Advanced)
+• Helps you prepare for exams like IELTS, TOEFL, and TOEIC
+• Created by English language experts
+• Proven to expand your vocabulary and boost confidence
+
+💡 Study Plan: Watch daily → Comment your answer → Learn → Speak with confidence!
+🔔 New videos uploaded every day!
+
+🏆 Join thousands of learners who are improving their English with us!
+
+Keywords: ${seoKeywords}
+${hashtags}
+
+${tag}`;
+  }
+
+  if (accountId === 'health_shots') {
+    if (persona === 'brain_health_tips') {
+      return `🧠 Boost your brain health with expert tips on ${topicDisplayName}! Science-backed advice for better memory, focus, and cognitive wellness.
+
+✅ What you'll learn:
+• Evidence-based brain health strategies
+• Memory enhancement techniques
+• Focus and concentration methods
+• Cognitive exercises and training
+• Brain-healthy lifestyle habits
+
+🎯 Why trust our content?
+• Created by certified health professionals
+• Based on latest neuroscience research
+• Practical tips you can use immediately
+• Suitable for all ages and fitness levels
+
+💡 Your brain health journey: Watch → Apply → Track progress → Feel the difference!
+🔔 New brain health tips uploaded regularly!
+
+🏆 Join thousands improving their cognitive wellness with us!
+
+Keywords: ${seoKeywords}
+${hashtags}
+
+${tag}`;
+    }
+
+    if (persona === 'eye_health_tips') {
+      return `👁️ Protect and improve your vision with expert eye health tips on ${topicDisplayName}! Professional advice for healthy eyes in the digital age.
+
+✅ What you'll discover:
+• Screen time protection strategies
+• Eye exercises for better vision
+• Digital eye strain prevention
+• Vision-supporting nutrition tips
+• Daily eye care routines
+
+🎯 Why choose our eye care advice?
+• Created by certified optometrists
+• Evidence-based prevention methods
+• Perfect for screen users and professionals
+• Easy-to-follow daily practices
+
+💡 Your vision care plan: Watch → Practice → Protect → Maintain healthy eyes!
+🔔 New eye health tips uploaded weekly!
+
+🏆 Join thousands protecting their vision with us!
+
+Keywords: ${seoKeywords}
+${hashtags}
+
+${tag}`;
+    }
+  }
+
+  // Fallback description
+  return `📚 Expert content on ${topicDisplayName} from ${account.name}. 
+
+Educational content designed for ${account.branding.audience} with a ${account.branding.tone} approach.
+
+Keywords: ${seoKeywords}
+${hashtags}
+
+${tag}`;
 }
 
 /**
  * Parses the canonical key from a playlist's description tag.
- * @param description The playlist description string.
- * @returns The canonical key if found, otherwise null.
  */
 function parseCanonicalKeyFromDescription(description?: string | null): string | null {
   if (!description) return null;
@@ -92,9 +200,7 @@ function parseCanonicalKeyFromDescription(description?: string | null): string |
 }
 
 /**
- * Fetches all of the channel's playlists and maps them by their canonical key.
- * @param youtube The authenticated YouTube API client.
- * @returns A Map where keys are canonical keys and values are YouTube Playlist IDs.
+ * Fetches all managed playlists for the authenticated account.
  */
 export async function findManagedPlaylists(youtube: youtube_v3.Youtube): Promise<Map<string, string>> {
   console.log("Fetching and mapping all managed playlists from YouTube...");
@@ -130,11 +236,7 @@ export async function findManagedPlaylists(youtube: youtube_v3.Youtube): Promise
 }
 
 /**
- * Gets a playlist ID or creates one, with persona-aware titles and keys.
- * @param youtube The authenticated YouTube API client.
- * @param jobData The full job object from the database.
- * @param playlistMap The pre-fetched map of existing playlists.
- * @returns The YouTube Playlist ID.
+ * Gets a playlist ID or creates one with account-specific branding.
  */
 export async function getOrCreatePlaylist(
   youtube: youtube_v3.Youtube,
@@ -142,6 +244,11 @@ export async function getOrCreatePlaylist(
   playlistMap: Map<string, string>
 ): Promise<string> {
   const { persona, topic, data } = jobData;
+  
+  // Determine account from persona
+  const account = getAccountForPersona(persona);
+  const accountId = account.id;
+  
   const topic_display_name = jobData.topic_display_name || data.topic_display_name;
   let canonicalKey: string;
   let playlistTitle: string;
@@ -149,11 +256,13 @@ export async function getOrCreatePlaylist(
   const personaData = MasterPersonas[persona];
   let topicDisplayName = topic_display_name;
 
-  const topicKey = data.question?.topic || topic;
+  // Get proper topic display name
+  const topicKey = (data.content as any)?.topic || (data.question as any)?.topic || topic;
   topicDisplayName = personaData?.subCategories?.find(cat => cat.key === topicKey)?.displayName || topic_display_name;
   
-  canonicalKey = generateCanonicalKey(persona, topicKey);
-  playlistTitle = generatePlaylistTitle(persona, topicDisplayName);
+  // Generate account-specific canonical key and title
+  canonicalKey = generateCanonicalKey(accountId, persona, topicKey);
+  playlistTitle = generatePlaylistTitle(accountId, persona, topicDisplayName);
     
   if (playlistMap.has(canonicalKey)) {
     return playlistMap.get(canonicalKey)!;
@@ -164,37 +273,9 @@ export async function getOrCreatePlaylist(
     return await playlistCreationLocks.get(canonicalKey)!;
   }
 
-  console.log(`Creating new playlist: "${playlistTitle}" for key "${canonicalKey}"...`);
+  console.log(`Creating new ${account.name} playlist: "${playlistTitle}" for key "${canonicalKey}"...`);
   
-  const tag = `${MANAGER_TAG_PREFIX}${canonicalKey}${MANAGER_TAG_SUFFIX}`;
-  
-  const seoKeywords = generateSEOKeywords(persona, topicDisplayName);
-  const hashtags = generateHashtags(persona, topicDisplayName);
-  
-  // This description block is now fully tailored to English learners.
-  const playlistDescription = `🚀 Master ${topicDisplayName} to speak English fluently! This is your ultimate collection of daily vocabulary quizzes.
-
-✅ What you'll get:
-• 100+ high-frequency words with explanations
-• Quizzes on Synonyms, Antonyms, Idioms, Phrasal Verbs, and more
-• Clear examples to help you use words correctly
-• Quick 30-second revision videos
-
-🎯 Why choose this playlist?
-• Perfect for all levels (Beginner to Advanced)
-• Helps you prepare for exams like IELTS, TOEFL, and TOEIC
-• Created by English language experts
-• Proven to expand your vocabulary and boost confidence
-
-💡 Study Plan: Watch daily → Comment your answer → Learn → Speak with confidence!
-🔔 New videos uploaded every day!
-
-🏆 Join thousands of learners who are improving their English with us!
-
-Keywords: ${seoKeywords}
-${hashtags}
-
-${tag}`;
+  const playlistDescription = generatePlaylistDescription(accountId, persona, topicDisplayName, canonicalKey);
 
   const creationPromise = createPlaylistWithLock(youtube, playlistTitle, playlistDescription, canonicalKey, playlistMap);
   playlistCreationLocks.set(canonicalKey, creationPromise);
@@ -237,5 +318,3 @@ async function createPlaylistWithLock(
     throw new Error(`Failed to create playlist "${playlistTitle}".`);
   }
 }
-
-// --- MODIFICATION END ---

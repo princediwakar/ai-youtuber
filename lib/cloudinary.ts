@@ -1,11 +1,5 @@
-import { v2 as cloudinary } from 'cloudinary';
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+import { getAccountConfig } from './accounts';
 
 export interface CloudinaryUploadResult {
   public_id: string;
@@ -17,10 +11,27 @@ export interface CloudinaryUploadResult {
 }
 
 /**
- * Upload an image buffer to Cloudinary
+ * Get configured Cloudinary instance for a specific account
+ */
+function getCloudinaryForAccount(accountId: string) {
+  const accountConfig = getAccountConfig(accountId);
+  
+  return {
+    config: {
+      cloud_name: accountConfig.cloudinaryCloudName,
+      api_key: accountConfig.cloudinaryApiKey,
+      api_secret: accountConfig.cloudinaryApiSecret,
+    },
+    uploader: cloudinary.uploader,
+  };
+}
+
+/**
+ * Upload an image buffer to Cloudinary for a specific account
  */
 export async function uploadImageToCloudinary(
   buffer: Buffer,
+  accountId: string,
   options: {
     folder?: string;
     public_id?: string;
@@ -28,20 +39,23 @@ export async function uploadImageToCloudinary(
     format?: string;
   } = {}
 ): Promise<CloudinaryUploadResult> {
+  const { config, uploader } = getCloudinaryForAccount(accountId);
+  
   return new Promise((resolve, reject) => {
     const uploadOptions = {
       resource_type: options.resource_type || 'image',
-      folder: options.folder || 'quiz-frames',
+      folder: options.folder || `${accountId}/quiz-frames`,
       public_id: options.public_id,
       format: options.format || 'png',
+      ...config,
       ...options,
     };
 
-    cloudinary.uploader.upload_stream(
+    uploader.upload_stream(
       uploadOptions,
-      (error, result) => {
+      (error: any, result: UploadApiResponse | undefined) => {
         if (error) {
-          console.error('Cloudinary upload error:', error);
+          console.error(`Cloudinary upload error for account ${accountId}:`, error);
           reject(error);
         } else if (result) {
           resolve({
@@ -61,7 +75,7 @@ export async function uploadImageToCloudinary(
 }
 
 /**
- * Download an image from Cloudinary URL
+ * Download an image from Cloudinary URL (account-agnostic)
  */
 export async function downloadImageFromCloudinary(url: string): Promise<Buffer> {
   const response = await fetch(url);
@@ -73,32 +87,42 @@ export async function downloadImageFromCloudinary(url: string): Promise<Buffer> 
 }
 
 /**
- * Delete an image from Cloudinary
+ * Delete an image from Cloudinary for a specific account
  */
-export async function deleteImageFromCloudinary(publicId: string): Promise<void> {
+export async function deleteImageFromCloudinary(publicId: string, accountId: string): Promise<void> {
+  const { config, uploader } = getCloudinaryForAccount(accountId);
+  
   try {
-    await cloudinary.uploader.destroy(publicId);
-    console.log(`Deleted image: ${publicId}`);
+    // Temporarily configure cloudinary for this account
+    cloudinary.config(config);
+    await uploader.destroy(publicId);
+    console.log(`Deleted image for account ${accountId}: ${publicId}`);
   } catch (error) {
-    console.error(`Failed to delete image ${publicId}:`, error);
+    console.error(`Failed to delete image ${publicId} for account ${accountId}:`, error);
     throw error;
   }
 }
 
 /**
- * Generate multiple frame public IDs for a job
+ * Generate multiple frame public IDs for a job with account-specific folders
  */
-export function generateFramePublicIds(jobId: string, themeName: string, frameCount: number = 3): string[] {
+export function generateFramePublicIds(
+  jobId: string, 
+  themeName: string, 
+  accountId: string,
+  frameCount: number = 3
+): string[] {
   return Array.from({ length: frameCount }, (_, index) => 
-    `quiz-frames/${themeName}-job-${jobId}-frame-${index + 1}`
+    `${accountId}/quiz-frames/${themeName}-job-${jobId}-frame-${index + 1}`
   );
 }
 
 /**
- * Upload a video buffer to Cloudinary
+ * Upload a video buffer to Cloudinary for a specific account
  */
 export async function uploadVideoToCloudinary(
   buffer: Buffer,
+  accountId: string,
   options: { 
     resource_type?: "video"; 
     folder?: string; 
@@ -106,20 +130,23 @@ export async function uploadVideoToCloudinary(
     format?: string; 
   } = {}
 ): Promise<CloudinaryUploadResult> {
+  const { config, uploader } = getCloudinaryForAccount(accountId);
+  
   return new Promise((resolve, reject) => {
     const uploadOptions = {
       resource_type: 'video' as const,
-      folder: options.folder || 'quiz-videos',
+      folder: options.folder || `${accountId}/quiz-videos`,
       public_id: options.public_id,
       format: options.format || 'mp4',
+      ...config,
       ...options,
     };
 
-    cloudinary.uploader.upload_stream(
+    uploader.upload_stream(
       uploadOptions,
-      (error, result) => {
+      (error: any, result: UploadApiResponse | undefined) => {
         if (error) {
-          console.error('Cloudinary video upload error:', error);
+          console.error(`Cloudinary video upload error for account ${accountId}:`, error);
           reject(error);
         } else if (result) {
           resolve({
@@ -139,7 +166,7 @@ export async function uploadVideoToCloudinary(
 }
 
 /**
- * Download a video from Cloudinary URL
+ * Download a video from Cloudinary URL (account-agnostic)
  */
 export async function downloadVideoFromCloudinary(url: string): Promise<Buffer> {
   const response = await fetch(url);
@@ -151,37 +178,78 @@ export async function downloadVideoFromCloudinary(url: string): Promise<Buffer> 
 }
 
 /**
- * Generate video public ID for a job
+ * Generate video public ID for a job with account-specific folder
  */
-export function generateVideoPublicId(jobId: string): string {
-  return `quiz-videos/quiz-${jobId}`;
+export function generateVideoPublicId(jobId: string, accountId: string): string {
+  return `${accountId}/quiz-videos/quiz-${jobId}`;
 }
 
 /**
- * Cleanup old frames for a job (useful for retries)
+ * Cleanup old frames for a job (useful for retries) - account-aware
  */
-export async function cleanupJobFrames(publicIds: string[]): Promise<void> {
+export async function cleanupJobFrames(publicIds: string[], accountId: string): Promise<void> {
+  const { config, uploader } = getCloudinaryForAccount(accountId);
+  
   try {
+    // Temporarily configure cloudinary for this account
+    cloudinary.config(config);
+    
     const deletePromises = publicIds.map(id => 
-      cloudinary.uploader.destroy(id).catch(err => 
-        console.warn(`Failed to delete ${id}:`, err)
+      uploader.destroy(id).catch(err => 
+        console.warn(`Failed to delete ${id} for account ${accountId}:`, err)
       )
     );
     await Promise.allSettled(deletePromises);
   } catch (error) {
-    console.error('Error during frame cleanup:', error);
+    console.error(`Error during frame cleanup for account ${accountId}:`, error);
   }
 }
 
 /**
- * Delete a video from Cloudinary
+ * Delete a video from Cloudinary for a specific account
  */
-export async function deleteVideoFromCloudinary(publicId: string): Promise<void> {
+export async function deleteVideoFromCloudinary(publicId: string, accountId: string): Promise<void> {
+  const { config, uploader } = getCloudinaryForAccount(accountId);
+  
   try {
-    await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
-    console.log(`Deleted video: ${publicId}`);
+    // Temporarily configure cloudinary for this account
+    cloudinary.config(config);
+    await uploader.destroy(publicId, { resource_type: 'video' });
+    console.log(`Deleted video for account ${accountId}: ${publicId}`);
   } catch (error) {
-    console.error(`Failed to delete video ${publicId}:`, error);
+    console.error(`Failed to delete video ${publicId} for account ${accountId}:`, error);
     throw error;
   }
+}
+
+// Legacy functions for backward compatibility (default to english_shots account)
+
+/**
+ * @deprecated Use uploadImageToCloudinary(buffer, accountId, options) instead
+ */
+export async function legacyUploadImageToCloudinary(
+  buffer: Buffer,
+  options: {
+    folder?: string;
+    public_id?: string;
+    resource_type?: 'image' | 'video' | 'raw' | 'auto';
+    format?: string;
+  } = {}
+): Promise<CloudinaryUploadResult> {
+  return uploadImageToCloudinary(buffer, 'english_shots', options);
+}
+
+/**
+ * @deprecated Use uploadVideoToCloudinary(buffer, accountId, options) instead
+ */
+export async function legacyUploadVideoToCloudinary(
+  buffer: Buffer,
+  options: { 
+    resource_type?: "video"; 
+    folder?: string; 
+    public_id?: string; 
+    format?: string; 
+  } = {}
+): Promise<CloudinaryUploadResult> {
+  return uploadVideoToCloudinary(buffer, 'english_shots', options);
 }

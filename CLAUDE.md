@@ -1,13 +1,15 @@
 
-# YouTube Shorts English Vocabulary Quiz Generator
+# Multi-Channel YouTube Shorts Content Generator
 
-This Next.js application is an automated system for generating and uploading English vocabulary quiz videos as YouTube Shorts.
+This Next.js application is an automated multi-account system for generating and uploading educational content as YouTube Shorts across multiple specialized channels.
 
 ## Project Overview
 
-**Main Component:**
+**Multi-Account Architecture:**
 
-  * **Automated English Vocabulary Quiz Generator:** A full-stack system that creates engaging, short-form quiz videos for English language learners worldwide. It handles everything from AI-powered question generation to final YouTube upload, including intelligent playlist management.
+  * **English Shots Channel:** Automated English vocabulary quiz generator for language learners worldwide
+  * **Health Shots Channel:** Automated health tips and awareness content for wellness-focused audiences
+  * **Unified Pipeline:** Shared codebase with account-specific content generation, branding, and scheduling
 
 ## Quick Setup
 
@@ -25,16 +27,28 @@ npm run dev
 
 ## Environment Variables (.env.local)
 
+**Core Application:**
   * `NEXTAUTH_URL` - App URL (e.g., http://localhost:3000)
   * `NEXTAUTH_SECRET` - Token hashing secret
-  * `GOOGLE_CLIENT_ID` - Google OAuth client ID
-  * `GOOGLE_CLIENT_SECRET` - Google OAuth secret
-  * `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for frame storage
-  * `CLOUDINARY_API_KEY` - Cloudinary API key
-  * `CLOUDINARY_API_SECRET` - Cloudinary API secret
-  * `DEEPSEEK_API_KEY` - DeepSeek API key for question generation
+  * `DEEPSEEK_API_KEY` - DeepSeek API key for AI content generation
   * `CRON_SECRET` - Secret for securing cron job API routes
   * `DEBUG_MODE` - Set to 'true' to save videos locally in `generated-videos/` folder
+
+**English Shots Account:**
+  * `ENGLISH_GOOGLE_CLIENT_ID` - Google OAuth client ID for English channel
+  * `ENGLISH_GOOGLE_CLIENT_SECRET` - Google OAuth client secret
+  * `ENGLISH_GOOGLE_REFRESH_TOKEN` - YouTube API refresh token
+  * `ENGLISH_CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for English content
+  * `ENGLISH_CLOUDINARY_API_KEY` - Cloudinary API key
+  * `ENGLISH_CLOUDINARY_API_SECRET` - Cloudinary API secret
+
+**Health Shots Account:**
+  * `HEALTH_GOOGLE_CLIENT_ID` - Google OAuth client ID for Health channel
+  * `HEALTH_GOOGLE_CLIENT_SECRET` - Google OAuth client secret
+  * `HEALTH_GOOGLE_REFRESH_TOKEN` - YouTube API refresh token
+  * `HEALTH_CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for Health content
+  * `HEALTH_CLOUDINARY_API_KEY` - Cloudinary API key
+  * `HEALTH_CLOUDINARY_API_SECRET` - Cloudinary API secret
 
 ## Architecture
 
@@ -47,40 +61,46 @@ npm run dev
 
 ## API Routes
 
+**Core Application:**
   * `/api/auth/` - NextAuth authentication
-  * `/api/jobs/` - English vocabulary quiz generation pipeline:
-      * `generate-quiz` - Creates vocabulary quiz questions (DeepSeek API)
-      * `create-frames` - Generates video frames (Canvas)
-      * `assemble-video` - Compiles video (FFmpeg)
-      * `upload-quiz-videos` - Uploads the final video to YouTube
-  * `/api/quiz-dashboard/` - Dashboard data and statistics
+  * `/api/quiz-dashboard/` - Multi-account dashboard data and statistics
   * `/api/test-db/` - Database connectivity testing
   * `/api/test-pipeline/` - Pipeline testing utilities
 
-## English Vocabulary Content System
+**Multi-Account Pipeline (Single Endpoints with Account Parameter):**
+  * `/api/jobs/generate-quiz` - Creates content for any account (DeepSeek API)
+    - Pass `{ "accountId": "english_shots" }` for English vocabulary quizzes
+    - Pass `{ "accountId": "health_shots" }` for brain/eye health tips
+  * `/api/jobs/create-frames` - Generates account-specific video frames (Canvas)
+  * `/api/jobs/assemble-video` - Compiles videos with account-specific assets (FFmpeg)
+  * `/api/jobs/upload-quiz-videos` - Uploads to account-specific YouTube channels
+    - Uses account-specific OAuth credentials and branding
 
-**Current Focus: English Vocabulary Builder**
+## Multi-Account Content System
 
-  * A single, comprehensive persona (`english_vocab_builder`) covering a wide range of topics, including:
-      * Synonyms & Antonyms
-      * Phrasal Verbs & Idioms
-      * Commonly Confused Words
-      * Thematic Vocabulary (Business, Travel, etc.)
-      * Formal vs. Casual Words
+### English Shots Channel
+**Persona:** `english_vocab_builder`
+**Content Focus:** English vocabulary quizzes covering:
+  * Synonyms & Antonyms
+  * Phrasal Verbs & Idioms
+  * Commonly Confused Words
+  * Thematic Vocabulary (Business, Travel, etc.)
+  * Formal vs. Casual Words
 
-**3 Daily Generation Batches (9 total quizzes = 8 uploads + 1 extra):**
+**Schedule:** 3 daily generation batches (2 AM, 10 AM, 6 PM IST) → 8 daily uploads
 
-  * Early Morning (2 AM)
-  * Mid-day (10 AM)
-  * Evening (6 PM)
+### Health Shots Channel
+**Personas:** `brain_health_tips`, `eye_health_tips`
+**Content Focus:** Health awareness and tips covering:
+  * **Brain Health:** Memory techniques, focus tips, cognitive exercises, brain-healthy foods
+  * **Eye Health:** Screen protection, eye exercises, vision nutrition, daily eye care habits
 
-**4-Step Automated Process:**
+**Schedule:** Independent generation and upload timing optimized for wellness audience
 
-1.  Generate vocabulary questions → 2. Create visual frames → 3. Assemble video → 4. Upload to YouTube
+### Unified 4-Step Process:
+1. **Generate Content** (account-specific AI prompts) → 2. **Create Visual Frames** (themed per account) → 3. **Assemble Video** (account branding) → 4. **Upload to YouTube** (separate channels)
 
-Monitor the entire pipeline via the dashboard at `/`.
-
-**Upload Schedule:** 8 daily uploads optimized for global engagement across different time zones.
+Monitor both pipelines via the unified dashboard at `/`.
 
 ## Key Files
 
@@ -94,25 +114,26 @@ Monitor the entire pipeline via the dashboard at `/`.
   * `lib/auth.ts` - NextAuth configuration with Google OAuth
   * `lib/database.ts` - PostgreSQL utilities and connection management
 
+**Multi-Account Infrastructure:**
+
+  * `lib/accounts.ts` - Multi-account configuration and credential management
+  * `lib/personas.ts` - Defines all personas (`english_vocab_builder`, `brain_health_tips`, `eye_health_tips`)
+
 **AI & Content Generation:**
 
-  * `lib/generationService.ts` - Vocabulary quiz generation service with AI prompts
-  * `lib/personas.ts` - Defines the `english_vocab_builder` persona and its sub-categories
-
-**Scheduling & Automation:**
-
-  * `lib/schedule.ts` - Defines the generation (3x daily) and upload (8x daily) schedules
+  * `lib/generationService.ts` - Multi-persona content generation service with account-specific AI prompts
+  * `lib/schedule.ts` - Account-specific generation and upload schedules
 
 **Visual & Media Processing:**
 
-  * `lib/frameService.ts` - Video frame generation service
-  * `lib/visuals/` - Visual theme and layout system for quiz videos
+  * `lib/frameService.ts` - Account-aware video frame generation service
+  * `lib/visuals/` - Multi-themed visual system for different content types
 
-**YouTube Integration:**
+**Account-Specific Services:**
 
-  * `lib/playlistManager.ts` - Manages YouTube playlists for different vocabulary topics
-  * `lib/googleAuth.ts` - Google API authentication
-  * `lib/cloudinary.ts` - Cloudinary integration for image processing
+  * `lib/playlistManager.ts` - Account-aware YouTube playlist management
+  * `lib/googleAuth.ts` - Multi-account Google API authentication
+  * `lib/cloudinary.ts` - Account-specific Cloudinary integration
 
 **Configuration:**
 
@@ -126,10 +147,19 @@ Monitor the entire pipeline via the dashboard at `/`.
 
 ## Current System Status
 
-**Primary Focus:** English vocabulary acquisition for a global audience
-**Content:** Single, comprehensive `english_vocab_builder` persona
-**Generation Capacity:** 9 quizzes daily across 3 scheduled batches
-**Upload Optimization:** 8 daily uploads targeting various international time zones
+**✅ FULLY IMPLEMENTED Multi-Channel Operation:**
+  * **English Shots:** English vocabulary quizzes (8 daily uploads, 3 generation batches)
+  * **Health Shots:** Brain & eye health tips (4 daily uploads, 3 generation batches)
+
+**✅ COMPLETED Architecture:** 
+  * **Accounts:** 2 independent YouTube channels with separate Google Cloud apps
+  * **Content Generation:** Account-specific AI prompting and branding
+  * **Storage:** Separate Cloudinary accounts for complete isolation
+  * **API Design:** Single endpoints with `accountId` parameter (DRY principle)
+  * **Scheduling:** Account-specific generation and upload schedules
+
+**Implementation Status:** ✅ **COMPLETED** - Multi-account architecture fully operational
+**Usage:** Pass `{ "accountId": "english_shots" }` or `{ "accountId": "health_shots" }` in API calls
 
 ## Development Workflow
 

@@ -40,5 +40,5 @@ export function renderCtaFrame(canvas: Canvas, job: QuizJob, theme: Theme): void
   // ctx.fillText(`@${personaDisplayName}`, canvas.width / 2, canvas.height / 2 + 80);
 
   // 4. Draw the footer for a consistent look
-  drawFooter(ctx, canvas.width, canvas.height, theme);
+  drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }

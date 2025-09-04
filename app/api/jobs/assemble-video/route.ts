@@ -263,7 +263,7 @@ async function processJob(job: QuizJob) {
     }
     await fs.mkdir(tempDir, { recursive: true });
 
-    const { videoUrl, videoSize } = await assembleVideoWithTransitions(frameUrls, job, tempDir);
+    const { videoUrl, videoSize } = await assembleVideoWithConcat(frameUrls, job, tempDir);
     
     await updateJob(job.id, {
       step: 4,
@@ -287,10 +287,10 @@ async function processJob(job: QuizJob) {
   }
 }
 
-async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number}> {
+async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number}> {
   const ffmpegPath = getFFmpegPath();
 
-  console.log(`[Job ${job.id}] Assembling video with fade transitions...`);
+  console.log(`[Job ${job.id}] Assembling video with simple concatenation...`);
 
   // Download frames
   const framePaths = await Promise.all(
@@ -309,37 +309,14 @@ async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, t
     getFrameDuration(job.data.question, 4),
   ];
 
-  // Create individual video clips from static frames with smooth transitions
+  // Create individual video clips from static frames
   const clipPromises = framePaths.map(async (framePath, index) => {
     const duration = durations[index];
     const clipPath = path.join(tempDir, `clip-${String(index + 1).padStart(3, '0')}.mp4`);
     
-    // Logical transition flow for 4-frame structure:
-    // Frame 1 (Question): Clean start, smooth fade out to answer
-    // Frame 2 (Answer): Fade in from question, fade out to explanation  
-    // Frame 3 (Explanation): Fade in from answer, fade out to CTA
-    // Frame 4 (CTA): Fade in from explanation, clean end
-    let fadeFilter;
-    if (index === 0) {
-      // Question frame: clean start, fade out for smooth transition to answer
-      fadeFilter = `fade=out:${Math.max(0, (duration - 0.5) * 30)}:15`;
-    } else if (index === 1) {
-      // Answer frame: fade in from question, fade out to explanation
-      fadeFilter = `fade=in:0:15,fade=out:${Math.max(0, (duration - 0.5) * 30)}:15`;
-    } else if (index === 2) {
-      // Explanation frame: fade in from answer, fade out to CTA
-      fadeFilter = `fade=in:0:15,fade=out:${Math.max(0, (duration - 0.5) * 30)}:15`;
-    } else {
-      // CTA frame: fade in from explanation, clean end
-      fadeFilter = `fade=in:0:15`;
-    }
-
-    
-    
     const args = [
       '-loop', '1',
       '-i', framePath,
-      '-vf', fadeFilter,
       '-c:v', 'libx264',
       '-t', duration.toString(),
       '-pix_fmt', 'yuv420p',
@@ -420,8 +397,11 @@ async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, t
   // Save debug video locally if DEBUG_MODE is enabled
   await saveDebugVideo(videoBuffer, job.id, job.data.themeName);
   
-  const publicId = generateVideoPublicId(job.id);
-  const result = await uploadVideoToCloudinary(videoBuffer, {
+  // Get account ID from job data or persona
+  const accountId = job.account_id || (job.persona === 'english_vocab_builder' ? 'english_shots' : 'health_shots');
+  
+  const publicId = generateVideoPublicId(job.id, accountId);
+  const result = await uploadVideoToCloudinary(videoBuffer, accountId, {
     folder: config.CLOUDINARY_VIDEOS_FOLDER,
     public_id: publicId,
     resource_type: 'video',
@@ -429,6 +409,8 @@ async function assembleVideoWithTransitions(frameUrls: string[], job: QuizJob, t
 
   return { videoUrl: result.secure_url, videoSize: videoBuffer.length };
 }
+
+
 function getFrameDuration(question: any, frameNumber: number): number {
   switch (frameNumber) {
     case 1: // Question Frame

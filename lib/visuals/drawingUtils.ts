@@ -84,14 +84,18 @@ export const drawBackground = (ctx: CanvasRenderingContext2D, width: number, hei
 // Make sure to add the new functions to your exports if you structure them in a way that requires it.
 // For this example, we'll assume they are available to the layout files.
 
-export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme) => {
+export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme, job: QuizJob) => {
     ctx.fillStyle = theme.text.secondary; // ✨ Changed to use secondary text color
     ctx.font = `bold 48px ${theme.fontFamily}`; // ✨ Changed
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     // No need for globalAlpha, as the color itself has transparency
     ctx.font = `48px ${theme.fontFamily}`; // ✨ Changed
-    ctx.fillText('@gibbiai', width / 2, height - 90);
+    ctx.fillText('gibbi.vercel.app', width / 2, height - 90);
+    // const personaDisplayName = MasterPersonas[job.persona]?.displayName || job.persona;
+    
+    // Draw the text in the middle of the header plate
+    // ctx.fillText(personaDisplayName, width / 2, height - 90);
 };
 
 export const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {

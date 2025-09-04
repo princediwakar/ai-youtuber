@@ -14,6 +14,7 @@ import {
   generateFramePublicIds,
   cleanupJobFrames
 } from '@/lib/cloudinary';
+import { getAccountForPersona } from '@/lib/accounts';
 
 // --- FIX START ---
 // 1. Correctly import from the commonFrames file using a relative path
@@ -40,7 +41,21 @@ const layoutRouter = {
 export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   const theme = selectThemeForPersona(job.persona);
   
-  const questionType = job.data.question.question_type || 'multiple_choice';
+  // Support both legacy question structure and new content structure
+  const contentData = job.data?.content || job.data?.question;
+  
+  // Add proper null checking for contentData
+  if (!contentData) {
+    throw new Error(`Job ${job.id} missing content data. Expected either job.data.content or job.data.question.`);
+  }
+  
+  // Ensure job.data.question exists for layout functions (normalize the structure)
+  if (!job.data.question && job.data.content) {
+    job.data.question = job.data.content;
+  }
+  
+  // Safely get question type with proper fallback
+  const questionType = contentData?.question_type || 'multiple_choice';
   const layout = layoutRouter[questionType as keyof typeof layoutRouter] || layoutRouter.default;
 
   // --- FIX START ---
@@ -64,7 +79,9 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
       renderedCanvases.push(canvas);
   }
 
-  const frameUrls = await uploadFrames(job.id, theme.name, renderedCanvases);
+  // Get account for this job's persona to determine upload destination
+  const account = getAccountForPersona(job.persona);
+  const frameUrls = await uploadFrames(job.id, theme.name, renderedCanvases, account.id);
   
   const { updateJob } = await import('@/lib/database');
   await updateJob(job.id, {
@@ -80,23 +97,23 @@ function selectThemeForPersona(persona: string): Theme {
   return themes[randomThemeName];
 }
 
-async function uploadFrames(jobId: string, themeName: string, canvases: Canvas[]): Promise<string[]> {
-  const publicIds = generateFramePublicIds(jobId, themeName, canvases.length);
+async function uploadFrames(jobId: string, themeName: string, canvases: Canvas[], accountId: string): Promise<string[]> {
+  const publicIds = generateFramePublicIds(jobId, themeName, accountId, canvases.length);
   try {
     const uploadPromises = canvases.map((canvas, index) => {
       const buffer = canvas.toBuffer('image/png');
-      return uploadImageToCloudinary(buffer, {
+      return uploadImageToCloudinary(buffer, accountId, {
         folder: config.CLOUDINARY_FRAMES_FOLDER,
         public_id: publicIds[index],
       });
     });
     const results = await Promise.all(uploadPromises);
-    console.log(`[Job ${jobId}] ✅ All ${canvases.length} frames uploaded to Cloudinary.`);
+    console.log(`[Job ${jobId}] ✅ All ${canvases.length} frames uploaded to ${accountId} Cloudinary account.`);
     return results.map(r => r.secure_url);
   } catch (error) {
-    console.error(`[Job ${jobId}] ❌ Cloudinary upload failed. Cleaning up...`, error);
-    await cleanupJobFrames(publicIds);
-    throw new Error('Failed to upload frames to Cloudinary.');
+    console.error(`[Job ${jobId}] ❌ Cloudinary upload failed for account ${accountId}. Cleaning up...`, error);
+    await cleanupJobFrames(publicIds, accountId);
+    throw new Error(`Failed to upload frames to Cloudinary for account ${accountId}.`);
   }
 }
 

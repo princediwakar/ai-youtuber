@@ -10,7 +10,8 @@ import { findManagedPlaylists, getOrCreatePlaylist } from '@/lib/playlistManager
 import { QuizJob } from '@/lib/types';
 import { config } from '@/lib/config';
 import { getOAuth2Client } from '@/lib/googleAuth';
-import { UploadSchedule } from '@/lib/schedule';
+import { getScheduledPersonasForUpload } from '@/lib/schedule';
+import { getAccountConfig } from '@/lib/accounts';
 
 // The in-memory cache for the playlist map is still useful to avoid re-fetching on every run.
 interface Cache {
@@ -28,7 +29,27 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // 1. Check the upload schedule to see what needs to be published now.
+    // Parse request body to get accountId (optional)
+    let accountId = 'english_shots'; // Default for backward compatibility
+    try {
+      const body = await request.json();
+      accountId = body.accountId || accountId;
+    } catch {
+      // No body or invalid JSON - use default
+    }
+
+    // Validate account exists
+    let account;
+    try {
+      account = getAccountConfig(accountId);
+    } catch (error) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Invalid accountId: ${accountId}` 
+      }, { status: 400 });
+    }
+
+    // 1. Check the account-specific upload schedule to see what needs to be published now.
     const now = new Date();
     // Convert to IST (UTC + 5:30)
     const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
@@ -37,36 +58,36 @@ export async function POST(request: NextRequest) {
     let personasToUpload: string[] = [];
 
     if (config.DEBUG_MODE) {
-      // In debug mode, bypass schedule and allow all personas
-      console.log('🐛 DEBUG MODE: Bypassing upload schedule, allowing all personas');
-      personasToUpload = []; // Empty array means all personas in getPendingJobs
+      // In debug mode, bypass schedule and allow account-specific personas
+      console.log(`🐛 DEBUG MODE: Bypassing ${account.name} upload schedule, allowing account personas`);
+      personasToUpload = account.personas; // Use account's personas in debug mode
     } else {
-      personasToUpload = UploadSchedule[dayOfWeek]?.[hourOfDay] || [];
+      personasToUpload = getScheduledPersonasForUpload(accountId, dayOfWeek, hourOfDay);
       
       // 2. If no personas are scheduled for this hour, exit gracefully.
       if (personasToUpload.length === 0) {
-        const message = `No uploads scheduled for this hour (${hourOfDay}:00).`;
+        const message = `No ${account.name} uploads scheduled for this hour (${hourOfDay}:00).`;
         console.log(message);
-        return NextResponse.json({ success: true, message });
+        return NextResponse.json({ success: true, message, accountId });
       }
       
-      console.log(`🚀 Found scheduled uploads for this hour: ${personasToUpload.join(', ')}`);
+      console.log(`🚀 Found scheduled ${account.name} uploads for this hour: ${personasToUpload.join(', ')}`);
     }
 
     // 3. Auto-retry failed jobs with valid data
     await autoRetryFailedJobs();
     
-    // 4. Fetch pending jobs for the scheduled personas (or all if debug mode).
+    // 4. Fetch pending jobs for the scheduled personas.
     const jobs = await getPendingJobs(4, config.UPLOAD_CONCURRENCY, personasToUpload.length > 0 ? personasToUpload : undefined);
     if (jobs.length === 0) {
       const message = config.DEBUG_MODE 
-        ? `No videos ready for upload (debug mode - all personas allowed).`
-        : `No videos ready for upload for scheduled personas.`;
-      return NextResponse.json({ success: true, message });
+        ? `No videos ready for ${account.name} upload (debug mode - account personas allowed).`
+        : `No videos ready for ${account.name} upload for scheduled personas.`;
+      return NextResponse.json({ success: true, message, accountId });
     }
     
     const cache = await getCache();
-    const oauth2Client = getOAuth2Client();
+    const oauth2Client = getOAuth2Client(accountId); // Use account-specific OAuth client
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
     
     if (!cache.playlistMap) {
@@ -74,16 +95,21 @@ export async function POST(request: NextRequest) {
       await setCache(cache);
     }
 
-    const processPromises = jobs.map(job => processUpload(job, youtube, cache.playlistMap!));
+    const processPromises = jobs.map(job => processUpload(job, youtube, cache.playlistMap!, accountId));
     const results = await Promise.allSettled(processPromises);
     
     const successfulJobs = results.filter(r => r.status === 'fulfilled' && r.value).length;
 
     const personaMessage = config.DEBUG_MODE 
-      ? 'all personas (debug mode)' 
+      ? `${account.name} personas (debug mode)` 
       : personasToUpload.join(', ');
-    console.log(`YouTube upload batch completed. Processed ${successfulJobs} jobs for: ${personaMessage}.`);
-    return NextResponse.json({ success: true, processed: successfulJobs });
+    console.log(`${account.name} YouTube upload batch completed. Processed ${successfulJobs} jobs for: ${personaMessage}.`);
+    return NextResponse.json({ 
+      success: true, 
+      processed: successfulJobs, 
+      accountId,
+      accountName: account.name
+    });
 
   } catch (error) {
     console.error('YouTube upload batch failed:', error);
@@ -91,7 +117,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlistMap: Map<string, string>) {
+async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlistMap: Map<string, string>, accountId: string) {
   let tempFile: string | null = null;
   try {
     console.log(`[Job ${job.id}] Starting YouTube upload...`);
@@ -106,8 +132,8 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
     // Get playlist ID first so we can include it in metadata
     const playlistId = await getOrCreatePlaylist(youtube, job, playlistMap);
     
-    // Generate metadata with playlist link
-    const metadata = generateVideoMetadata(job, playlistId);
+    // Generate account-specific metadata with playlist link
+    const metadata = generateVideoMetadata(job, playlistId, accountId);
     
     // Get the first frame URL as thumbnail (question frame)
     const thumbnailUrl = job.data.frameUrls?.[0];
@@ -117,7 +143,7 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
     await addVideoToPlaylist(youtubeVideoId, job, youtube, playlistMap, playlistId);
     
     await markJobCompleted(job.id, youtubeVideoId, metadata);
-    await cleanupCloudinaryAssets(job.data);
+    await cleanupCloudinaryAssets(job.data, accountId);
     
     console.log(`[Job ${job.id}] ✅ YouTube upload successful: https://www.youtube.com/watch?v=${youtubeVideoId}`);
     return { id: job.id, youtube_video_id: youtubeVideoId };
@@ -225,83 +251,100 @@ async function addVideoToPlaylist(
   }
 }
 
-function generateVideoMetadata(job: QuizJob, playlistId?: string) {
-  const { question } = job.data;
+function generateVideoMetadata(job: QuizJob, playlistId: string | undefined, accountId: string) {
+  const contentData = job.data.content || job.data.question; // Support both structures
   const topic_display_name = job.topic_display_name || job.data.topic_display_name;
   
-  // Generate SEO-optimized, viral-worthy title
-  const title = generateTitle(job.persona, topic_display_name);
+  // Generate account-specific SEO-optimized, viral-worthy title
+  const title = generateTitle(accountId, job.persona, topic_display_name);
   
-  // Generate strategic hashtags for maximum reach
-  const hashtags = generateHashtags(job.persona, job.topic);
+  // Generate account-specific strategic hashtags for maximum reach
+  const hashtags = generateHashtags(accountId, job.persona, job.topic);
   
-  // Create engaging description with full question content and playlist link
-  const description = generateDescription(question, topic_display_name, hashtags, playlistId);
+  // Create engaging description with full content and playlist link
+  const description = generateDescription(accountId, contentData, topic_display_name, hashtags, playlistId);
   
   // Optimized tags for YouTube algorithm
-  const tags = generateSEOTags(job.persona, job.topic, topic_display_name);
+  const tags = generateSEOTags(accountId, job.persona, job.topic, topic_display_name);
   
   return { title: title.slice(0, 100), description, tags };
 }
 
-// --- MODIFICATION START ---
-// All metadata functions below have been updated for the English Vocabulary persona.
-
 /**
- * Generates viral-worthy, SEO-optimized titles for English learning.
+ * Generates account-specific viral-worthy, SEO-optimized titles.
  */
-function generateTitle(persona: string, topicName: string): string {
-  const titleTemplates: Record<string, string[]> = {
-    english_vocab_builder: [
-      `🧠 English Vocabulary Quiz | ${topicName}`,
-      `🏆 Can You Answer This? | English Vocab Challenge`,
-      `🤔 9/10 Fail This Vocabulary Test | ${topicName}`,
-      `🇬🇧 Daily English Vocabulary Quiz | ${topicName}`,
-    ],
+function generateTitle(accountId: string, persona: string, topicName: string): string {
+  const titleTemplates: Record<string, Record<string, string[]>> = {
+    english_shots: {
+      english_vocab_builder: [
+        `🧠 English Vocabulary Quiz | ${topicName}`,
+        `🏆 Can You Answer This? | English Vocab Challenge`,
+        `🤔 9/10 Fail This Vocabulary Test | ${topicName}`,
+        `🇬🇧 Daily English Vocabulary Quiz | ${topicName}`,
+      ]
+    },
+    health_shots: {
+      brain_health_tips: [
+        `🧠 Brain Health Tip | ${topicName}`,
+        `🎯 Boost Your Memory | ${topicName}`,
+        `💡 Neurologist's Secret | ${topicName}`,
+        `🚀 Brain Power Boost | ${topicName}`,
+      ],
+      eye_health_tips: [
+        `👁️ Eye Health Tip | ${topicName}`,
+        `💻 Screen Time Safety | ${topicName}`,
+        `✨ Protect Your Vision | ${topicName}`,
+        `🎯 Optometrist's Advice | ${topicName}`,
+      ]
+    }
   };
   
-  const templates = titleTemplates[persona] || [`📚 English Quiz | ${topicName}`];
+  const accountTemplates = titleTemplates[accountId] || {};
+  const templates = accountTemplates[persona] || [`📚 ${topicName} | Expert Tips`];
   return templates[Math.floor(Math.random() * templates.length)];
 }
 
 /**
- * Generates strategic hashtags for the English learning niche.
+ * Generates account-specific strategic hashtags.
  */
-function generateHashtags(persona: string, category: string): string {
-  const baseHashtags = `#shorts #viral #learnenglish #english #vocabulary`;
-  
-  const subjectHashtags: Record<string, string> = {
-    english_vocab_builder: '#englishquiz #vocab #esl #ielts #toefl #englishteacher',
+function generateHashtags(accountId: string, persona: string, category: string): string {
+  const hashtagMap: Record<string, Record<string, string>> = {
+    english_shots: {
+      english_vocab_builder: '#shorts #viral #learnenglish #english #vocabulary #englishquiz #vocab #esl #ielts #toefl #englishteacher #trending #fyp #challenge #quiz #education'
+    },
+    health_shots: {
+      brain_health_tips: '#shorts #viral #brainhealth #memory #focus #cognitivehealth #wellness #brainfood #neurology #mindfulness #trending #fyp #health #tips #education',
+      eye_health_tips: '#shorts #viral #eyehealth #visioncare #screentime #eyecare #healthyeyes #optometry #digitalstrain #bluelight #trending #fyp #health #vision #tips'
+    }
   };
-  
-  const viralBoosts = '#trending #fyp #challenge #quiz #education';
-  
-  return `${baseHashtags} ${subjectHashtags[persona] || ''} ${viralBoosts}`.trim();
+
+  const accountHashtags = hashtagMap[accountId] || {};
+  return accountHashtags[persona] || '#shorts #viral #health #tips #wellness #trending #fyp #education';
 }
 
 /**
- * Creates engaging video descriptions for English vocabulary quizzes.
+ * Creates account-specific engaging video descriptions.
  */
-function generateDescription(question: any, topicName: string, hashtags: string, playlistId?: string): string {
-  const hooks = [
-    "🤔 Think you know this word?",
-    "⚡ Test your English vocabulary!",
-    "🧠 Only 10% get this right!",
-    "🎯 Can you master this English quiz?"
-  ];
-  
-  const hook = hooks[Math.floor(Math.random() * hooks.length)];
-  
-  // Build playlist link first to place it at the top
-  const playlistLink = playlistId ? 
-    `📺 For more questions on ${topicName}, check out the full playlist:\nhttps://www.youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
+function generateDescription(accountId: string, contentData: any, topicName: string, hashtags: string, playlistId?: string): string {
+  // English account description
+  if (accountId === 'english_shots') {
+    const hooks = [
+      "🤔 Think you know this word?",
+      "⚡ Test your English vocabulary!",
+      "🧠 Only 10% get this right!",
+      "🎯 Can you master this English quiz?"
+    ];
+    
+    const hook = hooks[Math.floor(Math.random() * hooks.length)];
+    
+    const playlistLink = playlistId ? 
+      `📺 For more questions on ${topicName}, check out the full playlist:\nhttps://www.youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
 
-  // Build options string
-  const optionsText = question.options ? 
-    Object.entries(question.options).map(([key, value]) => `${key}) ${value}`).join('\n') : '';
-  
-  return `${hook}\n${playlistLink}📚 QUESTION:
-${question.question || question.assertion}
+    const optionsText = contentData.options ? 
+      Object.entries(contentData.options).map(([key, value]) => `${key}) ${value}`).join('\n') : '';
+    
+    return `${hook}\n${playlistLink}📚 QUESTION:
+${contentData.question || contentData.assertion}
 
 🔤 OPTIONS:
 ${optionsText}
@@ -310,7 +353,7 @@ ${optionsText}
 The correct answer is revealed in the video!
 
 💡 EXPLANATION:
-${question.explanation || 'Watch the video for a detailed explanation!'}
+${contentData.explanation || 'Watch the video for a detailed explanation!'}
 
 🏆 Join thousands of learners improving their English daily!
 
@@ -320,58 +363,94 @@ ${question.explanation || 'Watch the video for a detailed explanation!'}
 ⚡ Share with your study partners!
 
 ${hashtags}`;
+  }
+
+  // Health account description
+  if (accountId === 'health_shots') {
+    const hooks = [
+      "🌟 Transform your health today!",
+      "💡 Expert health tip coming up!",
+      "🎯 Science-backed advice ahead!",
+      "🚀 Boost your wellness journey!"
+    ];
+    
+    const hook = hooks[Math.floor(Math.random() * hooks.length)];
+    
+    const playlistLink = playlistId ? 
+      `📺 For more tips on ${topicName}, check out the full playlist:\nhttps://www.youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
+
+    return `${hook}\n${playlistLink}❓ HEALTH QUIZ:
+${contentData.question}
+
+🎯 ANSWER & EXPLANATION:
+${contentData.answer === 'A' ? 'TRUE' : 'FALSE'} - ${contentData.explanation}
+
+🏆 Join thousands improving their health knowledge!
+
+🎯 TAKE ACTION:
+💡 Test your health knowledge and learn something new!
+🔔 Subscribe for daily health quizzes!
+⚡ Share with friends who care about their health!
+
+${hashtags}`;
+  }
+
+  // Fallback description
+  return `${contentData.question || 'Expert content'}\n\n${contentData.explanation || 'Professional advice for better health and wellness.'}\n\n${hashtags}`;
 }
 
 /**
- * Generates SEO-optimized tags for the YouTube algorithm.
+ * Generates account-specific SEO-optimized tags for YouTube algorithm.
  */
-function generateSEOTags(persona: string, category: string, topicName: string): string[] {
-  const baseTags = ['learn english', 'english vocabulary', 'english quiz', 'shorts', 'viral', 'education'];
-  
-  const subjectTags: Record<string, string[]> = {
-    english_vocab_builder: ['vocabulary', 'english lesson', 'esl', 'ielts vocabulary', 'toefl vocabulary', 'speak english'],
+function generateSEOTags(accountId: string, persona: string, category: string, topicName: string): string[] {
+  const tagMap: Record<string, Record<string, string[]>> = {
+    english_shots: {
+      english_vocab_builder: ['learn english', 'english vocabulary', 'english quiz', 'vocabulary', 'english lesson', 'esl', 'ielts vocabulary', 'toefl vocabulary', 'speak english', 'challenge', 'english test', 'study english']
+    },
+    health_shots: {
+      brain_health_tips: ['brain health', 'memory improvement', 'cognitive function', 'mental wellness', 'focus techniques', 'brain exercises', 'neurology', 'brain tips', 'memory tips'],
+      eye_health_tips: ['eye health', 'vision care', 'screen time protection', 'eye exercises', 'digital eye strain', 'eye safety', 'optometry', 'vision tips', 'healthy eyes']
+    }
   };
+
+  const baseTags = ['shorts', 'viral', 'education', 'tips', 'health', 'wellness'];
+  const accountTags = tagMap[accountId] || {};
+  const personaTags = accountTags[persona] || ['health tips', 'wellness'];
   
   const categoryTag = category.toLowerCase().replace(/_/g, ' ');
   const topicTag = topicName.toLowerCase();
   
   const allTags = [
     ...baseTags,
-    ...(subjectTags[persona] || []),
+    ...personaTags,
     categoryTag,
-    topicTag,
-    'challenge',
-    'english test',
-    'study english'
+    topicTag
   ];
   
-  // Remove duplicates and return unique tags
   return [...new Set(allTags)].filter(Boolean);
 }
 
-// --- MODIFICATION END ---
-
-async function cleanupCloudinaryAssets(jobData: any): Promise<void> {
+async function cleanupCloudinaryAssets(jobData: any, accountId: string): Promise<void> {
   try {
     const cleanupPromises = [];
     if (jobData.videoUrl) {
       const videoPublicId = extractPublicIdFromUrl(jobData.videoUrl);
       if (videoPublicId) {
-        cleanupPromises.push(deleteVideoFromCloudinary(videoPublicId).catch(err => console.warn(`Failed to delete video ${videoPublicId}:`, err)));
+        cleanupPromises.push(deleteVideoFromCloudinary(videoPublicId, accountId).catch(err => console.warn(`Failed to delete video ${videoPublicId} for ${accountId}:`, err)));
       }
     }
     if (jobData.frameUrls && Array.isArray(jobData.frameUrls)) {
       jobData.frameUrls.forEach((frameUrl: string) => {
         const framePublicId = extractPublicIdFromUrl(frameUrl);
         if (framePublicId) {
-          cleanupPromises.push(deleteImageFromCloudinary(framePublicId).catch(err => console.warn(`Failed to delete frame ${framePublicId}:`, err)));
+          cleanupPromises.push(deleteImageFromCloudinary(framePublicId, accountId).catch(err => console.warn(`Failed to delete frame ${framePublicId} for ${accountId}:`, err)));
         }
       });
     }
     await Promise.allSettled(cleanupPromises);
-    console.log(`🧹 Cleaned up Cloudinary assets for job`);
+    console.log(`🧹 Cleaned up Cloudinary assets for ${accountId} job`);
   } catch (error) {
-    console.error('Error during Cloudinary cleanup:', error);
+    console.error(`Error during Cloudinary cleanup for ${accountId}:`, error);
   }
 }
 

@@ -4,7 +4,9 @@
  */
 
 // --- MODIFICATION START ---
-// Updated the Question interface to include all possible fields from the AI generation.
+// Updated interfaces to support both English quiz and Health content formats.
+
+// English quiz content structure
 export interface Question {
   question?: string; // Optional, as assertion/reason questions don't use this
   assertion?: string; // For assertion/reason questions
@@ -13,9 +15,12 @@ export interface Question {
   answer: string;
   explanation: string;
   topic: string;
-  question_type?: 'multiple_choice' | 'true_false' | 'assertion_reason'; // More specific type
+  question_type?: 'multiple_choice' | 'true_false' | 'assertion_reason';
   cta: string; // For the call-to-action frame
 }
+
+// Union type for all content types (now just Question since health content uses the same format)
+export type ContentData = Question;
 // --- MODIFICATION END ---
 
 
@@ -44,8 +49,11 @@ export interface QuizJob {
   generation_date: string;
   status: string;
   step: number;
+  account_id?: string; // Account identifier for multi-account support
   data: {
-    question: Question; // Using the strong Question type here
+    // Support both legacy and new content structures
+    question?: Question; // Legacy structure (still supported)
+    content?: ContentData; // New unified structure
     [key: string]: any; // Allows for other properties like frameUrls, themeName etc.
   };
   error_message?: string;
