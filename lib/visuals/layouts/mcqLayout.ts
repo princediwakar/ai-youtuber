@@ -269,10 +269,13 @@ Object.entries(options).forEach(([optionKey, optionText]) => {
     // 1. Apply shadow for a cool pop-out effect
     applyShadow(ctx, theme.button.shadow);
 
-    // 2. Determine the fill style (correct answer vs. normal button)
+    // 2. Determine the fill style (correct answer vs. normal button vs. incorrect answer)
     let fillStyle = theme.button.background;
     if (isAnswerFrame && isCorrect) {
         fillStyle = theme.feedback.correct;
+    } else if (isAnswerFrame && !isCorrect) {
+        // Make incorrect answers visually muted in answer frame
+        fillStyle = 'rgba(128, 128, 128, 0.3)';
     }
 
     // 3. Apply the gradient/solid color and draw the button
@@ -284,11 +287,43 @@ Object.entries(options).forEach(([optionKey, optionText]) => {
     clearShadow(ctx);
     
     // 5. Set text color and draw the text
-    ctx.fillStyle = (isAnswerFrame && isCorrect) ? theme.text.onAccent : theme.button.text;
+    if (isAnswerFrame && isCorrect) {
+        ctx.fillStyle = theme.text.onAccent;
+    } else if (isAnswerFrame && !isCorrect) {
+        ctx.fillStyle = 'rgba(128, 128, 128, 0.7)'; // Muted text for incorrect answers
+    } else {
+        ctx.fillStyle = theme.button.text;
+    }
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
 
     const textStartY = optionY + PADDING;
+    
+    // Add checkmark for correct answer in answer frame
+    if (isAnswerFrame && isCorrect) {
+      const checkmarkSize = fontSize * 0.6;
+      const checkmarkX = buttonX + buttonWidth - PADDING - checkmarkSize;
+      const checkmarkY = optionY + (dynamicButtonHeight - checkmarkSize) / 2;
+      
+      // Draw checkmark background circle
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      ctx.beginPath();
+      ctx.arc(checkmarkX + checkmarkSize/2, checkmarkY + checkmarkSize/2, checkmarkSize/2, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Draw checkmark
+      const strokeColor = Array.isArray(theme.feedback.correct) ? theme.feedback.correct[0] : theme.feedback.correct;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = checkmarkSize * 0.15;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(checkmarkX + checkmarkSize * 0.25, checkmarkY + checkmarkSize * 0.5);
+      ctx.lineTo(checkmarkX + checkmarkSize * 0.45, checkmarkY + checkmarkSize * 0.7);
+      ctx.lineTo(checkmarkX + checkmarkSize * 0.75, checkmarkY + checkmarkSize * 0.3);
+      ctx.stroke();
+    }
+    
     lines.forEach((line, lineIndex) => {
       const textX = buttonX + PADDING;
       const textY = textStartY + (lineIndex * LINE_HEIGHT);

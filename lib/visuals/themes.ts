@@ -123,6 +123,6 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(33, 37, 41, 0.05)', text: '#212529' },
     text: { primary: '#212529', secondary: 'rgba(33, 37, 41, 0.6)', onAccent: '#FFFFFF' },
     button: { background: ['#64DDBB', '#48BCA8'], text: '#FFFFFF', shadow: 'rgba(0, 0, 0, 0.1)' },
-    feedback: { correct: ['#004AAD', '#003580'] },
+    feedback: { correct: ['#28A745', '#20C997'] },
   },
 };
