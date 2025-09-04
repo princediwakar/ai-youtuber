@@ -14,7 +14,7 @@ import {
   generateFramePublicIds,
   cleanupJobFrames
 } from '@/lib/cloudinary';
-import { getAccountForPersona } from '@/lib/accounts';
+import { getAccountConfig } from '@/lib/accounts';
 
 // --- FIX START ---
 // 1. Correctly import from the commonFrames file using a relative path
@@ -79,8 +79,8 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
       renderedCanvases.push(canvas);
   }
 
-  // Get account for this job's persona to determine upload destination
-  const account = getAccountForPersona(job.persona);
+  // Get account for this job to determine upload destination
+  const account = await getAccountConfig(job.account_id);
   const frameUrls = await uploadFrames(job.id, theme.name, renderedCanvases, account.id);
   
   const { updateJob } = await import('@/lib/database');

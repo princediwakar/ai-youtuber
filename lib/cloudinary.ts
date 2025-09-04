@@ -13,8 +13,8 @@ export interface CloudinaryUploadResult {
 /**
  * Get configured Cloudinary instance for a specific account
  */
-function getCloudinaryForAccount(accountId: string) {
-  const accountConfig = getAccountConfig(accountId);
+async function getCloudinaryForAccount(accountId: string) {
+  const accountConfig = await getAccountConfig(accountId);
   
   return {
     config: {
@@ -39,7 +39,7 @@ export async function uploadImageToCloudinary(
     format?: string;
   } = {}
 ): Promise<CloudinaryUploadResult> {
-  const { config, uploader } = getCloudinaryForAccount(accountId);
+  const { config, uploader } = await getCloudinaryForAccount(accountId);
   
   return new Promise((resolve, reject) => {
     const uploadOptions = {
@@ -90,7 +90,7 @@ export async function downloadImageFromCloudinary(url: string): Promise<Buffer> 
  * Delete an image from Cloudinary for a specific account
  */
 export async function deleteImageFromCloudinary(publicId: string, accountId: string): Promise<void> {
-  const { config, uploader } = getCloudinaryForAccount(accountId);
+  const { config, uploader } = await getCloudinaryForAccount(accountId);
   
   try {
     // Temporarily configure cloudinary for this account
@@ -130,7 +130,7 @@ export async function uploadVideoToCloudinary(
     format?: string; 
   } = {}
 ): Promise<CloudinaryUploadResult> {
-  const { config, uploader } = getCloudinaryForAccount(accountId);
+  const { config, uploader } = await getCloudinaryForAccount(accountId);
   
   return new Promise((resolve, reject) => {
     const uploadOptions = {
@@ -188,7 +188,7 @@ export function generateVideoPublicId(jobId: string, accountId: string): string 
  * Cleanup old frames for a job (useful for retries) - account-aware
  */
 export async function cleanupJobFrames(publicIds: string[], accountId: string): Promise<void> {
-  const { config, uploader } = getCloudinaryForAccount(accountId);
+  const { config, uploader } = await getCloudinaryForAccount(accountId);
   
   try {
     // Temporarily configure cloudinary for this account
@@ -209,7 +209,7 @@ export async function cleanupJobFrames(publicIds: string[], accountId: string): 
  * Delete a video from Cloudinary for a specific account
  */
 export async function deleteVideoFromCloudinary(publicId: string, accountId: string): Promise<void> {
-  const { config, uploader } = getCloudinaryForAccount(accountId);
+  const { config, uploader } = await getCloudinaryForAccount(accountId);
   
   try {
     // Temporarily configure cloudinary for this account

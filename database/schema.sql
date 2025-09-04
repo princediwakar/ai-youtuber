@@ -3,11 +3,13 @@
 -- =================================================================
 
 -- Drop existing objects in reverse order of dependency to ensure a clean setup.
+DROP TRIGGER IF EXISTS set_accounts_updated_at ON accounts;
 DROP TRIGGER IF EXISTS set_quiz_jobs_updated_at ON quiz_jobs;
 DROP TRIGGER IF EXISTS set_uploaded_videos_updated_at ON uploaded_videos;
 DROP FUNCTION IF EXISTS trigger_set_timestamp();
 DROP TABLE IF EXISTS uploaded_videos;
 DROP TABLE IF EXISTS quiz_jobs;
+DROP TABLE IF EXISTS accounts;
 
 -- =================================================================
 --  Helper Function for Timestamps
@@ -23,12 +25,48 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =================================================================
+--  Accounts Table
+-- =================================================================
+
+-- This table stores account configurations and encrypted credentials.
+CREATE TABLE accounts (
+    id VARCHAR(50) PRIMARY KEY, -- e.g., 'english_shots', 'health_shots'
+    name VARCHAR(100) NOT NULL, -- Display name
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
+    
+    -- OAuth Credentials (encrypted)
+    google_client_id_encrypted TEXT NOT NULL,
+    google_client_secret_encrypted TEXT NOT NULL,
+    refresh_token_encrypted TEXT NOT NULL,
+    
+    -- Cloudinary Credentials (encrypted)
+    cloudinary_cloud_name_encrypted TEXT NOT NULL,
+    cloudinary_api_key_encrypted TEXT NOT NULL,
+    cloudinary_api_secret_encrypted TEXT NOT NULL,
+    
+    -- Account Configuration
+    personas JSONB NOT NULL, -- Array of persona names
+    branding JSONB NOT NULL, -- Theme, audience, tone settings
+    
+    -- Timestamps
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE accounts IS 'Stores account configurations and encrypted credentials for multi-channel operation.';
+COMMENT ON COLUMN accounts.personas IS 'Array of persona names associated with this account.';
+COMMENT ON COLUMN accounts.branding IS 'Account branding configuration (theme, audience, tone).';
+
+-- =================================================================
 --  Primary Table: quiz_jobs
 -- =================================================================
 
 -- This table tracks each piece of content through the entire generation pipeline.
 CREATE TABLE quiz_jobs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    -- Account Reference
+    account_id VARCHAR(50) NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
 
     -- Core Persona & Content Information
     persona VARCHAR(50) NOT NULL,
@@ -56,6 +94,7 @@ CREATE TABLE quiz_jobs (
 );
 
 COMMENT ON TABLE quiz_jobs IS 'Tracks the state of each content generation job from creation to completion.';
+COMMENT ON COLUMN quiz_jobs.account_id IS 'Foreign key reference to the accounts table.';
 COMMENT ON COLUMN quiz_jobs.persona IS 'The content persona, e.g., ''eng_vocabulary_builder''.';
 COMMENT ON COLUMN quiz_jobs.topic IS 'The machine-readable topic key from the persona config, e.g., ''physics_units_measurements''.';
 COMMENT ON COLUMN quiz_jobs.data IS 'Stores the AI-generated question, frame URLs, video URL, etc.';
@@ -89,8 +128,10 @@ COMMENT ON COLUMN uploaded_videos.job_id IS 'A foreign key linking back to the o
 -- Crucial for the 'getPendingJobs' function to quickly find work to do.
 CREATE INDEX idx_jobs_pending ON quiz_jobs(status, step);
 
--- For analytics and filtering by content type.
+-- For analytics and filtering by account and content type.
+CREATE INDEX idx_jobs_account_persona ON quiz_jobs(account_id, persona);
 CREATE INDEX idx_jobs_persona_topic ON quiz_jobs(persona, topic);
+CREATE INDEX idx_jobs_account_status ON quiz_jobs(account_id, status);
 
 -- Allows for efficient querying of the JSONB data column.
 CREATE INDEX idx_jobs_data ON quiz_jobs USING gin(data);
@@ -102,6 +143,12 @@ CREATE INDEX idx_videos_job_id ON uploaded_videos(job_id);
 -- =================================================================
 --  Triggers for Automatic Timestamp Updates
 -- =================================================================
+
+-- Trigger for the accounts table
+CREATE TRIGGER set_accounts_updated_at
+BEFORE UPDATE ON accounts
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
 
 -- Trigger for the quiz_jobs table
 CREATE TRIGGER set_quiz_jobs_updated_at

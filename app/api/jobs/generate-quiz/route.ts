@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Validate account exists
     let account;
     try {
-      account = getAccountConfig(accountId);
+      account = await getAccountConfig(accountId);
     } catch (error) {
       return NextResponse.json({ 
         success: false, 

@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { createQuizJob } from '@/lib/database';
 import { Question } from './types';
 import { MasterPersonas } from './personas';
-import { getAccountForPersona } from './accounts';
+import { getAccountConfig } from './accounts';
 
 const deepseekClient = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
@@ -415,8 +415,8 @@ MANDATORY JSON STRUCTURE:
  */
 export async function generateAndStoreContent(jobConfig: any): Promise<any | null> {
   try {
-    // Determine the account for this persona
-    const account = getAccountForPersona(jobConfig.persona);
+    // Get account configuration using the provided accountId
+    const account = await getAccountConfig(jobConfig.accountId);
     
     const prompt = await generatePrompt(jobConfig);
     const { timeMarker, tokenMarker } = generateVariationMarkers();

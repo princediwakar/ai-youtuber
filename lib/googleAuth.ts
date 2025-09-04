@@ -8,8 +8,8 @@ import { getAccountConfig } from './accounts';
  * @param accountId - The account identifier to get credentials for
  * @returns An authenticated OAuth2 client instance for the specified account
  */
-export function getOAuth2Client(accountId: string) {
-  const accountConfig = getAccountConfig(accountId);
+export async function getOAuth2Client(accountId: string) {
+  const accountConfig = await getAccountConfig(accountId);
   
   const oauth2Client = new google.auth.OAuth2(
     accountConfig.googleClientId,

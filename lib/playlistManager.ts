@@ -1,7 +1,7 @@
 import { youtube_v3 } from 'googleapis';
 import { MasterPersonas } from './personas';
 import { QuizJob } from './types';
-import { getAccountConfig, getAccountForPersona } from './accounts';
+import { getAccountConfig } from './accounts';
 
 const MANAGER_TAG_PREFIX = '[managed-by:quiz-app; key:';
 const MANAGER_TAG_SUFFIX = ']';
@@ -87,8 +87,8 @@ function generateSEOKeywords(accountId: string, persona: string, topicDisplayNam
 /**
  * Generates account-specific playlist descriptions.
  */
-function generatePlaylistDescription(accountId: string, persona: string, topicDisplayName: string, canonicalKey: string): string {
-  const account = getAccountConfig(accountId);
+async function generatePlaylistDescription(accountId: string, persona: string, topicDisplayName: string, canonicalKey: string): Promise<string> {
+  const account = await getAccountConfig(accountId);
   const seoKeywords = generateSEOKeywords(accountId, persona, topicDisplayName);
   const hashtags = generateHashtags(accountId, persona, topicDisplayName);
   const tag = `${MANAGER_TAG_PREFIX}${canonicalKey}${MANAGER_TAG_SUFFIX}`;
@@ -245,8 +245,8 @@ export async function getOrCreatePlaylist(
 ): Promise<string> {
   const { persona, topic, data } = jobData;
   
-  // Determine account from persona
-  const account = getAccountForPersona(persona);
+  // Get account from job data
+  const account = await getAccountConfig(jobData.account_id);
   const accountId = account.id;
   
   const topic_display_name = jobData.topic_display_name || data.topic_display_name;
@@ -275,7 +275,7 @@ export async function getOrCreatePlaylist(
 
   console.log(`Creating new ${account.name} playlist: "${playlistTitle}" for key "${canonicalKey}"...`);
   
-  const playlistDescription = generatePlaylistDescription(accountId, persona, topicDisplayName, canonicalKey);
+  const playlistDescription = await generatePlaylistDescription(accountId, persona, topicDisplayName, canonicalKey);
 
   const creationPromise = createPlaylistWithLock(youtube, playlistTitle, playlistDescription, canonicalKey, playlistMap);
   playlistCreationLocks.set(canonicalKey, creationPromise);

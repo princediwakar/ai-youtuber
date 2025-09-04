@@ -397,8 +397,11 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   // Save debug video locally if DEBUG_MODE is enabled
   await saveDebugVideo(videoBuffer, job.id, job.data.themeName);
   
-  // Get account ID from job data or persona
-  const accountId = job.account_id || (job.persona === 'english_vocab_builder' ? 'english_shots' : 'health_shots');
+  // Get account ID from job data
+  const accountId = job.account_id;
+  if (!accountId) {
+    throw new Error(`Job ${job.id} is missing account_id - database migration may be incomplete`);
+  }
   
   const publicId = generateVideoPublicId(job.id, accountId);
   const result = await uploadVideoToCloudinary(videoBuffer, accountId, {

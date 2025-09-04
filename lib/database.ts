@@ -25,6 +25,17 @@ export function createClient(): Client {
   });
 }
 
+// Helper function for running queries with automatic connection management
+export async function query(text: string, params?: any[]): Promise<any> {
+  const client = createClient();
+  try {
+    await client.connect();
+    return await client.query(text, params);
+  } finally {
+    await client.end();
+  }
+}
+
 
 /**
  * UPDATED & FIXED: Can now filter pending jobs by an array of personas.
@@ -67,15 +78,16 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
 export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> {
   const query = `
     INSERT INTO quiz_jobs (
-      persona, topic, topic_display_name, 
+      account_id, persona, topic, topic_display_name, 
       question_format, generation_date, status, step, data
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING id
   `;
   
-  // UPDATED VALUES ARRAY - removed category references
+  // UPDATED VALUES ARRAY - includes account_id
   const values = [
+    jobData.account_id,
     jobData.persona,
     jobData.topic,
     jobData.topic_display_name,

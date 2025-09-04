@@ -49,7 +49,7 @@ export interface QuizJob {
   generation_date: string;
   status: string;
   step: number;
-  account_id?: string; // Account identifier for multi-account support
+  account_id: string; // Account identifier for multi-account support
   data: {
     // Support both legacy and new content structures
     question?: Question; // Legacy structure (still supported)

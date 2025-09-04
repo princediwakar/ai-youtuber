@@ -41,7 +41,13 @@ export async function POST(request: NextRequest) {
     // Validate account exists
     let account;
     try {
-      account = getAccountConfig(accountId);
+      account = await getAccountConfig(accountId);
+      console.log(`[upload-quiz-videos] Retrieved account ${accountId}:`, {
+        name: account.name,
+        personas: account.personas,
+        personasType: typeof account.personas,
+        personasLength: account.personas?.length
+      });
     } catch (error) {
       return NextResponse.json({ 
         success: false, 
@@ -60,9 +66,13 @@ export async function POST(request: NextRequest) {
     if (config.DEBUG_MODE) {
       // In debug mode, bypass schedule and allow account-specific personas
       console.log(`🐛 DEBUG MODE: Bypassing ${account.name} upload schedule, allowing account personas`);
-      personasToUpload = account.personas; // Use account's personas in debug mode
+      personasToUpload = Array.isArray(account.personas) ? account.personas : []; // Ensure it's an array
+      if (personasToUpload.length === 0) {
+        console.log(`⚠️  DEBUG MODE: Account ${accountId} has no personas defined`);
+        return NextResponse.json({ success: true, message: 'No personas defined for account in debug mode', accountId });
+      }
     } else {
-      personasToUpload = getScheduledPersonasForUpload(accountId, dayOfWeek, hourOfDay);
+      personasToUpload = getScheduledPersonasForUpload(accountId, dayOfWeek, hourOfDay) || [];
       
       // 2. If no personas are scheduled for this hour, exit gracefully.
       if (personasToUpload.length === 0) {
@@ -72,6 +82,14 @@ export async function POST(request: NextRequest) {
       }
       
       console.log(`🚀 Found scheduled ${account.name} uploads for this hour: ${personasToUpload.join(', ')}`);
+    }
+
+    console.log(`📋 Personas to upload: ${personasToUpload.join(', ')} (${personasToUpload.length} personas)`);
+
+    // Ensure personasToUpload is always an array
+    if (!Array.isArray(personasToUpload)) {
+      console.error(`❌ personasToUpload is not an array:`, personasToUpload);
+      return NextResponse.json({ success: false, error: 'Invalid personas configuration' }, { status: 500 });
     }
 
     // 3. Auto-retry failed jobs with valid data
@@ -87,7 +105,7 @@ export async function POST(request: NextRequest) {
     }
     
     const cache = await getCache();
-    const oauth2Client = getOAuth2Client(accountId); // Use account-specific OAuth client
+    const oauth2Client = await getOAuth2Client(accountId); // Use account-specific OAuth client
     const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
     
     if (!cache.playlistMap) {
@@ -252,22 +270,42 @@ async function addVideoToPlaylist(
 }
 
 function generateVideoMetadata(job: QuizJob, playlistId: string | undefined, accountId: string) {
+  console.log(`[Job ${job.id}] Generating metadata for accountId: ${accountId}, persona: ${job.persona}`);
+  
   const contentData = job.data.content || job.data.question; // Support both structures
-  const topic_display_name = job.topic_display_name || job.data.topic_display_name;
+  const topic_display_name = job.topic_display_name || job.data.topic_display_name || 'Quiz';
   
-  // Generate account-specific SEO-optimized, viral-worthy title
-  const title = generateTitle(accountId, job.persona, topic_display_name);
+  console.log(`[Job ${job.id}] Content data exists: ${!!contentData}, Topic: ${topic_display_name}`);
   
-  // Generate account-specific strategic hashtags for maximum reach
-  const hashtags = generateHashtags(accountId, job.persona, job.topic);
-  
-  // Create engaging description with full content and playlist link
-  const description = generateDescription(accountId, contentData, topic_display_name, hashtags, playlistId);
-  
-  // Optimized tags for YouTube algorithm
-  const tags = generateSEOTags(accountId, job.persona, job.topic, topic_display_name);
-  
-  return { title: title.slice(0, 100), description, tags };
+  try {
+    // Generate account-specific SEO-optimized, viral-worthy title
+    const title = generateTitle(accountId, job.persona, topic_display_name);
+    console.log(`[Job ${job.id}] Generated title: ${title}`);
+    
+    // Generate account-specific strategic hashtags for maximum reach
+    const hashtags = generateHashtags(accountId, job.persona, job.topic);
+    console.log(`[Job ${job.id}] Generated hashtags`);
+    
+    // Create engaging description with full content and playlist link
+    const description = generateDescription(accountId, contentData, topic_display_name, hashtags, playlistId);
+    console.log(`[Job ${job.id}] Generated description (${description.length} chars)`);
+    
+    // Optimized tags for YouTube algorithm
+    const tags = generateSEOTags(accountId, job.persona, job.topic, topic_display_name);
+    console.log(`[Job ${job.id}] Generated ${tags.length} SEO tags`);
+    
+    return { title: title.slice(0, 100), description, tags };
+  } catch (error) {
+    console.error(`[Job ${job.id}] Error generating metadata:`, error);
+    console.error(`[Job ${job.id}] Job data:`, JSON.stringify({
+      accountId,
+      persona: job.persona,
+      topic: job.topic,
+      topic_display_name,
+      hasContentData: !!contentData
+    }, null, 2));
+    throw error;
+  }
 }
 
 /**
@@ -417,8 +455,8 @@ function generateSEOTags(accountId: string, persona: string, category: string, t
   const accountTags = tagMap[accountId] || {};
   const personaTags = accountTags[persona] || ['health tips', 'wellness'];
   
-  const categoryTag = category.toLowerCase().replace(/_/g, ' ');
-  const topicTag = topicName.toLowerCase();
+  const categoryTag = (category || 'general').toLowerCase().replace(/_/g, ' ');
+  const topicTag = (topicName || 'quiz').toLowerCase();
   
   const allTags = [
     ...baseTags,
