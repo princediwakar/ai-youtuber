@@ -25,6 +25,7 @@ interface AccountSchedules {
  */
 const englishGenerationPattern: HourlySchedule = {
   2: ['english_vocab_builder'],   // Early morning generation
+  4: ['english_vocab_builder'],   // Early morning generation
   10: ['english_vocab_builder'],  // Mid-day generation  
   18: ['english_vocab_builder'],  // Evening generation
 };
@@ -47,6 +48,7 @@ const englishUploadPattern: HourlySchedule = {
  */
 const healthGenerationPattern: HourlySchedule = {
   1: ['brain_health_tips'],      // Early morning generation for morning content
+  3: ['brain_health_tips'],      // Early morning generation for morning content
   6: ['eye_health_tips'],        // Early generation for work-day content
   13: ['brain_health_tips'],     // Midday generation for afternoon content
   18: ['eye_health_tips'],       // Evening generation for night content
@@ -54,6 +56,7 @@ const healthGenerationPattern: HourlySchedule = {
 
 const healthUploadPattern: HourlySchedule = {
   7:  ['brain_health_tips'],  // Morning routine time (brain food, focus prep)
+  8:  ['brain_health_tips'],  // Morning routine time (brain food, focus prep)
   10: ['eye_health_tips'],    // Mid-morning work break (screen time awareness)
   12: ['brain_health_tips'],  // Lunch break (midday brain boost tips)
   15: ['eye_health_tips'],    // Afternoon work break (eye strain relief)

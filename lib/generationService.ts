@@ -387,7 +387,7 @@ async function generatePrompt(jobConfig: any): Promise<string> {
     prompt = generateEnglishPrompt(topicData, topic, markers);
     
     const rand = Math.random();
-    const questionFormat = rand < 0.75 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason');
+    const questionFormat = rand < 0.85 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason');
 
     if (questionFormat === 'true_false') {
       return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A": "True", "B": "False"), "answer" (either "A" or "B"), "explanation", "cta", and "question_type" (set to "true_false"). Explanation must be under 150 characters.';
