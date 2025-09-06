@@ -8,6 +8,8 @@
 export const PersonaThemeMap: Record<string, string[]> = {
 
   english_vocab_builder: ['VintageScroll', 'SakuraGrove', 'CanyonSunset', 'MintyFresh', 'SunsetBeach'],
+  brain_health_tips: ['VintageScroll', 'SakuraGrove', 'CanyonSunset', 'MintyFresh', 'SunsetBeach'],
+  eye_health_tips: ['VintageScroll', 'SakuraGrove', 'CanyonSunset', 'MintyFresh', 'SunsetBeach'],
   // Removed dark themes (EnchantedForest, EmeraldSea, CosmicDawn) for better mobile visibility
   // A default set of themes for any new persona not explicitly listed.
   default: ['MintyFresh'],
