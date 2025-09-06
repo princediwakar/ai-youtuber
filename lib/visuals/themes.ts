@@ -29,15 +29,6 @@ export interface Theme {
 
 export const themes: Record<string, Theme> = {
   // --- Original Themes ---
-  CafeAuLait: {
-    name: 'CafeAuLait',
-    fontFamily: 'Poppins',
-    page: { background: '#fff4e6' },
-    header: { background: 'rgba(60, 47, 47, 0.08)', text: '#3c2f2f' },
-    text: { primary: '#3c2f2f', secondary: 'rgba(60, 47, 47, 0.5)', onAccent: '#fff4e6' },
-    button: { background: '#be9b7b', text: '#FFFFFF', shadow: 'rgba(0,0,0,0.15)' },
-    feedback: { correct: '#854442' },
-  },
   
   VintageScroll: {
     name: 'VintageScroll',
