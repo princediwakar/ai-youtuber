@@ -17,6 +17,73 @@ export interface Question {
   topic: string;
   question_type?: 'multiple_choice' | 'true_false' | 'assertion_reason';
   cta: string; // For the call-to-action frame
+  
+  // Format-specific properties for new layouts
+  // Common Mistake Format
+  hook?: string;
+  mistake?: string;
+  incorrect_usage?: string;
+  mistake_percentage?: string;
+  correct?: string;
+  correct_usage?: string;
+  practice?: string;
+  
+  // Quick Fix Format
+  basic_word?: string;
+  advanced_word?: string;
+  before?: string;
+  after?: string;
+  context?: string;
+  definition?: string;
+  
+  // Usage Demo Format
+  target_word?: string;
+  wrong_example?: string;
+  wrong_context?: string;
+  right_example?: string;
+  right_context?: string;
+  practice_scenario?: string;
+  
+  // Health Format Fields
+  action?: string;
+  result?: string;
+  science?: string;
+  habit?: string;
+  duration?: string;
+  
+  // Quick Tip Format (Health)
+  steps?: string[];
+  step_details?: string[];
+  instructions?: string[];
+  detailed_action?: string;
+  why_it_works?: string;
+  
+  // Before/After Format (Health)
+  bad_habit?: string;
+  good_habit?: string;
+  negative_effects?: string;
+  positive_effects?: string;
+  damage?: string;
+  benefits?: string;
+  proof?: string;
+  evidence?: string;
+  research?: string;
+  immediate_action?: string;
+  next_step?: string;
+  
+  // Challenge Format (Health)
+  setup?: string;
+  challenge_type?: string;
+  challenge_items?: string[];
+  items_to_remember?: string[];
+  challenge_content?: string;
+  visual_test?: string;
+  reveal?: string;
+  trick?: string;
+  method?: string;
+  solution?: string;
+  encouragement?: string;
+  next_challenge?: string;
 }
 
 // Union type for all content types (now just Question since health content uses the same format)
@@ -50,6 +117,17 @@ export interface QuizJob {
   status: string;
   step: number;
   account_id: string; // Account identifier for multi-account support
+  
+  // Format tracking fields (new)
+  format_type?: string; // Format type (mcq, common_mistake, quick_fix, etc.)
+  frame_sequence?: any[]; // Sequence and type of frames for this format
+  format_metadata?: {
+    frameCount?: number;
+    totalDuration?: number;
+    formatVersion?: string;
+    [key: string]: any;
+  };
+  
   data: {
     // Support both legacy and new content structures
     question?: Question; // Legacy structure (still supported)

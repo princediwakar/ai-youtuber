@@ -12,21 +12,21 @@ export interface ValidationResult {
 }
 
 /**
- * Parse and validate AI response based on content type
+ * Parse and validate AI response based on content type and format
  */
-export function parseAndValidateResponse(content: string, persona: string): ValidationResult {
+export function parseAndValidateResponse(content: string, persona: string, format?: string): ValidationResult {
   try {
     const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
     const data = JSON.parse(cleanedContent);
 
     // Health content validation (supports both true_false and multiple_choice)
     if (persona === 'brain_health_tips' || persona === 'eye_health_tips') {
-      return validateHealthContent(data);
+      return validateHealthContent(data, format);
     }
 
     // English quiz validation
     if (persona === 'english_vocab_builder') {
-      return validateEnglishContent(data);
+      return validateEnglishContent(data, format);
     }
 
     return {
@@ -46,7 +46,15 @@ export function parseAndValidateResponse(content: string, persona: string): Vali
 /**
  * Validates health content structure
  */
-function validateHealthContent(data: any): ValidationResult {
+function validateHealthContent(data: any, format?: string): ValidationResult {
+  // Format-specific validation for health content
+  if (format === 'quick_tip') {
+    return validateQuickTipFormat(data);
+  } else if (format === 'before_after') {
+    return validateBeforeAfterFormat(data);
+  }
+
+  // Default MCQ validation for health content
   // Check required fields
   if (!data.question || typeof data.question !== 'string' ||
       !data.options || typeof data.options !== 'object' ||
@@ -102,7 +110,17 @@ function validateHealthContent(data: any): ValidationResult {
 /**
  * Validates English content structure
  */
-function validateEnglishContent(data: any): ValidationResult {
+function validateEnglishContent(data: any, format?: string): ValidationResult {
+  // Format-specific validation for English content
+  if (format === 'common_mistake') {
+    return validateCommonMistakeFormat(data);
+  } else if (format === 'quick_fix') {
+    return validateQuickFixFormat(data);
+  } else if (format === 'usage_demo') {
+    return validateUsageDemoFormat(data);
+  }
+
+  // Default MCQ validation for English content
   const hasQuestion = data.question && typeof data.question === 'string';
   const hasAssertionReason = data.assertion && typeof data.assertion === 'string' && 
                             data.reason && typeof data.reason === 'string';
@@ -120,9 +138,96 @@ function validateEnglishContent(data: any): ValidationResult {
   }
   
   // Truncate explanation if too long
-  if (data.explanation.length > 150) {
+  if (data.explanation && data.explanation.length > 150) {
     console.warn(`English explanation too long (${data.explanation.length} chars), truncating`);
     data.explanation = data.explanation.substring(0, 147) + '...';
+  }
+
+  return { success: true, data };
+}
+
+// Format-specific validation functions
+
+/**
+ * Validates Common Mistake format structure
+ */
+function validateCommonMistakeFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'mistake', 'correct', 'practice', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `Common Mistake format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
+/**
+ * Validates Quick Fix format structure
+ */
+function validateQuickFixFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'basic_word', 'advanced_word', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `Quick Fix format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
+/**
+ * Validates Usage Demo format structure
+ */
+function validateUsageDemoFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'target_word', 'wrong_example', 'right_example', 'practice', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `Usage Demo format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
+/**
+ * Validates Quick Tip format structure (for health)
+ */
+function validateQuickTipFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'action', 'result', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `Quick Tip format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
+/**
+ * Validates Before/After format structure (for health)
+ */
+function validateBeforeAfterFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'before', 'after', 'result', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `Before/After format missing required fields: ${missingFields.join(', ')}`
+    };
   }
 
   return { success: true, data };
@@ -133,10 +238,9 @@ function validateEnglishContent(data: any): ValidationResult {
  */
 export function generateContentHash(content: ContentData): string {
   const contentString = JSON.stringify({
-    main: content.question,
-    options: content.options,
-    answer: content.answer,
-    content_type: content.question_type
+    main: content.question || content.hook || content.target_word,
+    answer: content.answer || content.correct || content.advanced_word,
+    content_type: content.question_type || 'format_based'
   });
 
   // Simple hash function (for production, use crypto.createHash)

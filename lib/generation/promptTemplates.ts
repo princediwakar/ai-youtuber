@@ -16,6 +16,8 @@ export interface PromptConfig {
   topicData: any;
   markers: VariationMarkers;
   questionFormat?: string;
+  format?: string;
+  formatDefinition?: any;
 }
 
 /**
@@ -191,4 +193,187 @@ MANDATORY JSON STRUCTURE:
   }
   
   return prompt;
+}
+
+// =================================================================
+// FORMAT-SPECIFIC PROMPT GENERATORS
+// =================================================================
+
+/**
+ * Generates Common Mistake format prompt (English)
+ */
+export function generateCommonMistakePrompt(config: PromptConfig): string {
+  const { topicData, markers } = config;
+  const { timeMarker, tokenMarker } = markers;
+  
+  return `You are a native English speaker creating viral "Common Mistake" content for YouTube Shorts.
+
+TOPIC: "${topicData.displayName}" - Focus on mistakes that 99% of learners make
+
+FORMAT: Common Mistake (4 frames)
+Frame 1 (Hook): "Stop saying this word wrong!"  
+Frame 2 (Mistake): "99% say: [incorrect pronunciation/usage]"
+Frame 3 (Correct): "Natives say: [correct version]"
+Frame 4 (Practice): "Try it now! Repeat after me..."
+
+CONTENT REQUIREMENTS:
+• HOOK: Create urgency about a common error most learners make
+• MISTAKE: Show the wrong way that sounds natural but isn't correct
+• CORRECT: Provide the native speaker version with clear difference
+• PRACTICE: Give immediate practice opportunity
+
+TARGET: Intermediate English learners who want to sound more native
+
+MANDATORY OUTPUT JSON:
+• "hook": Attention-grabbing opener about the mistake (under 60 chars)
+• "mistake": The incorrect version most learners use  
+• "correct": The native speaker version
+• "practice": Practice instruction with the correct form
+• "explanation": Why natives use this version (under 100 chars)
+• "cta": "Follow for native tips!" or similar (under 40 chars)
+• "format_type": "common_mistake"
+
+Create content that makes learners feel embarrassed about their mistake but excited to fix it. [${timeMarker}-${tokenMarker}]`;
+}
+
+/**
+ * Generates Quick Fix format prompt (English)  
+ */
+export function generateQuickFixPrompt(config: PromptConfig): string {
+  const { topicData, markers } = config;
+  const { timeMarker, tokenMarker } = markers;
+  
+  return `You are an English fluency coach creating viral "Quick Fix" content for YouTube Shorts.
+
+TOPIC: "${topicData.displayName}" - Instant vocabulary upgrades
+
+FORMAT: Quick Fix (3 frames)
+Frame 1 (Hook): "Upgrade your English in 15 seconds"
+Frame 2 (Before): "Instead of saying [basic word]..."  
+Frame 3 (After): "Sound smarter with [advanced word]"
+
+CONTENT REQUIREMENTS:
+• HOOK: Promise immediate vocabulary improvement
+• BEFORE: Common basic word that sounds childish/unprofessional
+• AFTER: Advanced alternative that sounds sophisticated
+• Include usage example in professional/academic context
+
+TARGET: Intermediate learners who want to sound more professional
+
+MANDATORY OUTPUT JSON:
+• "hook": Promise of quick vocabulary upgrade (under 60 chars)
+• "basic_word": The simple word to replace
+• "advanced_word": The sophisticated alternative
+• "usage_example": Professional context example
+• "explanation": Why the advanced word is better (under 100 chars)
+• "cta": "Level up your English!" or similar (under 40 chars)  
+• "format_type": "quick_fix"
+
+Create content that makes learners immediately feel more sophisticated. [${timeMarker}-${tokenMarker}]`;
+}
+
+/**
+ * Generates Quick Tip format prompt (Health)
+ */
+export function generateQuickTipPrompt(config: PromptConfig): string {
+  const { topicData, markers } = config;
+  const { timeMarker, tokenMarker } = markers;
+  const guidelines = TOPIC_GUIDELINES[config.topic];
+  
+  return `You are a health expert creating viral "Quick Tip" content for YouTube Shorts.
+
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Immediate health improvements'}
+
+FORMAT: Quick Tip (3 frames)
+Frame 1 (Hook): "This 30-second habit will boost your [brain/eyes]"
+Frame 2 (Action): "Here's exactly what to do: [step by step]"  
+Frame 3 (Result): "Why it works + science behind it"
+
+CONTENT REQUIREMENTS:
+• HOOK: Promise specific timeframe and health benefit
+• ACTION: Clear, actionable steps anyone can do immediately
+• RESULT: Scientific explanation + motivating outcome
+• Focus on immediate practical value
+
+TARGET: Health-conscious adults seeking quick wins
+
+MANDATORY OUTPUT JSON:
+• "hook": Specific promise with timeframe (under 60 chars)
+• "action_steps": Array of 2-3 specific steps
+• "scientific_reason": Why this works scientifically  
+• "immediate_benefit": What they'll notice right away
+• "explanation": Motivating summary (under 100 chars)
+• "cta": "Try this now!" or similar (under 40 chars)
+• "format_type": "quick_tip"
+
+Create content that viewers immediately want to try. [${timeMarker}-${tokenMarker}]`;
+}
+
+/**
+ * Generates Before/After format prompt (Health)
+ */
+export function generateBeforeAfterPrompt(config: PromptConfig): string {
+  const { topicData, markers } = config;
+  const { timeMarker, tokenMarker } = markers;
+  const guidelines = TOPIC_GUIDELINES[config.topic];
+  
+  return `You are a health expert creating viral "Before/After" content for YouTube Shorts.
+
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Health consequences and transformations'}
+
+FORMAT: Before/After (4 frames)
+Frame 1 (Hook): "What happens to your [brain/eyes] when you..."
+Frame 2 (Before): "Most people damage their [health] by..."
+Frame 3 (After): "But if you do THIS instead..."
+Frame 4 (Proof): "Here's the science + immediate action"
+
+CONTENT REQUIREMENTS:
+• HOOK: Create curiosity about health consequences  
+• BEFORE: Common harmful behavior most people do
+• AFTER: Simple alternative behavior/habit
+• PROOF: Scientific backing + actionable next step
+
+TARGET: People unaware of daily health damage they're causing
+
+MANDATORY OUTPUT JSON:
+• "hook": Curiosity-driven opener (under 60 chars)
+• "harmful_behavior": What most people do wrong
+• "better_behavior": The healthier alternative
+• "scientific_proof": Research-backed explanation
+• "immediate_action": One thing to do right now
+• "explanation": Why this matters (under 100 chars)
+• "cta": "Protect your health!" or similar (under 40 chars)
+• "format_type": "before_after"
+
+Create content that makes viewers realize they need to change immediately. [${timeMarker}-${tokenMarker}]`;
+}
+
+/**
+ * Main format-aware prompt generator  
+ */
+export function generateFormatPrompt(config: PromptConfig): string {
+  const format = config.format || 'mcq';
+  
+  switch (format) {
+    case 'common_mistake':
+      return generateCommonMistakePrompt(config);
+    case 'quick_fix':
+      return generateQuickFixPrompt(config);
+    case 'quick_tip':
+      return generateQuickTipPrompt(config);
+    case 'before_after':
+      return generateBeforeAfterPrompt(config);
+    case 'mcq':
+    default:
+      // Fall back to existing MCQ logic based on persona
+      if (config.persona === 'brain_health_tips') {
+        return generateBrainHealthPrompt(config);
+      } else if (config.persona === 'eye_health_tips') {
+        return generateEyeHealthPrompt(config);
+      } else if (config.persona === 'english_vocab_builder') {
+        return generateEnglishPrompt(config);
+      } else {
+        return generateEnglishPrompt(config); // Default fallback
+      }
+  }
 }

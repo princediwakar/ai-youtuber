@@ -9,6 +9,7 @@ import {
   generateBrainHealthPrompt,
   generateEyeHealthPrompt,
   generateEnglishPrompt,
+  generateFormatPrompt,
   addJsonFormatInstructions,
   type PromptConfig
 } from './promptTemplates';
@@ -18,6 +19,9 @@ export interface JobConfig {
   topic: string;
   accountId: string;
   generationDate: string | Date;
+  // Format support
+  preferredFormat?: string;
+  formatDefinition?: any;
 }
 
 export interface GeneratedPrompt {
@@ -44,10 +48,19 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
     persona,
     topic,
     topicData,
-    markers
+    markers,
+    format: jobConfig.preferredFormat,
+    formatDefinition: jobConfig.formatDefinition
   };
   
-  // Health content generation
+  // Use format-aware prompt generation for new formats
+  if (jobConfig.preferredFormat && jobConfig.preferredFormat !== 'mcq') {
+    prompt = generateFormatPrompt(promptConfig);
+    // For new formats, we don't need the legacy JSON formatting
+    return { prompt, markers };
+  }
+  
+  // Legacy format generation for MCQ
   if (persona === 'brain_health_tips' || persona === 'eye_health_tips') {
     if (!topicData) {
       throw new Error(`Topic "${topic}" not found for persona "${persona}"`);
