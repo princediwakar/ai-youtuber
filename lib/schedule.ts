@@ -28,6 +28,7 @@ const englishGenerationPattern: HourlySchedule = {
   4: ['english_vocab_builder'],   // Early morning generation
   10: ['english_vocab_builder'],  // Mid-day generation  
   18: ['english_vocab_builder'],  // Evening generation
+  21: ['english_vocab_builder'],  // Evening generation
 };
 
 const englishUploadPattern: HourlySchedule = {
