@@ -163,5 +163,68 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_set_timestamp();
 
 -- =================================================================
+--  Video Analytics Table
+-- =================================================================
+
+-- This table stores YouTube video performance analytics collected 24+ hours after upload
+CREATE TABLE video_analytics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    
+    -- References
+    video_id VARCHAR(50) NOT NULL, -- YouTube video ID
+    job_id UUID NOT NULL REFERENCES quiz_jobs(id) ON DELETE CASCADE,
+    account_id VARCHAR(50) NOT NULL REFERENCES accounts(id) ON DELETE RESTRICT,
+    
+    -- Analytics Data
+    views BIGINT DEFAULT 0,
+    likes BIGINT DEFAULT 0,
+    comments BIGINT DEFAULT 0,
+    dislikes BIGINT DEFAULT 0, -- May be 0 due to YouTube API changes
+    
+    -- Engagement Metrics (calculated)
+    engagement_rate DECIMAL(5,2) DEFAULT 0.00, -- (likes + comments) / views * 100
+    like_ratio DECIMAL(5,2) DEFAULT 0.00, -- likes / views * 100
+    
+    -- Collection Metadata
+    collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    video_uploaded_at TIMESTAMPTZ NOT NULL, -- When the video was originally uploaded
+    
+    -- Timestamps
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE video_analytics IS 'Stores YouTube video performance metrics collected 24+ hours after upload for content optimization.';
+COMMENT ON COLUMN video_analytics.video_id IS 'YouTube video ID for API reference.';
+COMMENT ON COLUMN video_analytics.engagement_rate IS 'Calculated engagement rate as (likes + comments) / views * 100.';
+COMMENT ON COLUMN video_analytics.collected_at IS 'When these analytics were collected from YouTube API.';
+
+-- =================================================================
+--  Analytics Indexes for Performance
+-- =================================================================
+
+-- For efficient analytics queries by account and time
+CREATE INDEX idx_analytics_account_collected ON video_analytics(account_id, collected_at DESC);
+CREATE INDEX idx_analytics_video_id ON video_analytics(video_id);
+CREATE INDEX idx_analytics_job_id ON video_analytics(job_id);
+
+-- For performance analysis queries
+CREATE INDEX idx_analytics_engagement ON video_analytics(account_id, engagement_rate DESC);
+CREATE INDEX idx_analytics_views ON video_analytics(account_id, views DESC);
+
+-- Unique constraint to prevent duplicate analytics for same video/collection time
+CREATE UNIQUE INDEX idx_analytics_unique_collection ON video_analytics(video_id, DATE(collected_at));
+
+-- =================================================================
+--  Analytics Trigger for Automatic Timestamp Updates
+-- =================================================================
+
+-- Trigger for the video_analytics table
+CREATE TRIGGER set_video_analytics_updated_at
+BEFORE UPDATE ON video_analytics
+FOR EACH ROW
+EXECUTE FUNCTION trigger_set_timestamp();
+
+-- =================================================================
 --  Schema setup complete.
 -- =================================================================

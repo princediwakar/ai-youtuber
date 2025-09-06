@@ -1,7 +1,7 @@
 // app/api/jobs/generate-quiz/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { MasterPersonas } from '@/lib/personas';
-import { generateAndStoreContent } from '@/lib/generationService';
+import { generateAndStoreContent } from '@/lib/generation/generationService';
 import { config } from '@/lib/config';
 import { getScheduledPersonasForGeneration } from '@/lib/schedule';
 import { getAccountConfig } from '@/lib/accounts';
