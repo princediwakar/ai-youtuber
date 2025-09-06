@@ -58,9 +58,10 @@ const healthUploadPattern: HourlySchedule = {
   7:  ['brain_health_tips'],  // Morning routine time (brain food, focus prep)
   8:  ['brain_health_tips'],  // Morning routine time (brain food, focus prep)
   10: ['eye_health_tips'],    // Mid-morning work break (screen time awareness)
-  12: ['brain_health_tips'],  // Lunch break (midday brain boost tips)
-  15: ['eye_health_tips'],    // Afternoon work break (eye strain relief)
-  18: ['brain_health_tips'],  // Post-work time (mental wellness, stress relief)
+
+  
+  19: ['eye_health_tips'], 
+  20: ['brain_health_tips'],    // Evening wind-down (blue light, sleep hygiene)
   21: ['eye_health_tips'],    // Evening wind-down (blue light, sleep hygiene)
 };
 
