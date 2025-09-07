@@ -99,6 +99,10 @@ export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height:
 };
 
 export const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
+    if (!text || typeof text !== 'string') {
+        console.warn('wrapText received invalid text:', text);
+        return [];
+    }
     const words = text.split(' ');
     let lines: string[] = [];
     if (!words.length) return [];
@@ -192,6 +196,11 @@ export const measureOptionsContent = (
     
     let totalHeight = 0;
     const optionHeights: number[] = [];
+    
+    // Guard against undefined/null options
+    if (!options || typeof options !== 'object') {
+        return { height: 0, optionHeights: [] };
+    }
     
     Object.entries(options).forEach(([optionKey, optionText]) => {
         const fullOptionText = `${optionKey}. ${optionText}`;

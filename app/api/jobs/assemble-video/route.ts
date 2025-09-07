@@ -317,12 +317,15 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     })
   );
 
+  // Normalize job data structure for different formats
+  const questionData = job.data.question || job.data.content || {};
+  
   const durations = [
-    getFrameDuration(job.data.question, 1),
-    getFrameDuration(job.data.question, 2),
-    getFrameDuration(job.data.question, 3),
-    getFrameDuration(job.data.question, 4),
-  ];
+    getFrameDuration(questionData, 1),
+    getFrameDuration(questionData, 2),
+    getFrameDuration(questionData, 3),
+    getFrameDuration(questionData, 4),
+  ].map(d => d || 4); // Ensure no undefined values with 4s fallback
 
   // Create individual video clips from static frames
   const clipPromises = framePaths.map(async (framePath, index) => {
@@ -333,7 +336,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
       '-loop', '1',
       '-i', framePath,
       '-c:v', 'libx264',
-      '-t', duration.toString(),
+      '-t', String(duration || 4),
       '-pix_fmt', 'yuv420p',
       '-r', '30',
       '-y', clipPath
@@ -359,7 +362,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   await fs.writeFile(concatFilePath, concatContent);
 
   const outputVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
-  const totalDuration = durations.reduce((acc, d) => acc + d, 0);
+  const totalDuration = durations.reduce((acc, d) => acc + (d || 4), 0);
   const audioPath = getRandomAudioFile();
 
   let ffmpegArgs: string[];
@@ -376,7 +379,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
       '-c:a', 'aac',
       '-filter:a', 'volume=0.3',
       '-shortest',
-      '-t', totalDuration.toString(),
+      '-t', String(totalDuration || 16),
       '-y', outputVideoPath
     ];
   } else {
@@ -386,12 +389,12 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
       '-safe', '0',
       '-i', concatFilePath,
       '-f', 'lavfi',
-      '-i', 'sine=frequency=220:duration=' + totalDuration + ',sine=frequency=330:duration=' + totalDuration + ',sine=frequency=440:duration=' + totalDuration,
+      '-i', 'sine=frequency=220:duration=' + String(totalDuration || 16) + ',sine=frequency=330:duration=' + String(totalDuration || 16) + ',sine=frequency=440:duration=' + String(totalDuration || 16),
       '-filter_complex', '[1:a][2:a][3:a]amix=inputs=3:duration=shortest:weights=0.3 0.4 0.3,volume=0.08,aecho=0.6:0.7:1000:0.2,lowpass=f=800',
       '-c:v', 'libx264',
       '-c:a', 'aac',
       '-shortest',
-      '-t', totalDuration.toString(),
+      '-t', String(totalDuration || 16),
       '-y', outputVideoPath
     ];
   }
@@ -429,20 +432,29 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
 }
 
 
-function getFrameDuration(question: any, frameNumber: number): number {
+function getFrameDuration(questionData: any, frameNumber: number): number {
+  if (!questionData || typeof questionData !== 'object') {
+    return 4; // Safe fallback for invalid data
+  }
+  
   switch (frameNumber) {
-    case 1: // Question Frame
-      const textLength = (question?.question?.length || 0) + Object.values(question?.options || {}).join(" ").length;
+    case 1: // First Frame (Hook/Question)
+      // Try different text fields based on format
+      const hookText = questionData.hook || questionData.question || '';
+      const optionsText = questionData.options ? Object.values(questionData.options).join(" ") : '';
+      const textLength = hookText.length + optionsText.length;
       return Math.max(4, Math.min(7, Math.ceil(textLength / 15)));
       
-    case 2: // Answer Frame
-      return 3; // Enough time to see the answer
+    case 2: // Second Frame (Action/Answer) 
+      const secondText = questionData.action || questionData.before || questionData.wrong || questionData.answer || '';
+      return Math.max(3, Math.min(5, Math.ceil(secondText.length / 20)));
       
-    case 3: // Explanation Frame
-      return Math.max(4, Math.min(6, Math.ceil((question?.explanation?.length || 0) / 15)));
+    case 3: // Third Frame (Result/Explanation)
+      const thirdText = questionData.result || questionData.after || questionData.right || questionData.explanation || '';
+      return Math.max(3, Math.min(6, Math.ceil(thirdText.length / 15)));
       
-    case 4: // CTA Frame
-      return 3; // Standard duration for a call-to-action
+    case 4: // Fourth Frame (CTA)
+      return 3; // Standard duration for call-to-action
       
     default:
       return 4; // Fallback

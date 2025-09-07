@@ -25,7 +25,7 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const hookText = job.data.question.hook || "Upgrade your English in 15 seconds";
+    const hookText = job.data?.question?.hook || "Upgrade your English in 15 seconds";
     
     // Create purple gradient background for the hook
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -76,8 +76,8 @@ export function renderBeforeFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const basicWord = job.data.question.basic_word || job.data.question.before || "basic word";
-    const context = job.data.question.context || "";
+    const basicWord = job.data?.question?.basic_word || job.data?.question?.before || "basic word";
+    const context = job.data?.question?.context || "";
     
     // Light gray background to show "basic/old" concept
     ctx.fillStyle = '#F9FAFB';
@@ -135,8 +135,8 @@ export function renderAfterFrame(canvas: Canvas, job: QuizJob, theme: Theme): vo
     
     drawHeader(ctx, canvas.width, theme, job);
     
-    const advancedWord = job.data.question.advanced_word || job.data.question.after || job.data.question.answer;
-    const definition = job.data.question.definition || job.data.question.explanation;
+    const advancedWord = job.data?.question?.advanced_word || job.data?.question?.after || job.data?.question?.answer || "advanced word";
+    const definition = job.data?.question?.definition || job.data?.question?.explanation || "";
     
     // "Sound smarter with..." label
     ctx.fillStyle = '#E9D5FF';
@@ -205,22 +205,37 @@ export function renderAfterFrame(canvas: Canvas, job: QuizJob, theme: Theme): vo
 }
 
 // Helper function to draw a star/sparkle
-function drawStar(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
+// Helper function to draw a star/sparkle
+function drawStar(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, points: number = 5): void {
+    const outerRadius = size;
+    const innerRadius = size / 2.5; // Controls how "pointy" the star is
+    
+    // Start drawing from the top point
+    let rotation = Math.PI / 2 * 3;
+    
     ctx.save();
-    ctx.translate(x, y);
-    
+    ctx.translate(cx, cy); // Move to the center of where the star should be
     ctx.beginPath();
-    for (let i = 0; i < 5; i++) {
-        ctx.lineTo(0, -size);
-        ctx.translate(0, -size);
-        ctx.rotate((Math.PI * 2) / 10);
-        ctx.lineTo(0, -size * 0.4);
-        ctx.translate(0, -size * 0.4);
-        ctx.rotate((Math.PI * 2) / 10);
-    }
-    ctx.closePath();
-    ctx.fill();
     
+    // Start at the first outer point
+    ctx.moveTo(0, -outerRadius);
+
+    for (let i = 0; i < points; i++) {
+        // Calculate the position of the next outer point
+        rotation += Math.PI / points;
+        const x_outer = Math.cos(rotation) * outerRadius;
+        const y_outer = Math.sin(rotation) * outerRadius;
+        ctx.lineTo(x_outer, y_outer);
+
+        // Calculate the position of the next inner point
+        rotation += Math.PI / points;
+        const x_inner = Math.cos(rotation) * innerRadius;
+        const y_inner = Math.sin(rotation) * innerRadius;
+        ctx.lineTo(x_inner, y_inner);
+    }
+    
+    ctx.closePath(); // Connects the last point to the first
+    ctx.fill();
     ctx.restore();
 }
 

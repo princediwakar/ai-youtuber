@@ -105,7 +105,7 @@ export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme):
   const measurements = calculateOptimalLayout(
     ctx, 
     layoutQuestionText, 
-    question.options, 
+    question.options || {}, // Provide empty object if options is undefined
     canvas.width, 
     canvas.height, 
     theme.fontFamily
@@ -153,7 +153,7 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
   const measurements = calculateOptimalLayout(
     ctx, 
     layoutQuestionText,
-    question.options, 
+    question.options || {}, // Provide empty object if options is undefined
     canvas.width, 
     canvas.height, 
     theme.fontFamily
@@ -246,6 +246,12 @@ function renderOptions(
   fontSize: number = 45
 ) {
 const { options, answer } = job.data.question;
+
+// Guard against undefined/null options (for non-MCQ formats)
+if (!options || typeof options !== 'object') {
+    console.warn(`Skipping options rendering - no valid options found for job ${job.id}`);
+    return;
+}
 
 const buttonWidth = width * 0.85;
 const buttonX = (width - buttonWidth) / 2;
