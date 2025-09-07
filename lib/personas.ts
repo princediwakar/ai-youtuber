@@ -25,14 +25,11 @@ export const MasterPersonas: PersonaConfig = {
       { key: 'eng_vocab_shades_of_meaning', displayName: 'Shades of Meaning 🤔' },
 
       // --- Practical & Contextual Vocabulary ---
-      { key: 'eng_vocab_confusing_words', displayName: 'Commonly Confused Words 😵' },
       { key: 'eng_vocab_thematic_words', displayName: 'Thematic Vocab (e.g., Business, Travel) ✈️' },
       { key: 'eng_vocab_register', displayName: 'Formal vs. Casual Words 👔/👕' },
 
       // --- Advanced Vocabulary & Fluency ---
-      { key: 'eng_vocab_phrases', displayName: 'Phrases (get up, put off) 🧩' },
       { key: 'eng_vocab_idioms', displayName: 'Guess the Idiom! 🤯' },
-      { key: 'eng_vocab_prefixes_suffixes', displayName: 'Word Origins (Prefixes/Suffixes) ⚛️' },
     ],
   },
 

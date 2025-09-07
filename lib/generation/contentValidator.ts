@@ -5,6 +5,67 @@
 
 import { ContentData } from '../types';
 
+// Length limits for different content elements
+const LENGTH_LIMITS = {
+  QUESTION: 180,
+  OPTION: 70,
+  EXPLANATION: 120,
+  CTA: 35
+} as const;
+
+/**
+ * Truncates text to specified length with ellipsis if needed
+ */
+function truncateText(text: string, maxLength: number): string {
+  if (!text || text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + '...';
+}
+
+/**
+ * Enforces length limits on content with smart truncation
+ */
+function enforceLengthLimits(data: any): void {
+  // Truncate question/content
+  if (data.question) {
+    const originalLength = data.question.length;
+    data.question = truncateText(data.question, LENGTH_LIMITS.QUESTION);
+    if (data.question.length < originalLength) {
+      console.warn(`Question truncated from ${originalLength} to ${data.question.length} chars`);
+    }
+  }
+  
+  // Truncate options
+  if (data.options && typeof data.options === 'object') {
+    Object.keys(data.options).forEach(key => {
+      if (typeof data.options[key] === 'string') {
+        const originalLength = data.options[key].length;
+        data.options[key] = truncateText(data.options[key], LENGTH_LIMITS.OPTION);
+        if (data.options[key].length < originalLength) {
+          console.warn(`Option ${key} truncated from ${originalLength} to ${data.options[key].length} chars`);
+        }
+      }
+    });
+  }
+  
+  // Truncate explanation
+  if (data.explanation) {
+    const originalLength = data.explanation.length;
+    data.explanation = truncateText(data.explanation, LENGTH_LIMITS.EXPLANATION);
+    if (data.explanation.length < originalLength) {
+      console.warn(`Explanation truncated from ${originalLength} to ${data.explanation.length} chars`);
+    }
+  }
+  
+  // Truncate CTA
+  if (data.cta) {
+    const originalLength = data.cta.length;
+    data.cta = truncateText(data.cta, LENGTH_LIMITS.CTA);
+    if (data.cta.length < originalLength) {
+      console.warn(`CTA truncated from ${originalLength} to ${data.cta.length} chars`);
+    }
+  }
+}
+
 export interface ValidationResult {
   success: boolean;
   data?: ContentData;
@@ -103,11 +164,8 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
     }
   }
   
-  // Truncate explanation if too long
-  if (data.explanation.length > 150) {
-    console.warn(`Health explanation too long (${data.explanation.length} chars), truncating`);
-    data.explanation = data.explanation.substring(0, 147) + '...';
-  }
+  // Apply length limits to all content
+  enforceLengthLimits(data);
   
   return { success: true, data };
 }
@@ -144,11 +202,8 @@ function validateEnglishContent(data: any, format?: string): ValidationResult {
     };
   }
   
-  // Truncate explanation if too long
-  if (data.explanation && data.explanation.length > 150) {
-    console.warn(`English explanation too long (${data.explanation.length} chars), truncating`);
-    data.explanation = data.explanation.substring(0, 147) + '...';
-  }
+  // Apply length limits to all content
+  enforceLengthLimits(data);
 
   return { success: true, data };
 }

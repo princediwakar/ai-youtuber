@@ -82,9 +82,11 @@ export async function POST(request: NextRequest) {
       console.log(`-- Starting ${account.name} generation batch for persona: "${personaConfig.displayName}"`);
       const generationDate = new Date();
       
-      const generationPromises = Array(config.GENERATE_BATCH_SIZE).fill(null).map(async () => {
-          // With subject-specific personas, directly select from subCategories
-          const subCategory = getRandomElement(personaConfig.subCategories);
+      const generationPromises = Array(config.GENERATE_BATCH_SIZE).fill(null).map(async (_, index) => {
+          // Use time-based seeded selection to ensure topic variety within batches
+          const seed = Date.now() + index * 1000; // Different seed for each quiz
+          const topicIndex = Math.floor((seed / 1000) % personaConfig.subCategories.length);
+          const subCategory = personaConfig.subCategories[topicIndex];
 
           const jobConfig = {
               persona: personaKey,

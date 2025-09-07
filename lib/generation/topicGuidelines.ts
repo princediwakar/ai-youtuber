@@ -13,102 +13,102 @@ export interface TopicGuideline {
 export const TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // Brain Health Categories
   memory_techniques: {
-    focus: 'Practical memory improvement strategies, mnemonics, and scientifically-proven techniques',
-    hook: 'Reveal a surprising memory technique that viewers can master in minutes',
-    scenarios: ['studying for exams', 'remembering names at events', 'recalling important information'],
-    engagement: 'Challenge viewers to test the technique immediately'
+    focus: 'Neuroplasticity-based encoding methods, spatial memory systems, and synaptic strengthening protocols',
+    hook: 'Master the ancient technique that turns anyone into a memory champion',
+    scenarios: ['professional certification studying', 'multilingual vocabulary retention', 'database information recall'],
+    engagement: 'Provide immediate memorization challenge with measurable results'
   },
   focus_tips: {
-    focus: 'Modern attention challenges and actionable concentration techniques',
-    hook: 'Address the epidemic of digital distraction with proven focus methods',
-    scenarios: ['working from home', 'studying with distractions', 'staying focused during meetings'],
-    engagement: 'Promise immediate focus improvement'
+    focus: 'Attention restoration therapy, cognitive load management, and dopamine regulation strategies',
+    hook: 'Discover why your brain loses focus every 8 minutes (and how to fix it)',
+    scenarios: ['deep work session optimization', 'ADHD-friendly productivity systems', 'meditation-resistant focus training'],
+    engagement: 'Challenge viewers to complete focus endurance test'
   },
   brain_food: {
-    focus: 'Specific nutrients, foods, and dietary patterns with measurable brain benefits',
-    hook: 'Reveal surprising foods that dramatically boost brain power',
-    scenarios: ['exam preparation meals', 'brain-boosting breakfast', 'foods that prevent memory loss'],
-    engagement: 'Make viewers want to try the food today'
+    focus: 'Neurotransmitter precursor nutrition, blood-brain barrier optimization, and cognitive enhancement timing',
+    hook: 'Uncover the breakfast timing that increases IQ by 12 points',
+    scenarios: ['pre-exam cognitive loading', 'age-related cognitive decline prevention', 'neurodivergent brain nutrition'],
+    engagement: 'Create urgency about nutrient timing windows'
   },
   mental_exercises: {
-    focus: 'Engaging cognitive challenges and neuroplasticity concepts',
-    hook: 'Present a fun brain exercise that reveals cognitive abilities',
-    scenarios: ['daily brain training', 'preventing cognitive decline', 'sharpening mental agility'],
-    engagement: 'Include a mini-exercise viewers can try'
+    focus: 'Working memory expansion, processing speed enhancement, and executive function strengthening',
+    hook: 'Take the cognitive flexibility test that predicts career success',
+    scenarios: ['age-related cognitive maintenance', 'problem-solving skill advancement', 'creative thinking unlocking'],
+    engagement: 'Provide progressive difficulty brain challenges'
   },
   brain_lifestyle: {
-    focus: 'Lifestyle factors that significantly impact cognitive function',
-    hook: 'Expose how daily habits secretly damage or boost brain health',
-    scenarios: ['morning routines', 'weekend activities', 'social interactions'],
-    engagement: 'Motivate immediate lifestyle changes'
+    focus: 'Circadian rhythm optimization, social cognition enhancement, and environmental neurotoxin avoidance',
+    hook: 'Identify the lifestyle factor destroying 20% of your brain cells annually',
+    scenarios: ['remote work cognitive health', 'retirement brain preservation', 'parenting cognitive demands'],
+    engagement: 'Offer lifestyle audit with cognitive impact scoring'
   },
   stress_management: {
-    focus: 'Stress-brain connection with practical cortisol-reducing techniques',
-    hook: 'Reveal how stress literally shrinks the brain and how to reverse it',
-    scenarios: ['work stress', 'relationship anxiety', 'financial worries'],
-    engagement: 'Offer instant stress relief techniques'
+    focus: 'HPA axis regulation, cortisol rhythm restoration, and resilience neurocircuitry building',
+    hook: 'Measure your stress damage level with this 60-second brain test',
+    scenarios: ['chronic workplace pressure', 'caregiver burnout prevention', 'financial anxiety management'],
+    engagement: 'Provide physiological stress measurement techniques'
   },
   sleep_brain: {
-    focus: 'Sleep-memory consolidation and optimal sleep habits for brain performance',
-    hook: 'Expose the shocking truth about what happens to your brain during sleep',
-    scenarios: ['pulling all-nighters', 'improving memory overnight', 'sleep quality optimization'],
-    engagement: 'Promise better sleep and sharper thinking'
+    focus: 'Glymphatic system optimization, memory consolidation timing, and REM sleep enhancement',
+    hook: 'Calculate how much intelligence you lose with each hour of sleep debt',
+    scenarios: ['shift work cognitive protection', 'insomnia-related memory issues', 'power nap cognitive benefits'],
+    engagement: 'Challenge viewers to track cognitive performance vs sleep quality'
   },
   brain_myths: {
-    focus: 'Debunking popular brain myths with surprising scientific truths',
-    hook: 'Shatter a belief that 90% of people think is true but science proves wrong',
-    scenarios: ['common misconceptions', 'things parents taught wrong', 'viral health claims'],
-    engagement: 'Create "I had no idea!" moments'
+    focus: 'Evidence-based debunking of neurological misconceptions with peer-reviewed research',
+    hook: 'Expose the brain training myth that wastes millions of dollars annually',
+    scenarios: ['supplement industry false claims', 'education system cognitive misconceptions', 'aging brain capability myths'],
+    engagement: 'Challenge viewers to fact-check popular brain claims'
   },
   
   // Eye Health Categories
   screen_protection: {
-    focus: 'Digital eye strain prevention and blue light protection strategies',
-    hook: 'Reveal what hours of screen time are actually doing to your eyes',
-    scenarios: ['working from home', 'gaming sessions', 'late-night phone use'],
-    engagement: 'Offer immediate relief from eye strain'
+    focus: 'Blue light filtering technology, screen distance optimization, and digital break protocols',
+    hook: 'Expose the invisible light wavelength slowly destroying your retina every minute',
+    scenarios: ['remote work setups', 'smartphone addiction patterns', 'streaming marathons'],
+    engagement: 'Challenge viewers to test their blue light exposure immediately'
   },
   eye_exercises: {
-    focus: 'Practical eye exercises and vision training techniques',
-    hook: 'Teach a simple eye exercise that improves vision in 30 seconds',
-    scenarios: ['computer work breaks', 'driving long distances', 'reading for hours'],
-    engagement: 'Guide viewers through the exercise'
+    focus: 'Ciliary muscle strengthening, convergence training, and visual field enhancement exercises',
+    hook: 'Test your eye muscle strength with this focusing challenge',
+    scenarios: ['programmer focus training', 'age-related accommodation decline', 'sports vision enhancement'],
+    engagement: 'Provide measurable improvement tracking method'
   },
   vision_nutrition: {
-    focus: 'Foods and nutrients that directly support eye health and vision',
-    hook: 'Reveal foods that can literally improve your eyesight',
-    scenarios: ['preventing macular degeneration', 'foods for night vision', 'protecting aging eyes'],
-    engagement: 'Make viewers want to eat these foods today'
+    focus: 'Lutein absorption pathways, zeaxanthin bioavailability, and retinal antioxidant protection',
+    hook: 'Discover the nutrient deficiency behind 90% of vision problems',
+    scenarios: ['age-related macular degeneration prevention', 'night vision optimization', 'diabetic retinopathy nutrition'],
+    engagement: 'Create urgency about nutrient timing and absorption'
   },
   eye_care_habits: {
-    focus: 'Daily routines and habits that protect and improve eye health',
-    hook: 'Expose daily habits that are secretly damaging your vision',
-    scenarios: ['morning eye care', 'makeup and contacts', 'environmental protection'],
-    engagement: 'Motivate immediate habit changes'
+    focus: 'Tear film stability, eyelid hygiene protocols, and environmental protection routines',
+    hook: 'Uncover the morning habit that prevents 80% of eye infections',
+    scenarios: ['contact lens safety protocols', 'makeup-related eye damage', 'allergen exposure management'],
+    engagement: 'Provide step-by-step implementation checklist'
   },
   workplace_vision: {
-    focus: 'Optimizing work environment and habits for eye health',
-    hook: 'Reveal how your workspace setup is destroying your vision',
-    scenarios: ['office lighting', 'monitor positioning', 'break strategies'],
-    engagement: 'Offer instant workspace improvements'
+    focus: 'Ergonomic viewing angles, ambient lighting ratios, and productivity-vision balance',
+    hook: 'Calculate if your desk setup is causing permanent vision damage',
+    scenarios: ['home office lighting optimization', 'dual monitor positioning', 'presentation eye strain'],
+    engagement: 'Offer measurable workspace assessment tools'
   },
   eye_safety: {
-    focus: 'Protection strategies for various activities and environments',
-    hook: 'Show shocking eye injury statistics and how to prevent them',
-    scenarios: ['sports activities', 'home improvement', 'outdoor adventures'],
-    engagement: 'Create urgency about eye protection'
+    focus: 'UV radiation protection, impact injury prevention, and chemical exposure protocols',
+    hook: 'Reveal the everyday activity that causes 40% of eye injuries',
+    scenarios: ['outdoor UV exposure risks', 'DIY project safety gaps', 'sports impact protection'],
+    engagement: 'Create immediate protective behavior adoption'
   },
   vision_myths: {
-    focus: 'Debunking eye health myths with evidence-based facts',
-    hook: 'Shatter common beliefs about vision that are completely wrong',
-    scenarios: ['carrots improving vision', 'reading in dark', 'eye exercise limitations'],
-    engagement: 'Create surprise and disbelief moments'
+    focus: 'Scientific debunking of popular vision misconceptions with research evidence',
+    hook: 'Expose the vision "fact" taught in schools that science proves dangerous',
+    scenarios: ['carrot vision improvement myths', 'reading in dark damage claims', 'eye exercise miracle cures'],
+    engagement: 'Challenge viewers to verify claims with evidence'
   },
   eye_fatigue: {
-    focus: 'Preventing and treating digital eye strain and fatigue',
-    hook: 'Reveal the hidden cause of your constant eye tiredness',
-    scenarios: ['end-of-day eye strain', 'headaches from screens', 'tired eyes driving'],
-    engagement: 'Promise immediate relief techniques'
+    focus: 'Accommodation spasm relief, blink rate optimization, and neural visual processing recovery',
+    hook: 'Identify the hidden muscle causing your daily headaches',
+    scenarios: ['post-work eye exhaustion', 'digital migraine triggers', 'driving vision fatigue'],
+    engagement: 'Provide instant fatigue relief validation techniques'
   },
   
   // English Vocabulary Categories

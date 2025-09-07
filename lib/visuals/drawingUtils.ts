@@ -103,20 +103,58 @@ export const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: 
         console.warn('wrapText received invalid text:', text);
         return [];
     }
+    
     const words = text.split(' ');
     let lines: string[] = [];
     if (!words.length) return [];
-    let currentLine = words[0];
-    for (let i = 1; i < words.length; i++) {
-        const testLine = `${currentLine} ${words[i]}`;
-        if (ctx.measureText(testLine).width > maxWidth) {
-            lines.push(currentLine);
-            currentLine = words[i];
+    
+    let currentLine = '';
+    
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testWidth = ctx.measureText(testLine).width;
+        
+        // If the word alone is too wide, try to break it
+        if (ctx.measureText(word).width > maxWidth && word.length > 10) {
+            // Push current line if it exists
+            if (currentLine) {
+                lines.push(currentLine);
+                currentLine = '';
+            }
+            
+            // Break long word into smaller parts
+            let remainingWord = word;
+            while (remainingWord.length > 0) {
+                let breakPoint = remainingWord.length;
+                while (breakPoint > 0 && ctx.measureText(remainingWord.substring(0, breakPoint)).width > maxWidth) {
+                    breakPoint--;
+                }
+                
+                if (breakPoint === 0) breakPoint = 1; // Always take at least one character
+                
+                const wordPart = remainingWord.substring(0, breakPoint);
+                lines.push(wordPart);
+                remainingWord = remainingWord.substring(breakPoint);
+            }
+        } else if (testWidth > maxWidth) {
+            // Normal word wrapping
+            if (currentLine) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                // Single word is too wide but manageable
+                lines.push(word);
+            }
         } else {
             currentLine = testLine;
         }
     }
-    lines.push(currentLine);
+    
+    if (currentLine) {
+        lines.push(currentLine);
+    }
+    
     return lines;
 };
 
@@ -238,21 +276,37 @@ export const calculateOptimalLayout = (
     const availableHeight = canvasHeight - HEADER_HEIGHT - FOOTER_HEIGHT;
     const contentWidth = canvasWidth - CONTENT_MARGIN;
     
-    // Start with larger question font size
-    let questionFontSize = 70;
+    // Start with optimized question font size (slightly smaller for better fit)
+    let questionFontSize = 65;
     let questionMeasurement = measureQuestionContent(ctx, questionText, contentWidth, fontFamily, questionFontSize);
     
-    // Measure options at standard size
-    const optionsFontSize = 45;
-    const optionsMeasurement = measureOptionsContent(ctx, options, contentWidth, fontFamily, optionsFontSize);
+    // Start with optimized options font size (smaller for better readability)
+    let optionsFontSize = 42;
+    let optionsMeasurement = measureOptionsContent(ctx, options, contentWidth, fontFamily, optionsFontSize);
     
     // Calculate total needed space
     let totalNeededHeight = questionMeasurement.height + QUESTION_OPTION_SPACING + optionsMeasurement.height;
     
-    // If content doesn't fit, optimize question font size
+    // If content doesn't fit, first try reducing question font size
     while (totalNeededHeight > availableHeight && questionFontSize > 45) {
         questionFontSize -= 2;
         questionMeasurement = measureQuestionContent(ctx, questionText, contentWidth, fontFamily, questionFontSize);
+        totalNeededHeight = questionMeasurement.height + QUESTION_OPTION_SPACING + optionsMeasurement.height;
+    }
+    
+    // If still doesn't fit, try reducing options font size
+    while (totalNeededHeight > availableHeight && optionsFontSize > 35) {
+        optionsFontSize -= 2;
+        optionsMeasurement = measureOptionsContent(ctx, options, contentWidth, fontFamily, optionsFontSize);
+        totalNeededHeight = questionMeasurement.height + QUESTION_OPTION_SPACING + optionsMeasurement.height;
+    }
+    
+    // If still doesn't fit, make one final aggressive reduction
+    if (totalNeededHeight > availableHeight) {
+        questionFontSize = Math.max(40, questionFontSize - 5);
+        optionsFontSize = Math.max(32, optionsFontSize - 3);
+        questionMeasurement = measureQuestionContent(ctx, questionText, contentWidth, fontFamily, questionFontSize);
+        optionsMeasurement = measureOptionsContent(ctx, options, contentWidth, fontFamily, optionsFontSize);
         totalNeededHeight = questionMeasurement.height + QUESTION_OPTION_SPACING + optionsMeasurement.height;
     }
     

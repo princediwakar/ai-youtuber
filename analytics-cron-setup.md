@@ -12,7 +12,7 @@ Set up automated collection of YouTube video analytics with AI-powered insights 
 - **Body**: 
   ```json
   {
-    "secret": "tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c="
+    "secret": "$CRON_SECRET"
   }
   ```
 - **Purpose**: Collects basic YouTube metrics (views, likes, comments) for videos uploaded 24+ hours ago
@@ -24,7 +24,7 @@ Set up automated collection of YouTube video analytics with AI-powered insights 
 - **Body**:
   ```json
   {
-    "secret": "tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c="
+    "secret": "$CRON_SECRET"
   }
   ```
 - **Purpose**: Generates AI-powered performance insights, content recommendations, and engagement strategies
