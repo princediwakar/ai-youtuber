@@ -19,7 +19,112 @@ import {
 
 } from '../drawingUtils';
 
+// Hook frame for MCQ format - displays the hook/teaser
+export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
+  const ctx = canvas.getContext('2d');
+  drawBackground(ctx, canvas.width, canvas.height, theme);
+  drawHeader(ctx, canvas.width, theme, job);
 
+  // Generate a teaser/hook text instead of showing the full question
+  const question = job.data.content?.question || "";
+  let hookText = job.data.content?.hook;
+  
+  // If no specific hook provided, create one based on question type
+  if (!hookText) {
+    if (question.toLowerCase().includes('true or false')) {
+      hookText = "Think you know English idioms? Let's test your knowledge! 🤔";
+    } else if (question.toLowerCase().includes('which') || question.toLowerCase().includes('what')) {
+      hookText = "Ready for a vocabulary challenge? Can you pick the right answer? 📚";
+    } else {
+      hookText = "Let's boost your English vocabulary! Think you can get this right? 💡";
+    }
+  }
+  
+  // Calculate dynamic layout for hook text
+  const textMaxWidth = canvas.width - 160;
+  const HEADER_HEIGHT = 180;
+  const FOOTER_HEIGHT = 180;
+  const availableHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT;
+
+  // Measure hook content with larger starting font
+  const measurement = measureQuestionContent(
+    ctx, 
+    hookText, 
+    textMaxWidth, 
+    theme.fontFamily, 
+    72,  // Start with large font for hooks
+    40,  // Minimum readable size
+    availableHeight
+  );
+
+  // Center the hook text vertically
+  const unusedSpace = Math.max(0, availableHeight - measurement.height);
+  const idealStartY = HEADER_HEIGHT + (unusedSpace / 2);
+  const maxStartY = canvas.height - FOOTER_HEIGHT - measurement.height - 20;
+  const startY = Math.min(idealStartY, maxStartY);
+
+  ctx.fillStyle = theme.text.primary;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = `bold ${measurement.fontSize}px ${theme.fontFamily}`;
+  
+  // Draw hook text
+  measurement.lines.forEach((line, index) => {
+      const lineHeight = measurement.fontSize * 1.4;
+      ctx.fillText(line, canvas.width / 2, startY + index * lineHeight);
+  });
+
+  drawFooter(ctx, canvas.width, canvas.height, theme, job);
+}
+
+// Options frame - displays just the question and options without revealing answer
+export function renderOptionsFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
+  // Get question data from new content structure
+  const question = job.data.content;
+  const ctx = canvas.getContext('2d');
+  drawBackground(ctx, canvas.width, canvas.height, theme);
+  drawHeader(ctx, canvas.width, theme, job);
+
+  // ✨ MODIFIED: Determine the full text for measurement purposes
+  const layoutQuestionText = question.question_type === 'assertion_reason'
+    ? `Assertion (A): ${question.assertion}\n\nReason (R): ${question.reason}`
+    : question.question;
+  
+  // Calculate optimal layout based on the full text
+  const measurements = calculateOptimalLayout(
+    ctx, 
+    layoutQuestionText, 
+    question.options || {}, // Provide empty object if options is undefined
+    canvas.width, 
+    canvas.height, 
+    theme.fontFamily
+  );
+
+  // ✨ FIX: Adjust measurement for the hardcoded 40px gap in drawAssertionReasonText
+  if (question.question_type === 'assertion_reason') {
+    measurements.questionHeight += 40;
+    measurements.totalContentHeight += 40;
+  }
+  
+  const positions = calculateDynamicPositions(measurements, canvas.height);
+  
+  // ✨ MODIFIED: Conditionally draw either standard question or assertion/reason
+  let actualQuestionEndY;
+  if (question.question_type === 'assertion_reason') {
+      actualQuestionEndY = drawAssertionReasonText(
+          ctx, canvas, question, theme, positions.questionStartY, measurements.questionFontSize
+      );
+  } else {
+      actualQuestionEndY = drawQuestionText(
+          ctx, canvas, question.question, theme, positions.questionStartY, measurements.questionFontSize
+      );
+  }
+  
+  // Render options with dynamic positioning, NOT showing correct answer
+  const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
+  renderOptions(ctx, canvas.width, actualOptionsStartY, job, theme, false, measurements.optionsFontSize);
+  drawFooter(ctx, canvas.width, canvas.height, theme, job);
+}
 
 // Dynamic question text drawing with optimized font size
 function drawQuestionText(
@@ -91,7 +196,8 @@ function drawAssertionReasonText(
 
 // Dynamic MCQ question frame with optimized layout
 export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
-  const { question } = job.data;
+  // Get question data from new content structure
+  const question = job.data.content;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
@@ -139,7 +245,8 @@ export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme):
 
 // Dynamic MCQ answer frame with optimized layout
 export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
-  const { question } = job.data;
+  // Get question data from new content structure
+  const question = job.data.content;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
@@ -187,7 +294,9 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
 
 // Dynamic explanation frame with optimized layout
 export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
-  const { explanation } = job.data.question;
+  // Get question data from new content structure
+  const question = job.data.content;
+  const explanation = question?.explanation || "Explanation content not available.";
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   
@@ -245,7 +354,7 @@ function renderOptions(
   isAnswerFrame: boolean,
   fontSize: number = 45
 ) {
-const { options, answer } = job.data.question;
+const { options, answer } = job.data.content;
 
 // Guard against undefined/null options (for non-MCQ formats)
 if (!options || typeof options !== 'object') {

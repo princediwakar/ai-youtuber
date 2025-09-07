@@ -55,7 +55,7 @@ export async function generateAndStoreContent(
     };
     
     const selectedFormat = jobConfig.preferredFormat || selectFormatForContent(formatSelectionContext);
-    const formatDefinition = getFormat(selectedFormat, jobConfig.accountId);
+    const formatDefinition = getFormat(selectedFormat, jobConfig.accountId, jobConfig.persona);
     
     if (!formatDefinition) {
       console.warn(`Format ${selectedFormat} not found for account ${jobConfig.accountId}, falling back to MCQ`);

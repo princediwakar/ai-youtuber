@@ -38,14 +38,6 @@ try {
   console.error("CRITICAL: Failed to register font. Frames cannot be created.", error);
 }
 
-// Legacy Layout Router (used only for fallback when format system fails)
-// TODO: Remove when format system is fully stable
-const legacyLayoutRouter = {
-  multiple_choice: mcqLayout,
-  assertion_reason: mcqLayout,
-  true_false: mcqLayout,
-  default: mcqLayout,
-};
 
 // Format-specific frame rendering functions
 interface FormatFrameRenderer {
@@ -56,9 +48,8 @@ interface FormatFrameRenderer {
 
 const formatFrameRenderers: FormatFrameRenderer = {
   mcq: {
-    hook: (canvas: Canvas, job: QuizJob, theme: Theme) => mcqLayout.renderQuestionFrame(canvas, job, theme),
+    hook: (canvas: Canvas, job: QuizJob, theme: Theme) => mcqLayout.renderHookFrame(canvas, job, theme),
     question: (canvas: Canvas, job: QuizJob, theme: Theme) => mcqLayout.renderQuestionFrame(canvas, job, theme),
-    options: (canvas: Canvas, job: QuizJob, theme: Theme) => mcqLayout.renderQuestionFrame(canvas, job, theme),
     answer: (canvas: Canvas, job: QuizJob, theme: Theme) => mcqLayout.renderAnswerFrame(canvas, job, theme),
     explanation: (canvas: Canvas, job: QuizJob, theme: Theme) => mcqLayout.renderExplanationFrame(canvas, job, theme),
     cta: (canvas: Canvas, job: QuizJob, theme: Theme) => renderCtaFrame(canvas, job, theme),
@@ -111,22 +102,16 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   
   // Determine format type
   const formatType = (formatJob.formatType || job.format_type || 'mcq') as FormatType;
-  const format = getFormat(formatType, job.account_id);
+  const format = getFormat(formatType, job.account_id, job.persona);
   
   if (!format) {
-    console.warn(`Format ${formatType} not found for account ${job.account_id}, falling back to MCQ`);
-    return createLegacyFrames(job, theme);
+    throw new Error(`Format ${formatType} not found for account ${job.account_id}`);
   }
 
-  // Support both legacy and new content structures
-  const contentData = job.data?.content || job.data?.question;
+  // Use new content structure
+  const contentData = job.data?.content;
   if (!contentData) {
-    throw new Error(`Job ${job.id} missing content data. Expected either job.data.content or job.data.question.`);
-  }
-
-  // Ensure job.data.question exists for layout functions (normalize the structure)
-  if (!job.data.question && job.data.content) {
-    job.data.question = job.data.content;
+    throw new Error(`Job ${job.id} missing content data. Expected job.data.content.`);
   }
 
   // Generate frames based on format definition
@@ -165,21 +150,6 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   return frameUrls;
 }
 
-// Legacy frame creation for backward compatibility
-function createLegacyFrames(job: QuizJob, theme: Theme): Promise<string[]> {
-  const contentData = job.data?.content || job.data?.question;
-  const questionType = contentData?.question_type || 'multiple_choice';
-  const layout = legacyLayoutRouter[questionType as keyof typeof legacyLayoutRouter] || legacyLayoutRouter.default;
-
-  const framesToRender = [
-    (canvas: Canvas) => layout.renderQuestionFrame(canvas, job, theme),
-    (canvas: Canvas) => layout.renderAnswerFrame(canvas, job, theme),
-    (canvas: Canvas) => layout.renderExplanationFrame(canvas, job, theme),
-    (canvas: Canvas) => renderCtaFrame(canvas, job, theme),
-  ];
-
-  return renderFramesAndUpload(job, theme, framesToRender, ['question', 'answer', 'explanation', 'cta']);
-}
 
 // Create frame render pipeline based on format definition
 function createFrameRenderPipeline(

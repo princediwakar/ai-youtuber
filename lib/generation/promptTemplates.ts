@@ -177,9 +177,9 @@ Make learners feel accomplished and eager to share their new knowledge. [${timeM
  */
 export function addJsonFormatInstructions(prompt: string, questionFormat: string): string {
   if (questionFormat === 'multiple_choice') {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", "cta", and "question_type" (set to "multiple_choice"). Explanation must be under 150 characters.';
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "content", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", "cta", and "content_type" (set to "multiple_choice"). Explanation must be under 150 characters.';
   } else if (questionFormat === 'true_false') {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "question", "options" (an object with keys "A": "True", "B": "False"), "answer" (either "A" or "B"), "explanation", "cta", and "question_type" (set to "true_false"). Explanation must be under 150 characters.';
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "content", "options" (an object with keys "A": "True", "B": "False"), "answer" (either "A" or "B"), "explanation", "cta", and "content_type" (set to "true_false"). Explanation must be under 150 characters.';
   } else if (questionFormat === 'assertion_reason') {
     return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "assertion", "reason", "options", "answer", "explanation", "cta", and "question_type" (set to "assertion_reason"). 
 
@@ -299,12 +299,9 @@ TARGET: Health-conscious adults seeking quick wins
 
 MANDATORY OUTPUT JSON:
 • "hook": Specific promise with timeframe (under 60 chars)
-• "action_steps": Array of 2-3 specific steps
-• "scientific_reason": Why this works scientifically  
-• "immediate_benefit": What they'll notice right away
-• "explanation": Motivating summary (under 100 chars)
+• "action": 2-3 specific steps combined into one actionable instruction
+• "result": Scientific reason + immediate benefit combined
 • "cta": "Try this now!" or similar (under 40 chars)
-• "format_type": "quick_tip"
 
 Create content that viewers immediately want to try. [${timeMarker}-${tokenMarker}]`;
 }
@@ -337,15 +334,98 @@ TARGET: People unaware of daily health damage they're causing
 
 MANDATORY OUTPUT JSON:
 • "hook": Curiosity-driven opener (under 60 chars)
-• "harmful_behavior": What most people do wrong
-• "better_behavior": The healthier alternative
-• "scientific_proof": Research-backed explanation
-• "immediate_action": One thing to do right now
-• "explanation": Why this matters (under 100 chars)
+• "before": What most people do wrong (harmful behavior)
+• "after": The healthier alternative (better behavior) 
+• "result": Research-backed explanation + immediate benefit
 • "cta": "Protect your health!" or similar (under 40 chars)
-• "format_type": "before_after"
 
 Create content that makes viewers realize they need to change immediately. [${timeMarker}-${tokenMarker}]`;
+}
+
+/**
+ * Generates Usage Demo format prompt (English)
+ */
+export function generateUsageDemoPrompt(config: PromptConfig): string {
+  const { topicData, markers } = config;
+  const { timeMarker, tokenMarker } = markers;
+  
+  return `You are an English fluency expert creating viral "Usage Demo" content for YouTube Shorts.
+
+TOPIC: "${topicData.displayName}" - Contextual word mastery
+
+FORMAT: Usage Demo (4 frames)
+Frame 1 (Hook): "When to use this advanced word"
+Frame 2 (Wrong): "Don't use it here: [wrong example]"
+Frame 3 (Right): "Perfect usage: [correct example]"  
+Frame 4 (Practice): "Your turn to try!"
+
+CONTENT REQUIREMENTS:
+• HOOK: Promise to show contextual mastery of an advanced word
+• WRONG: Common misuse that sounds plausible but is incorrect
+• RIGHT: Perfect contextual usage that sounds natural and professional
+• PRACTICE: Interactive challenge for viewer engagement
+
+TARGET: Advanced learners who want contextual precision
+
+MANDATORY OUTPUT JSON:
+• "hook": Promise about contextual word mastery (under 60 chars)
+• "target_word": The advanced vocabulary word to demonstrate
+• "wrong_example": Sentence showing incorrect contextual usage
+• "wrong_context": Brief explanation of why it's wrong (under 80 chars)
+• "right_example": Sentence showing perfect contextual usage
+• "right_context": Brief explanation of why it's correct (under 80 chars) 
+• "practice": Practice instruction with scenario
+• "practice_scenario": Specific context for learner to practice
+• "cta": "Master word usage!" or similar (under 40 chars)
+• "format_type": "usage_demo"
+
+Create content that makes learners confident about contextual word usage. [${timeMarker}-${tokenMarker}]`;
+}
+
+/**
+ * Generates Challenge format prompt (Health)
+ */
+export function generateChallengePrompt(config: PromptConfig): string {
+  const { topicData, markers } = config;
+  const { timeMarker, tokenMarker } = markers;
+  const guidelines = TOPIC_GUIDELINES[config.topic];
+  
+  return `You are a brain training expert creating viral "Challenge" content for YouTube Shorts.
+
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Interactive brain/memory challenges'}
+
+FORMAT: Challenge (5 frames)
+Frame 1 (Hook): "Test your brain with this challenge"
+Frame 2 (Setup): "Try to remember these items..."
+Frame 3 (Challenge): Present the actual test/puzzle
+Frame 4 (Reveal): "How did you do? Here's the secret..."
+Frame 5 (CTA): "Follow for more brain training!"
+
+CONTENT REQUIREMENTS:
+• HOOK: Exciting challenge invitation 
+• SETUP: Clear instructions for the challenge
+• CHALLENGE: Interactive test (memory, visual, logic)
+• REVEAL: Solution + cognitive science explanation
+• ENGAGEMENT: Viewers must actively participate
+
+TARGET: People seeking brain training and cognitive improvement
+
+MANDATORY OUTPUT JSON:
+• "hook": Exciting challenge invitation (under 60 chars)
+• "setup": Clear challenge instructions
+• "instructions": Specific steps for the challenge
+• "challenge_type": "memory" or "visual" or "logic"
+• "challenge_items": Array of items to remember/observe (if memory challenge)
+• "challenge_content": The actual challenge content/puzzle
+• "reveal": Result reveal text (under 60 chars)
+• "trick": The method/science behind the challenge
+• "answer": The correct solution/explanation
+• "cta": "Follow for brain training!" or similar (under 40 chars)
+• "encouragement": Positive reinforcement text
+• "next_challenge": Teaser for next challenge
+• "format_type": "challenge"
+
+Create interactive content that viewers must engage with actively. [${timeMarker}-${tokenMarker}]`;
 }
 
 /**
@@ -359,6 +439,10 @@ export function generateFormatPrompt(config: PromptConfig): string {
       return generateCommonMistakePrompt(config);
     case 'quick_fix':
       return generateQuickFixPrompt(config);
+    case 'usage_demo':
+      return generateUsageDemoPrompt(config);
+    case 'challenge':
+      return generateChallengePrompt(config);
     case 'quick_tip':
       return generateQuickTipPrompt(config);
     case 'before_after':

@@ -1,10 +1,10 @@
 /**
  * Multi-Account YouTube Content Generation & Upload Schedule
  *
- * English Shots Strategy: 8 daily uploads with 3 generation batches for consistent global presence
- * Health Shots Strategy: 6 daily uploads targeting key wellness moments with 4 generation batches
+ * English Shots Strategy: 3 daily uploads with 1 generation batch (3 quizzes/day = perfect match)
+ * Health Shots Strategy: 2 daily uploads with 1 generation batch (3 quizzes/day = 1 buffer)
  *
- * Each account maintains independent schedules to optimize for their target audiences.
+ * Each generation batch creates 3 quizzes. Optimized for quality over quantity.
  */
 
 interface HourlySchedule {
@@ -24,46 +24,28 @@ interface AccountSchedules {
  * Focus: Global English learners across time zones
  */
 const englishGenerationPattern: HourlySchedule = {
-  2: ['english_vocab_builder'],   // Early morning generation
-  4: ['english_vocab_builder'],   // Early morning generation
-  10: ['english_vocab_builder'],  // Mid-day generation  
-  18: ['english_vocab_builder'],  // Evening generation
-  21: ['english_vocab_builder'],  // Evening generation
+  6: ['english_vocab_builder'],   // Morning generation for daily uploads
 };
 
 const englishUploadPattern: HourlySchedule = {
-  8:  ['english_vocab_builder'], // Morning (US evening, Asia morning)
-  11: ['english_vocab_builder'], // Mid-morning Break
-  13: ['english_vocab_builder'], // Lunch Break
-  15: ['english_vocab_builder'], // Afternoon Break
-  17: ['english_vocab_builder'], // Evening Commute
-  19: ['english_vocab_builder'], // Post-Dinner Study
-  21: ['english_vocab_builder'], // Prime Evening Time
-  23: ['english_vocab_builder'], // Late Night / Other Timezones
+  10: ['english_vocab_builder'], // Mid-morning global peak
+  16: ['english_vocab_builder'], // Afternoon global peak  
+  21: ['english_vocab_builder'], // Evening global peak
 };
 
 /**
  * Health Shots Account Schedules  
- * Focus: Health-conscious audiences during wellness-focused times
- * Strategy: 6 daily uploads targeting key wellness moments throughout the day
+ * Focus: Health-conscious audiences during key wellness moments
+ * Strategy: 2 daily uploads for optimal engagement without oversaturation
  */
 const healthGenerationPattern: HourlySchedule = {
-  1: ['brain_health_tips'],      // Early morning generation for morning content
-  3: ['brain_health_tips'],      // Early morning generation for morning content
-  6: ['eye_health_tips'],        // Early generation for work-day content
-  13: ['brain_health_tips'],     // Midday generation for afternoon content
-  18: ['eye_health_tips'],       // Evening generation for night content
+  5: ['brain_health_tips'],      // Early morning generation for daily wellness content
+  6: ['eye_health_tips'],      // Early morning generation for daily wellness content
 };
 
 const healthUploadPattern: HourlySchedule = {
-  7:  ['brain_health_tips'],  // Morning routine time (brain food, focus prep)
-  8:  ['brain_health_tips'],  // Morning routine time (brain food, focus prep)
-  10: ['eye_health_tips'],    // Mid-morning work break (screen time awareness)
-
-  
-  19: ['eye_health_tips'], 
-  20: ['brain_health_tips'],    // Evening wind-down (blue light, sleep hygiene)
-  21: ['eye_health_tips'],    // Evening wind-down (blue light, sleep hygiene)
+  8:  ['brain_health_tips'],  // Morning wellness routine
+  19: ['eye_health_tips'],    // Evening health awareness
 };
 
 // Account-specific schedules

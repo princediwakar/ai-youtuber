@@ -10,7 +10,7 @@ import { drawBackground, wrapText, drawFooter, drawHeader } from '@/lib/visuals/
  * This encourages viewers to like, follow, or comment.
  */
 export function renderCtaFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
-  const { cta } = job.data.question;
+  const { cta } = job.data.content;
   const ctx = canvas.getContext('2d');
 
   // 1. Draw background

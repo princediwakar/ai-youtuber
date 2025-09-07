@@ -129,9 +129,7 @@ export interface QuizJob {
   };
   
   data: {
-    // Support both legacy and new content structures
-    question?: Question; // Legacy structure (still supported)
-    content?: ContentData; // New unified structure
+    content: ContentData; // Unified content structure
     [key: string]: any; // Allows for other properties like frameUrls, themeName etc.
   };
   error_message?: string;

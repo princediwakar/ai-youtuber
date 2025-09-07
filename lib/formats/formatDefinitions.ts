@@ -10,10 +10,10 @@ export const englishFormats: { [key in FormatType]?: ContentFormat } = {
   mcq: {
     type: 'mcq',
     name: 'Multiple Choice Quiz',
-    description: 'Traditional quiz format with question, options, answer, and explanation',
+    description: 'Traditional quiz format with hook, question+options, answer, and explanation',
     accountId: 'english_shots',
     persona: 'english_vocab_builder',
-    frameCount: 5,
+    frameCount: 4,
     frames: [
       {
         type: 'hook',
@@ -31,27 +31,14 @@ export const englishFormats: { [key in FormatType]?: ContentFormat } = {
       {
         type: 'question',
         title: 'Question Frame',
-        description: 'Present the vocabulary question',
-        duration: 3,
+        description: 'Present the vocabulary question with options',
+        duration: 4,
         visualElements: {
           textSize: 'medium',
           textWeight: 'bold',
           textColor: '#1F2937',
           backgroundColor: '#F3F4F6',
           layout: 'top-bottom'
-        }
-      },
-      {
-        type: 'options',
-        title: 'Options Frame',
-        description: 'Show multiple choice options',
-        duration: 4,
-        visualElements: {
-          textSize: 'medium',
-          textWeight: 'normal',
-          textColor: '#374151',
-          backgroundColor: '#FFFFFF',
-          layout: 'stacked'
         }
       },
       {
@@ -245,20 +232,21 @@ export const englishFormats: { [key in FormatType]?: ContentFormat } = {
   }
 };
 
-// Health Shots Account Formats
+// Health Shots Account Formats  
 export const healthFormats: { [key in FormatType]?: ContentFormat } = {
+  // Brain Health MCQ Format
   mcq: {
     type: 'mcq',
-    name: 'Health Knowledge Quiz',
-    description: 'Educational health quiz with question, options, answer, and explanation',
+    name: 'Brain Health Knowledge Quiz',
+    description: 'Educational brain health quiz with hook, question+options, answer, and explanation',
     accountId: 'health_shots',
     persona: 'brain_health_tips',
-    frameCount: 5,
+    frameCount: 4,
     frames: [
       {
         type: 'hook',
         title: 'Hook Frame',
-        description: 'Health knowledge teaser',
+        description: 'Brain health knowledge teaser',
         duration: 2.5,
         visualElements: {
           textSize: 'large',
@@ -271,8 +259,8 @@ export const healthFormats: { [key in FormatType]?: ContentFormat } = {
       {
         type: 'question',
         title: 'Question Frame',
-        description: 'Present the health question',
-        duration: 3,
+        description: 'Present the brain health question with options',
+        duration: 4,
         visualElements: {
           textSize: 'medium',
           textWeight: 'bold',
@@ -282,22 +270,9 @@ export const healthFormats: { [key in FormatType]?: ContentFormat } = {
         }
       },
       {
-        type: 'options',
-        title: 'Options Frame',
-        description: 'Show health-related options',
-        duration: 4,
-        visualElements: {
-          textSize: 'medium',
-          textWeight: 'normal',
-          textColor: '#374151',
-          backgroundColor: '#FFFFFF',
-          layout: 'stacked'
-        }
-      },
-      {
         type: 'answer',
         title: 'Answer Frame',
-        description: 'Reveal correct health answer',
+        description: 'Reveal correct brain health answer',
         duration: 2,
         visualElements: {
           textSize: 'large',
@@ -310,7 +285,7 @@ export const healthFormats: { [key in FormatType]?: ContentFormat } = {
       {
         type: 'explanation',
         title: 'Explanation Frame',
-        description: 'Explain the health science',
+        description: 'Explain the brain health science',
         duration: 3.5,
         visualElements: {
           textSize: 'medium',
@@ -341,8 +316,8 @@ export const healthFormats: { [key in FormatType]?: ContentFormat } = {
 
   quick_tip: {
     type: 'quick_tip',
-    name: 'Quick Health Tip',
-    description: 'Actionable health advice in 3 frames',
+    name: 'Quick Brain Health Tip',
+    description: 'Actionable brain health advice in 3 frames',
     accountId: 'health_shots',
     persona: 'brain_health_tips',
     frameCount: 3,
@@ -407,8 +382,8 @@ export const healthFormats: { [key in FormatType]?: ContentFormat } = {
 
   before_after: {
     type: 'before_after',
-    name: 'Before/After Health Impact',
-    description: 'Show transformation or consequences of health choices',
+    name: 'Before/After Brain Health Impact',
+    description: 'Show transformation or consequences of brain health choices',
     accountId: 'health_shots',
     persona: 'brain_health_tips',
     frameCount: 4,
@@ -485,20 +460,274 @@ export const healthFormats: { [key in FormatType]?: ContentFormat } = {
   }
 };
 
+// Eye Health Formats (separate from brain health)
+export const eyeHealthFormats: { [key in FormatType]?: ContentFormat } = {
+  mcq: {
+    type: 'mcq',
+    name: 'Eye Health Knowledge Quiz',
+    description: 'Educational eye health quiz with hook, question+options, answer, and explanation',
+    accountId: 'health_shots',
+    persona: 'eye_health_tips',
+    frameCount: 4,
+    frames: [
+      {
+        type: 'hook',
+        title: 'Hook Frame',
+        description: 'Eye health knowledge teaser',
+        duration: 2.5,
+        visualElements: {
+          textSize: 'large',
+          textWeight: 'extra-bold',
+          textColor: '#FFFFFF',
+          backgroundColor: '#0891B2',
+          layout: 'centered'
+        }
+      },
+      {
+        type: 'question',
+        title: 'Question Frame',
+        description: 'Present the eye health question with options',
+        duration: 4,
+        visualElements: {
+          textSize: 'medium',
+          textWeight: 'bold',
+          textColor: '#1F2937',
+          backgroundColor: '#CFFAFE',
+          layout: 'top-bottom'
+        }
+      },
+      {
+        type: 'answer',
+        title: 'Answer Frame',
+        description: 'Reveal correct eye health answer',
+        duration: 2,
+        visualElements: {
+          textSize: 'large',
+          textWeight: 'bold',
+          textColor: '#FFFFFF',
+          backgroundColor: '#0891B2',
+          layout: 'centered'
+        }
+      },
+      {
+        type: 'explanation',
+        title: 'Explanation Frame',
+        description: 'Explain the eye health science',
+        duration: 3.5,
+        visualElements: {
+          textSize: 'medium',
+          textWeight: 'normal',
+          textColor: '#1F2937',
+          backgroundColor: '#F0F9FF',
+          layout: 'top-bottom'
+        }
+      }
+    ],
+    visualStyle: {
+      theme: 'health_education',
+      colorScheme: 'bright',
+      fontFamily: 'Inter',
+      primaryColor: '#0891B2',
+      secondaryColor: '#059669',
+      accentColor: '#F59E0B',
+      backgroundStyle: 'gradient'
+    },
+    timing: {
+      totalDuration: 15,
+      frameTransitions: 0.3,
+      pauseBeforeCTA: 0.5
+    },
+    suitableTopics: ['all'],
+    engagementTarget: 'educational'
+  },
+
+  quick_tip: {
+    type: 'quick_tip',
+    name: 'Quick Eye Health Tip',
+    description: 'Actionable eye health advice in 3 frames',
+    accountId: 'health_shots',
+    persona: 'eye_health_tips',
+    frameCount: 3,
+    frames: [
+      {
+        type: 'hook',
+        title: 'Hook Frame',
+        description: 'This 30-second habit will protect your eyes',
+        duration: 2.5,
+        visualElements: {
+          textSize: 'large',
+          textWeight: 'extra-bold',
+          textColor: '#FFFFFF',
+          backgroundColor: '#0891B2',
+          layout: 'centered'
+        }
+      },
+      {
+        type: 'action',
+        title: 'Action Frame',
+        description: 'Here\'s exactly what to do: [step by step]',
+        duration: 4,
+        visualElements: {
+          textSize: 'medium',
+          textWeight: 'bold',
+          textColor: '#1F2937',
+          backgroundColor: '#CFFAFE',
+          layout: 'stacked'
+        }
+      },
+      {
+        type: 'result',
+        title: 'Result Frame',
+        description: 'Why it protects your vision + science behind it',
+        duration: 3.5,
+        visualElements: {
+          textSize: 'medium',
+          textWeight: 'normal',
+          textColor: '#1F2937',
+          backgroundColor: '#F0F9FF',
+          layout: 'top-bottom'
+        }
+      }
+    ],
+    visualStyle: {
+      theme: 'health_action',
+      colorScheme: 'bright',
+      fontFamily: 'Inter',
+      primaryColor: '#0891B2',
+      secondaryColor: '#059669',
+      accentColor: '#F59E0B',
+      backgroundStyle: 'gradient'
+    },
+    timing: {
+      totalDuration: 10,
+      frameTransitions: 0.2,
+      pauseBeforeCTA: 0.3
+    },
+    suitableTopics: ['screen_protection', 'eye_exercises', 'eye_care_habits', 'workplace_vision'],
+    engagementTarget: 'practical'
+  },
+
+  before_after: {
+    type: 'before_after',
+    name: 'Before/After Eye Health Impact',
+    description: 'Show transformation or consequences of eye health choices',
+    accountId: 'health_shots',
+    persona: 'eye_health_tips',
+    frameCount: 4,
+    frames: [
+      {
+        type: 'hook',
+        title: 'Hook Frame',
+        description: 'What happens to your eyes when you...',
+        duration: 2.5,
+        visualElements: {
+          textSize: 'large',
+          textWeight: 'extra-bold',
+          textColor: '#FFFFFF',
+          backgroundColor: '#7C2D12',
+          layout: 'centered'
+        }
+      },
+      {
+        type: 'before',
+        title: 'Before Frame',
+        description: 'Most people damage their vision by...',
+        duration: 3,
+        visualElements: {
+          textSize: 'medium',
+          textWeight: 'bold',
+          textColor: '#DC2626',
+          backgroundColor: '#FEF2F2',
+          layout: 'centered'
+        }
+      },
+      {
+        type: 'after',
+        title: 'After Frame',
+        description: 'But if you protect your eyes like THIS...',
+        duration: 3,
+        visualElements: {
+          textSize: 'medium',
+          textWeight: 'bold',
+          textColor: '#0891B2',
+          backgroundColor: '#CFFAFE',
+          layout: 'centered'
+        }
+      },
+      {
+        type: 'result',
+        title: 'Proof Frame',
+        description: 'Here\'s the science + immediate action for your eyes',
+        duration: 3.5,
+        visualElements: {
+          textSize: 'medium',
+          textWeight: 'normal',
+          textColor: '#1F2937',
+          backgroundColor: '#F9FAFB',
+          layout: 'top-bottom'
+        }
+      }
+    ],
+    visualStyle: {
+      theme: 'health_transformation',
+      colorScheme: 'neutral',
+      fontFamily: 'Inter',
+      primaryColor: '#0891B2',
+      secondaryColor: '#059669',
+      accentColor: '#F59E0B',
+      backgroundStyle: 'solid'
+    },
+    timing: {
+      totalDuration: 12,
+      frameTransitions: 0.3,
+      pauseBeforeCTA: 0.5
+    },
+    suitableTopics: ['screen_protection', 'eye_care_habits', 'workplace_vision', 'digital_eye_strain'],
+    engagementTarget: 'educational'
+  }
+};
+
 // All available formats
 export const allFormats = {
   ...englishFormats,
-  ...healthFormats
+  ...healthFormats,
+  ...eyeHealthFormats
 };
 
-// Get format by type and account
-export function getFormat(formatType: FormatType, accountId: string): ContentFormat | null {
-  const accountFormats = accountId === 'english_shots' ? englishFormats : healthFormats;
-  return accountFormats[formatType] || null;
+// Get format by type, account, and optional persona
+export function getFormat(formatType: FormatType, accountId: string, persona?: string): ContentFormat | null {
+  if (accountId === 'english_shots') {
+    return englishFormats[formatType] || null;
+  } else if (accountId === 'health_shots') {
+    // For health account, we need persona-specific formats
+    if (persona === 'brain_health_tips') {
+      return healthFormats[formatType] || null;
+    } else if (persona === 'eye_health_tips') {
+      return eyeHealthFormats[formatType] || null;
+    } else {
+      // Fallback to brain health for backward compatibility
+      return healthFormats[formatType] || null;
+    }
+  }
+  return null;
 }
 
-// Get all formats for an account
-export function getFormatsForAccount(accountId: string): ContentFormat[] {
-  const accountFormats = accountId === 'english_shots' ? englishFormats : healthFormats;
-  return Object.values(accountFormats).filter((format): format is ContentFormat => format !== undefined);
+// Get all formats for an account and persona
+export function getFormatsForAccount(accountId: string, persona?: string): ContentFormat[] {
+  if (accountId === 'english_shots') {
+    return Object.values(englishFormats).filter((format): format is ContentFormat => format !== undefined);
+  } else if (accountId === 'health_shots') {
+    if (persona === 'brain_health_tips') {
+      return Object.values(healthFormats).filter((format): format is ContentFormat => format !== undefined);
+    } else if (persona === 'eye_health_tips') {
+      return Object.values(eyeHealthFormats).filter((format): format is ContentFormat => format !== undefined);
+    } else {
+      // Return all health formats if no persona specified
+      return [
+        ...Object.values(healthFormats),
+        ...Object.values(eyeHealthFormats)
+      ].filter((format): format is ContentFormat => format !== undefined);
+    }
+  }
+  return [];
 }

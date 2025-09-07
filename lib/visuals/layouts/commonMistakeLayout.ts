@@ -28,7 +28,7 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     drawHeader(ctx, canvas.width, theme, job);
     
     // Main hook text - attention-grabbing and urgent
-    const hookText = job.data.question?.hook || "Stop saying this word wrong!";
+    const hookText = job.data.content?.hook || "Stop saying this word wrong!";
     
     ctx.fillStyle = '#FFFFFF'; // White text for contrast
     ctx.textAlign = 'center';
@@ -67,8 +67,8 @@ export function renderMistakeFrame(canvas: Canvas, job: QuizJob, theme: Theme): 
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const mistakeText = job.data.question?.mistake || job.data.question?.incorrect_usage || "Most people say it wrong";
-    const percentage = job.data.question?.mistake_percentage || "99%";
+    const mistakeText = job.data.content?.mistake || job.data.content?.incorrect_usage || "Most people say it wrong";
+    const percentage = job.data.content?.mistake_percentage || "99%";
     
     // Background color for mistake section
     ctx.fillStyle = '#FEF2F2'; // Light red background
@@ -119,7 +119,7 @@ export function renderCorrectFrame(canvas: Canvas, job: QuizJob, theme: Theme): 
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const correctText = job.data.question?.correct || job.data.question?.correct_usage || job.data.question?.answer || "Correct version";
+    const correctText = job.data.content?.correct || job.data.content?.correct_usage || job.data.content?.answer || "Correct version";
     
     // Background color for correct section
     ctx.fillStyle = '#ECFDF5'; // Light green background
@@ -171,8 +171,8 @@ export function renderPracticeFrame(canvas: Canvas, job: QuizJob, theme: Theme):
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const practiceText = job.data.question?.practice || job.data.question?.cta || "Try it now!";
-    const correctText = job.data.question?.correct || job.data.question?.correct_usage || job.data.question?.answer || "Correct version";
+    const practiceText = job.data.content?.practice || job.data.content?.cta || "Try it now!";
+    const correctText = job.data.content?.correct || job.data.content?.correct_usage || job.data.content?.answer || "Correct version";
     
     // Main practice instruction
     ctx.fillStyle = theme.text.primary;

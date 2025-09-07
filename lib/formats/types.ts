@@ -74,7 +74,7 @@ export interface ContentFormat {
   name: string;
   description: string;
   accountId: string;
-  persona: string;
+  persona: string | string[];
   frameCount: number;
   frames: FormatFrame[];
   visualStyle: FormatVisualConfig;

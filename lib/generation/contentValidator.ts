@@ -52,17 +52,22 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
     return validateQuickTipFormat(data);
   } else if (format === 'before_after') {
     return validateBeforeAfterFormat(data);
+  } else if (format === 'challenge') {
+    return validateChallengeFormat(data);
   }
 
   // Default MCQ validation for health content
-  // Check required fields
-  if (!data.question || typeof data.question !== 'string' ||
+  // Check required fields - for MCQ format, we expect either 'question' or 'content' field
+  const hasQuestion = data.question && typeof data.question === 'string';
+  const hasContent = data.content && typeof data.content === 'string';
+  
+  if ((!hasQuestion && !hasContent) ||
       !data.options || typeof data.options !== 'object' ||
       !data.answer || typeof data.answer !== 'string' ||
       !data.explanation || typeof data.explanation !== 'string' ||
       !data.cta || typeof data.cta !== 'string' ||
-      !data.question_type || 
-      (data.question_type !== 'true_false' && data.question_type !== 'multiple_choice')) {
+      !data.content_type || 
+      (data.content_type !== 'true_false' && data.content_type !== 'multiple_choice')) {
     return {
       success: false,
       error: 'Health question response missing required fields'
@@ -70,7 +75,7 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
   }
   
   // Validate options structure based on question type
-  if (data.question_type === 'true_false') {
+  if (data.content_type === 'true_false') {
     if (!data.options.A || !data.options.B || data.options.A !== 'True' || data.options.B !== 'False') {
       return {
         success: false,
@@ -83,7 +88,7 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
         error: 'True/false health question answer must be A or B'
       };
     }
-  } else if (data.question_type === 'multiple_choice') {
+  } else if (data.content_type === 'multiple_choice') {
     if (!data.options.A || !data.options.B || !data.options.C || !data.options.D) {
       return {
         success: false,
@@ -118,10 +123,12 @@ function validateEnglishContent(data: any, format?: string): ValidationResult {
     return validateQuickFixFormat(data);
   } else if (format === 'usage_demo') {
     return validateUsageDemoFormat(data);
+  } else if (format === 'challenge') {
+    return validateChallengeFormat(data);
   }
 
   // Default MCQ validation for English content
-  const hasQuestion = data.question && typeof data.question === 'string';
+  const hasQuestion = data.content && typeof data.content === 'string';
   const hasAssertionReason = data.assertion && typeof data.assertion === 'string' && 
                             data.reason && typeof data.reason === 'string';
   const hasCta = data.cta && typeof data.cta === 'string';
@@ -227,6 +234,40 @@ function validateBeforeAfterFormat(data: any): ValidationResult {
     return {
       success: false,
       error: `Before/After format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
+/**
+ * Validates Challenge format structure (for health)
+ */
+function validateChallengeFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'setup', 'instructions', 'challenge_type', 'reveal', 'answer', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `Challenge format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  // Validate challenge_type is one of expected values
+  const validChallengeTypes = ['memory', 'visual', 'logic'];
+  if (!validChallengeTypes.includes(data.challenge_type)) {
+    return {
+      success: false,
+      error: `Challenge format challenge_type must be one of: ${validChallengeTypes.join(', ')}`
+    };
+  }
+
+  // For memory challenges, validate challenge_items array exists
+  if (data.challenge_type === 'memory' && (!data.challenge_items || !Array.isArray(data.challenge_items))) {
+    return {
+      success: false,
+      error: 'Memory challenge format requires challenge_items array'
     };
   }
 

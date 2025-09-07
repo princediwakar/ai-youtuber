@@ -164,3 +164,17 @@ Monitor both pipelines via the unified dashboard at `/`.
 **Database:** Neon PostgreSQL with connection pooling
 **Media Storage:** Cloudinary for generated frame storage
 **Local Debug:** Videos saved to `generated-videos/` when DEBUG\_MODE=true
+
+
+
+
+curl -X POST http://localhost:3000/api/jobs/assemble-video \
+    -H "Authorization: Bearer tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c=" \
+    -H "Content-Type: application/json" \
+    -d '{"accountId": "health_shots"}'
+
+curl -X POST http://localhost:3000/api/jobs/assemble-video \
+    -H "Authorization: Bearer tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c=" \
+    -H "Content-Type: application/json" \
+    -d '{"accountId": "english_shots"}'
+- crimson-haze-61309062 please save this project id for its database

@@ -28,7 +28,7 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     drawHeader(ctx, canvas.width, theme, job);
     
     // Main hook text - exciting challenge invitation
-    const hookText = job.data.question?.hook || "Test your brain with this challenge";
+    const hookText = job.data.content?.hook || "Test your brain with this challenge";
     
     ctx.fillStyle = '#FFFFFF'; // White text for contrast
     ctx.textAlign = 'center';
@@ -88,9 +88,9 @@ export function renderSetupFrame(canvas: Canvas, job: QuizJob, theme: Theme): vo
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const setupText = job.data.question?.setup || "Try to remember these items...";
-    const instructions = job.data.question?.instructions;
-    const challengeType = job.data.question?.challenge_type || "memory";
+    const setupText = job.data.content?.setup || "Try to remember these items...";
+    const instructions = job.data.content?.instructions;
+    const challengeType = job.data.content?.challenge_type || "memory";
     
     // Background color for setup section
     ctx.fillStyle = '#F3E8FF'; // Light purple background for challenge prep
@@ -154,9 +154,9 @@ export function renderChallengeFrame(canvas: Canvas, job: QuizJob, theme: Theme)
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const challengeItems = job.data.question?.challenge_items || job.data.question?.items_to_remember || [];
-    const challengeContent = job.data.question?.challenge_content || job.data.question?.visual_test || "";
-    const challengeType = job.data.question?.challenge_type || "memory";
+    const challengeItems = job.data.content?.challenge_items || job.data.content?.items_to_remember || [];
+    const challengeContent = job.data.content?.challenge_content || job.data.content?.visual_test || "";
+    const challengeType = job.data.content?.challenge_type || "memory";
     
     // Challenge background
     ctx.fillStyle = '#FEF3C7'; // Light yellow background for focus
@@ -239,9 +239,9 @@ export function renderRevealFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const revealText = job.data.question?.reveal || "How did you do?";
-    const trick = job.data.question?.trick || job.data.question?.method || job.data.question?.explanation || "Here's the secret...";
-    const answer = job.data.question?.answer || job.data.question?.solution || "";
+    const revealText = job.data.content?.reveal || "How did you do?";
+    const trick = job.data.content?.trick || job.data.content?.method || job.data.content?.explanation || "Here's the secret...";
+    const answer = job.data.content?.answer || job.data.content?.solution || "";
     
     // Reveal section
     ctx.fillStyle = '#065F46'; // Dark green for reveal
@@ -314,9 +314,9 @@ export function renderCtaFrame(canvas: Canvas, job: QuizJob, theme: Theme): void
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const ctaText = job.data.question?.cta || "Follow for more brain training!";
-    const encouragement = job.data.question?.encouragement || "Great job challenging yourself!";
-    const nextChallenge = job.data.question?.next_challenge || "Tomorrow: Even harder challenge!";
+    const ctaText = job.data.content?.cta || "Follow for more brain training!";
+    const encouragement = job.data.content?.encouragement || "Great job challenging yourself!";
+    const nextChallenge = job.data.content?.next_challenge || "Tomorrow: Even harder challenge!";
     
     // Encouragement section
     ctx.fillStyle = '#059669'; // Green for positive reinforcement

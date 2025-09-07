@@ -28,7 +28,7 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     drawHeader(ctx, canvas.width, theme, job);
     
     // Main hook text - compelling health benefit
-    const hookText = job.data.question?.hook || "This simple habit will transform your health";
+    const hookText = job.data.content?.hook || "This simple habit will transform your health";
     
     ctx.fillStyle = '#FFFFFF'; // White text for contrast
     ctx.textAlign = 'center';
@@ -75,9 +75,9 @@ export function renderActionFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const actionText = job.data.question?.action || "Here's what to do:";
-    const steps = job.data.question?.step_details || job.data.question?.instructions || [];
-    const stepsText = job.data.question?.steps;
+    const actionText = job.data.content?.action || "Here's what to do:";
+    const steps = job.data.content?.step_details || job.data.content?.instructions || [];
+    const stepsText = job.data.content?.steps;
     
     // Background color for action section
     ctx.fillStyle = '#EFF6FF'; // Light blue background
@@ -132,7 +132,7 @@ export function renderActionFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
         });
     } else {
         // Single instruction text
-        const actionContent = job.data.question?.detailed_action || actionText;
+        const actionContent = job.data.content?.detailed_action || actionText;
         ctx.textAlign = 'center';
         const lines = wrapText(ctx, actionContent, textMaxWidth);
         const lineHeight = 50 * 1.3;
@@ -151,9 +151,9 @@ export function renderResultFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const resultText = job.data.question?.result || job.data.question?.why_it_works || "Here's why it works:";
-    const science = job.data.question?.science || job.data.question?.explanation || job.data.question?.answer || "Scientific backing";
-    const cta = job.data.question?.cta || "Follow for more health tips!";
+    const resultText = job.data.content?.result || job.data.content?.why_it_works || "Here's why it works:";
+    const science = job.data.content?.science || job.data.content?.explanation || job.data.content?.answer || "Scientific backing";
+    const cta = job.data.content?.cta || "Follow for more health tips!";
     
     // Main result explanation
     ctx.fillStyle = theme.text.primary;

@@ -323,7 +323,7 @@ async function addVideoToPlaylist(
 function generateVideoMetadata(job: QuizJob, playlistId: string | undefined, accountId: string) {
   console.log(`[Job ${job.id}] Generating metadata for accountId: ${accountId}, persona: ${job.persona}`);
   
-  const contentData = job.data.content || job.data.question; // Support both structures
+  const contentData = job.data.content || job.data.content; // Support both structures
   const topic_display_name = job.topic_display_name || job.data.topic_display_name || 'Quiz';
   
   console.log(`[Job ${job.id}] Content data exists: ${!!contentData}, Topic: ${topic_display_name}`);

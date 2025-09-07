@@ -318,14 +318,15 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   );
 
   // Normalize job data structure for different formats
-  const questionData = job.data.question || job.data.content || {};
+  const questionData = job.data.content || job.data.content || {};
   
-  const durations = [
-    getFrameDuration(questionData, 1),
-    getFrameDuration(questionData, 2),
-    getFrameDuration(questionData, 3),
-    getFrameDuration(questionData, 4),
-  ].map(d => d || 4); // Ensure no undefined values with 4s fallback
+  // Determine actual frame count from frameUrls length
+  const actualFrameCount = frameUrls.length;
+  
+  // Generate durations array based on actual frame count
+  const durations = Array.from({ length: actualFrameCount }, (_, index) => {
+    return getFrameDuration(questionData, index + 1) || 4;
+  });
 
   // Create individual video clips from static frames
   const clipPromises = framePaths.map(async (framePath, index) => {
@@ -443,18 +444,30 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
       const hookText = questionData.hook || questionData.question || '';
       const optionsText = questionData.options ? Object.values(questionData.options).join(" ") : '';
       const textLength = hookText.length + optionsText.length;
-      return Math.max(4, Math.min(7, Math.ceil(textLength / 15)));
+      return Math.max(2, Math.min(7, Math.ceil(textLength / 20)));
       
-    case 2: // Second Frame (Action/Answer) 
-      const secondText = questionData.action || questionData.before || questionData.wrong || questionData.answer || '';
-      return Math.max(3, Math.min(5, Math.ceil(secondText.length / 20)));
+    case 2: // Second Frame (varies by format)
+      // MCQ: question+options, Common Mistake: mistake, Quick Fix: before, Quick Tip: action, Before/After: before
+      const secondText = questionData.question || questionData.mistake || questionData.before || questionData.action || questionData.answer || '';
+      const secondOptions = questionData.options ? Object.values(questionData.options).join(" ") : '';
+      const secondLength = secondText.length + secondOptions.length;
+      return Math.max(3, Math.min(6, Math.ceil(secondLength / 15)));
       
-    case 3: // Third Frame (Result/Explanation)
-      const thirdText = questionData.result || questionData.after || questionData.right || questionData.explanation || '';
-      return Math.max(3, Math.min(6, Math.ceil(thirdText.length / 15)));
+    case 3: // Third Frame (varies by format)
+      // MCQ: answer, Common Mistake: correct, Quick Fix: after, Quick Tip: result, Before/After: after
+      const thirdText = questionData.answer || questionData.correct || questionData.after || questionData.result || questionData.right || '';
+      return Math.max(3, Math.min(5, Math.ceil(thirdText.length / 15)));
       
-    case 4: // Fourth Frame (CTA)
-      return 3; // Standard duration for call-to-action
+    case 4: // Fourth Frame (if exists)
+      // MCQ: explanation, Common Mistake: practice, Before/After: result/proof
+      const fourthText = questionData.explanation || questionData.practice || questionData.result || '';
+      if (fourthText.length > 0) {
+        return Math.max(3, Math.min(6, Math.ceil(fourthText.length / 15)));
+      }
+      return 3; // Standard duration for CTA or final frame
+      
+    case 5: // Fifth Frame (if exists - rare, but possible for future formats)
+      return 3; // Standard duration for additional frames
       
     default:
       return 4; // Fallback

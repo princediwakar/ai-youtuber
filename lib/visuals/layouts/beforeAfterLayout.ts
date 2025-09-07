@@ -28,7 +28,7 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     drawHeader(ctx, canvas.width, theme, job);
     
     // Main hook text - compelling question about health consequences
-    const hookText = job.data.question?.hook || "What happens to your health when you...";
+    const hookText = job.data.content?.hook || "What happens to your health when you...";
     
     ctx.fillStyle = '#FFFFFF'; // White text for contrast
     ctx.textAlign = 'center';
@@ -72,8 +72,8 @@ export function renderBeforeFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const beforeText = job.data.question?.before || job.data.question?.bad_habit || "Most people damage their health by...";
-    const consequences = job.data.question?.negative_effects || job.data.question?.damage || "Negative health consequences";
+    const beforeText = job.data.content?.before || job.data.content?.bad_habit || "Most people damage their health by...";
+    const consequences = job.data.content?.negative_effects || job.data.content?.damage || "Negative health consequences";
     
     // Background color for negative/before section
     ctx.fillStyle = '#FEF2F2'; // Light red background for negative effects
@@ -146,8 +146,8 @@ export function renderAfterFrame(canvas: Canvas, job: QuizJob, theme: Theme): vo
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const afterText = job.data.question?.after || job.data.question?.good_habit || "But if you do THIS instead...";
-    const benefits = job.data.question?.positive_effects || job.data.question?.benefits || "Positive health outcomes";
+    const afterText = job.data.content?.after || job.data.content?.good_habit || "But if you do THIS instead...";
+    const benefits = job.data.content?.positive_effects || job.data.content?.benefits || "Positive health outcomes";
     
     // Background color for positive/after section
     ctx.fillStyle = '#ECFDF5'; // Light green background for positive effects
@@ -217,10 +217,10 @@ export function renderProofFrame(canvas: Canvas, job: QuizJob, theme: Theme): vo
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const proofText = job.data.question?.proof || job.data.question?.science || "Here's the scientific proof:";
-    const evidence = job.data.question?.evidence || job.data.question?.research || job.data.question?.explanation || "Research shows...";
-    const actionText = job.data.question?.immediate_action || job.data.question?.next_step || "Start today:";
-    const cta = job.data.question?.cta || "Follow for more health insights!";
+    const proofText = job.data.content?.proof || job.data.content?.science || "Here's the scientific proof:";
+    const evidence = job.data.content?.evidence || job.data.content?.research || job.data.content?.explanation || "Research shows...";
+    const actionText = job.data.content?.immediate_action || job.data.content?.next_step || "Start today:";
+    const cta = job.data.content?.cta || "Follow for more health insights!";
     
     // Science section
     ctx.fillStyle = '#1E40AF'; // Blue for science/authority
