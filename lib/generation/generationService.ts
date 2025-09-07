@@ -22,9 +22,9 @@ export interface GenerationJobConfig extends JobConfig {
  * Maps personas to their appropriate layout types
  */
 const PERSONA_LAYOUT_MAP: Record<string, LayoutType[]> = {
-  'english_vocab_builder': ['mcq'],
-  'brain_health_tips': ['quick_tip', 'before_after'],
-  'eye_health_tips': ['quick_tip', 'before_after'],
+  'english_vocab_builder': ['mcq', 'common_mistake', 'quick_fix', 'usage_demo'],
+  'brain_health_tips': ['mcq', 'quick_tip', 'before_after', 'challenge'],
+  'eye_health_tips': ['mcq', 'quick_tip', 'before_after', 'challenge'],
 };
 
 /**

@@ -449,12 +449,12 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
       const secondText = questionData.question || questionData.mistake || questionData.before || questionData.action || questionData.answer || '';
       const secondOptions = questionData.options ? Object.values(questionData.options).join(" ") : '';
       const secondLength = secondText.length + secondOptions.length;
-      return Math.max(3, Math.min(6, Math.ceil(secondLength / 15)));
+      return Math.max(4, Math.min(6, Math.ceil(secondLength / 15)));
       
     case 3: // Third Frame (varies by format)
       // MCQ: answer, Common Mistake: correct, Quick Fix: after, Quick Tip: result, Before/After: after
       const thirdText = questionData.answer || questionData.correct || questionData.after || questionData.result || questionData.right || '';
-      return Math.max(3, Math.min(5, Math.ceil(thirdText.length / 15)));
+      return Math.max(4, Math.min(5, Math.ceil(thirdText.length / 15)));
       
     case 4: // Fourth Frame (if exists)
       // MCQ: explanation, Common Mistake: practice, Before/After: result/proof

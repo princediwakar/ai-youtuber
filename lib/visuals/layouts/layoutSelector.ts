@@ -5,8 +5,12 @@ import { Theme } from '@/lib/visuals/themes';
 import * as mcqLayout from './mcqLayout';
 import * as beforeAfterLayout from './beforeAfterLayout';  
 import * as quickTipLayout from './quickTipLayout';
+import * as commonMistakeLayout from './commonMistakeLayout';
+import * as quickFixLayout from './quickFixLayout';
+import * as usageDemoLayout from './usageDemoLayout';
+import * as challengeLayout from './challengeLayout';
 
-export type LayoutType = 'mcq' | 'before_after' | 'quick_tip';
+export type LayoutType = 'mcq' | 'before_after' | 'quick_tip' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'challenge';
 
 export interface LayoutDefinition {
   type: LayoutType;
@@ -16,7 +20,7 @@ export interface LayoutDefinition {
   };
 }
 
-// Simple layout definitions based on the working mcqLayout pattern
+// Layout definitions for all 6 supported formats
 export const layouts: Record<LayoutType, LayoutDefinition> = {
   mcq: {
     type: 'mcq',
@@ -47,11 +51,73 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
       result: quickTipLayout.renderResultFrame,
     },
   },
+  common_mistake: {
+    type: 'common_mistake',
+    frames: ['hook', 'mistake', 'correct', 'practice'],
+    renderers: {
+      hook: commonMistakeLayout.renderHookFrame,
+      mistake: commonMistakeLayout.renderMistakeFrame,
+      correct: commonMistakeLayout.renderCorrectFrame,
+      practice: commonMistakeLayout.renderPracticeFrame,
+    },
+  },
+  quick_fix: {
+    type: 'quick_fix',
+    frames: ['hook', 'basic_word', 'advanced_word'],
+    renderers: {
+      hook: quickFixLayout.renderHookFrame,
+      basic_word: quickFixLayout.renderBasicWordFrame,
+      advanced_word: quickFixLayout.renderAdvancedWordFrame,
+    },
+  },
+  usage_demo: {
+    type: 'usage_demo',
+    frames: ['hook', 'wrong_example', 'right_example', 'practice'],
+    renderers: {
+      hook: usageDemoLayout.renderHookFrame,
+      wrong_example: usageDemoLayout.renderWrongExampleFrame,
+      right_example: usageDemoLayout.renderRightExampleFrame,
+      practice: usageDemoLayout.renderPracticeFrame,
+    },
+  },
+  challenge: {
+    type: 'challenge',
+    frames: ['hook', 'setup', 'challenge', 'reveal', 'cta'],
+    renderers: {
+      hook: challengeLayout.renderHookFrame,
+      setup: challengeLayout.renderSetupFrame,
+      challenge: challengeLayout.renderChallengeFrame,
+      reveal: challengeLayout.renderRevealFrame,
+      cta: challengeLayout.renderCtaFrame,
+    },
+  },
 };
 
 // Detect layout type from content structure
 export function detectLayoutType(contentData: any): LayoutType {
   if (!contentData) return 'mcq';
+  
+  // Common mistake format: has hook, mistake, correct, practice
+  if (contentData.hook && contentData.mistake && contentData.correct && contentData.practice) {
+    return 'common_mistake';
+  }
+  
+  // Quick fix format: has hook, basic_word, advanced_word
+  if (contentData.hook && contentData.basic_word && contentData.advanced_word) {
+    return 'quick_fix';
+  }
+  
+  // Usage demo format: has hook, target_word, wrong_example, right_example, practice
+  if (contentData.hook && contentData.target_word && contentData.wrong_example && 
+      contentData.right_example && contentData.practice) {
+    return 'usage_demo';
+  }
+  
+  // Challenge format: has hook, setup, challenge_type, reveal, answer
+  if (contentData.hook && contentData.setup && contentData.challenge_type && 
+      contentData.reveal && contentData.answer) {
+    return 'challenge';
+  }
   
   // Quick tip format: has hook, action, result
   if (contentData.hook && contentData.action && contentData.result) {

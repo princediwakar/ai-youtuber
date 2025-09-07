@@ -31,6 +31,7 @@ export interface Question {
   // Quick Fix Format
   basic_word?: string;
   advanced_word?: string;
+  usage_example?: string;
   before?: string;
   after?: string;
   context?: string;

@@ -25,6 +25,7 @@ interface AccountSchedules {
  */
 const englishGenerationPattern: HourlySchedule = {
   6: ['english_vocab_builder'],   // Morning generation for daily uploads
+  14: ['english_vocab_builder'],   // Morning generation for daily uploads
 };
 
 const englishUploadPattern: HourlySchedule = {
