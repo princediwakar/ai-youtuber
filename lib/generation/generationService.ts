@@ -4,7 +4,7 @@ import { MasterPersonas } from '@/lib/personas';
 import { getAccountConfig } from '@/lib/accounts';
 import { generatePrompt, type JobConfig } from './promptGenerator';
 import { parseAndValidateResponse, generateContentHash } from './contentValidator';
-import { selectFormatForContent, getFormat, type FormatSelectionContext, type FormatType } from '@/lib/formats';
+import { LayoutType } from '@/lib/visuals/layouts/layoutSelector';
 
 const deepseekClient = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
@@ -12,16 +12,41 @@ const deepseekClient = new OpenAI({
 });
 
 export interface GenerationJobConfig extends JobConfig {
-  // Format selection options
-  preferredFormat?: FormatType;
-  previousFormats?: FormatType[];
+  // Layout selection options
+  preferredLayout?: LayoutType;
+  previousLayouts?: LayoutType[];
   targetEngagement?: 'educational' | 'entertaining' | 'interactive' | 'practical';
+}
+
+/**
+ * Maps personas to their appropriate layout types
+ */
+const PERSONA_LAYOUT_MAP: Record<string, LayoutType[]> = {
+  'english_vocab_builder': ['mcq'],
+  'brain_health_tips': ['quick_tip', 'before_after'],
+  'eye_health_tips': ['quick_tip', 'before_after'],
+};
+
+/**
+ * Selects an appropriate layout for the given persona
+ */
+function selectLayoutForPersona(persona: string, preferredLayout?: LayoutType): LayoutType {
+  const availableLayouts = PERSONA_LAYOUT_MAP[persona] || ['mcq'];
+  
+  // If a preferred layout is specified and it's valid for this persona, use it
+  if (preferredLayout && availableLayouts.includes(preferredLayout)) {
+    return preferredLayout;
+  }
+  
+  // Otherwise, randomly select from available layouts for this persona
+  const randomIndex = Math.floor(Math.random() * availableLayouts.length);
+  return availableLayouts[randomIndex];
 }
 
 export interface GenerationResult {
   id: string;
   accountId: string;
-  formatType: FormatType;
+  layoutType: LayoutType;
   variationMarkers: {
     timeMarker: string;
     tokenMarker: string;
@@ -45,30 +70,16 @@ export async function generateAndStoreContent(
     // Get account configuration using the provided accountId
     const account = await getAccountConfig(jobConfig.accountId);
     
-    // Select format for this content
-    const formatSelectionContext: FormatSelectionContext = {
-      accountId: jobConfig.accountId,
-      persona: jobConfig.persona,
-      topic: jobConfig.topic,
-      previousFormats: jobConfig.previousFormats,
-      targetEngagement: jobConfig.targetEngagement
-    };
+    // Select appropriate layout for this persona
+    const selectedLayout: LayoutType = selectLayoutForPersona(jobConfig.persona, jobConfig.preferredLayout);
     
-    const selectedFormat = jobConfig.preferredFormat || selectFormatForContent(formatSelectionContext);
-    const formatDefinition = getFormat(selectedFormat, jobConfig.accountId, jobConfig.persona);
-    
-    if (!formatDefinition) {
-      console.warn(`Format ${selectedFormat} not found for account ${jobConfig.accountId}, falling back to MCQ`);
-    }
-
-    // Create enhanced job config with format information
+    // Create enhanced job config with layout information
     const enhancedJobConfig: GenerationJobConfig = {
       ...jobConfig,
-      preferredFormat: selectedFormat,
-      formatDefinition
+      preferredLayout: selectedLayout,
     };
     
-    // Generate format-aware prompt and get variation markers
+    // Generate prompt and get variation markers
     const promptResult = await generatePrompt(enhancedJobConfig);
     const { timeMarker, tokenMarker } = promptResult.markers;
 
@@ -86,8 +97,8 @@ export async function generateAndStoreContent(
       throw new Error('AI returned no content.');
     }
 
-    // Parse and validate the response with format context
-    const validationResult = parseAndValidateResponse(content, jobConfig.persona, selectedFormat);
+    // Parse and validate the response
+    const validationResult = parseAndValidateResponse(content, jobConfig.persona, selectedLayout);
     if (!validationResult.success || !validationResult.data) {
       throw new Error(`Validation failed: ${validationResult.error}`);
     }
@@ -99,12 +110,8 @@ export async function generateAndStoreContent(
     const personaData = MasterPersonas[jobConfig.persona];
     const topicData = personaData?.subCategories?.find(sub => sub.key === topicKey);
 
-    // Create frame sequence based on format
-    const frameSequence = formatDefinition?.frames.map(frame => ({
-      type: frame.type,
-      title: frame.title,
-      duration: frame.duration
-    })) || [];
+    // Frame sequence will be determined by layout detection in frameService
+    const frameSequence: any[] = [];
 
     const jobPayload = {
       persona: jobConfig.persona,
@@ -118,19 +125,18 @@ export async function generateAndStoreContent(
       status: 'frames_pending',
       account_id: account.id,
       
-      // Format tracking fields
-      format_type: selectedFormat,
+      // Layout tracking fields
+      format_type: selectedLayout, // Keep for compatibility
       frame_sequence: frameSequence,
-      format_metadata: {
-        frameCount: formatDefinition?.frameCount || 5,
-        totalDuration: formatDefinition?.timing.totalDuration || 15,
-        formatVersion: '1.0',
-        selectedAt: Date.now()
+      layout_metadata: {
+        layoutType: selectedLayout,
+        detectedAtGeneration: true,
+        generatedAt: Date.now()
       },
       
       data: {
         content: contentData,
-        formatType: selectedFormat, // Also store in data for compatibility
+        layoutType: selectedLayout, // Store layout type for compatibility
         variation_markers: {
           time_marker: timeMarker,
           token_marker: tokenMarker,
@@ -142,12 +148,12 @@ export async function generateAndStoreContent(
 
     const jobId = await createQuizJob(jobPayload);
 
-    console.log(`[Job ${jobId}] ✅ Created ${account.name} ${selectedFormat} content for persona "${jobConfig.persona}" [${timeMarker}-${tokenMarker}]`);
+    console.log(`[Job ${jobId}] ✅ Created ${account.name} ${selectedLayout} content for persona "${jobConfig.persona}" [${timeMarker}-${tokenMarker}]`);
     
     return { 
       id: jobId, 
       accountId: account.id,
-      formatType: selectedFormat,
+      layoutType: selectedLayout,
       variationMarkers: { timeMarker, tokenMarker } 
     };
 

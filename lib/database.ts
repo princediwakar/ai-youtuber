@@ -41,7 +41,7 @@ export async function query(text: string, params?: any[]): Promise<any> {
  * UPDATED & FIXED: Can now filter pending jobs by an array of personas.
  * The SQL parameter indexing has been corrected for robust filtering.
  */
-export async function getPendingJobs(step: number, limit: number = 10, personas?: string[]): Promise<QuizJob[]> {
+export async function getPendingJobs(step: number, limit: number = 10, personas?: string[], accountId?: string): Promise<QuizJob[]> {
   const client = createClient();
   try {
     await client.connect();
@@ -59,6 +59,10 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
     if (personas && personas.length > 0) {
       query += ` AND persona = ANY($${paramIndex++}::text[])`;
       values.push(personas);
+    }
+    if (accountId) {
+      query += ` AND account_id = $${paramIndex++}`;
+      values.push(accountId);
     }
     
     query += ` ORDER BY created_at ASC LIMIT $${paramIndex++}`;

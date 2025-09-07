@@ -14,19 +14,19 @@ export interface ValidationResult {
 /**
  * Parse and validate AI response based on content type and format
  */
-export function parseAndValidateResponse(content: string, persona: string, format?: string): ValidationResult {
+export function parseAndValidateResponse(content: string, persona: string, layout?: string): ValidationResult {
   try {
     const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
     const data = JSON.parse(cleanedContent);
 
     // Health content validation (supports both true_false and multiple_choice)
     if (persona === 'brain_health_tips' || persona === 'eye_health_tips') {
-      return validateHealthContent(data, format);
+      return validateHealthContent(data, layout);
     }
 
     // English quiz validation
     if (persona === 'english_vocab_builder') {
-      return validateEnglishContent(data, format);
+      return validateEnglishContent(data, layout);
     }
 
     return {

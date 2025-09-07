@@ -10,7 +10,9 @@ import {
     applyShadow,
     applyFillStyle,
     clearShadow,
-    measureQuestionContent
+    measureQuestionContent,
+    calculateOptimalLayout,
+    calculateDynamicPositions
 } from '../drawingUtils';
 
 /**
@@ -23,48 +25,64 @@ import {
 export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
     const ctx = canvas.getContext('2d');
     drawBackground(ctx, canvas.width, canvas.height, theme);
-    
-    // Draw header with persona branding
     drawHeader(ctx, canvas.width, theme, job);
     
-    // Main hook text - compelling health benefit
     const hookText = job.data.content?.hook || "This simple habit will transform your health";
     
-    ctx.fillStyle = '#FFFFFF'; // White text for contrast
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    // Content area dimensions
+    const HEADER_HEIGHT = 160;
+    const FOOTER_HEIGHT = 140;
+    const contentY = HEADER_HEIGHT + 40;
+    const contentHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT - 80;
+    const textMaxWidth = canvas.width - 100;
     
-    // Large, bold text for maximum impact
-    const textMaxWidth = canvas.width - 120;
-    ctx.font = `900 75px ${theme.fontFamily}`; // Extra bold weight
-    const lines = wrapText(ctx, hookText, textMaxWidth);
-    
-    const lineHeight = 75 * 1.2;
-    const totalTextHeight = lines.length * lineHeight;
-    const startY = (canvas.height - totalTextHeight) / 2;
-    
-    lines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight) + (lineHeight / 2));
-    });
-    
-    // Add health icon - heart or brain symbol
-    ctx.fillStyle = '#EF4444'; // Health red color
-    const iconSize = 80;
-    const iconX = canvas.width / 2 - iconSize / 2;
-    const iconY = startY - 120;
+    // Health icon at top
+    ctx.fillStyle = Array.isArray(theme.button.background) ? theme.button.background[0] : theme.button.background;
+    const iconSize = 100;
+    const iconX = canvas.width / 2;
+    const iconY = contentY + 60;
     
     // Draw heart icon
     ctx.beginPath();
-    ctx.arc(iconX + iconSize * 0.3, iconY + iconSize * 0.3, iconSize * 0.15, 0, Math.PI * 2);
-    ctx.arc(iconX + iconSize * 0.7, iconY + iconSize * 0.3, iconSize * 0.15, 0, Math.PI * 2);
+    ctx.arc(iconX - iconSize * 0.2, iconY - iconSize * 0.1, iconSize * 0.15, 0, Math.PI * 2);
+    ctx.arc(iconX + iconSize * 0.2, iconY - iconSize * 0.1, iconSize * 0.15, 0, Math.PI * 2);
     ctx.fill();
     
     ctx.beginPath();
-    ctx.moveTo(iconX + iconSize * 0.5, iconY + iconSize * 0.9);
-    ctx.lineTo(iconX + iconSize * 0.1, iconY + iconSize * 0.5);
-    ctx.lineTo(iconX + iconSize * 0.9, iconY + iconSize * 0.5);
+    ctx.moveTo(iconX, iconY + iconSize * 0.3);
+    ctx.lineTo(iconX - iconSize * 0.35, iconY - iconSize * 0.05);
+    ctx.lineTo(iconX + iconSize * 0.35, iconY - iconSize * 0.05);
     ctx.closePath();
     ctx.fill();
+    
+    // Hook text below icon
+    const textY = iconY + iconSize / 2 + 60;
+    const availableHeightForText = contentHeight - (textY - contentY) - 40;
+    
+    // Measure and fit text dynamically
+    const measurement = measureQuestionContent(
+        ctx, 
+        hookText, 
+        textMaxWidth, 
+        theme.fontFamily, 
+        60,  // Start font size
+        32,  // Min font size
+        availableHeightForText
+    );
+    
+    // Draw hook text centered
+    ctx.fillStyle = theme.text.primary;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.font = `900 ${measurement.fontSize}px ${theme.fontFamily}`;
+    
+    const totalTextHeight = measurement.lines.length * measurement.fontSize * 1.2;
+    const textStartY = textY + (availableHeightForText - totalTextHeight) / 2;
+    
+    measurement.lines.forEach((line, index) => {
+        const lineY = textStartY + (index * measurement.fontSize * 1.2);
+        ctx.fillText(line, canvas.width / 2, lineY);
+    });
     
     drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
@@ -79,134 +97,162 @@ export function renderActionFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     const steps = job.data.content?.step_details || job.data.content?.instructions || [];
     const stepsText = job.data.content?.steps;
     
-    // Background color for action section
-    ctx.fillStyle = '#EFF6FF'; // Light blue background
-    const bgHeight = canvas.height - 200; // Leave space for header and footer
-    drawRoundRect(ctx, 40, 100, canvas.width - 80, bgHeight - 100, 20);
-    
-    // "Here's what to do:" label
-    ctx.fillStyle = '#1D4ED8'; // Blue color for action
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.font = `bold 50px ${theme.fontFamily}`;
-    
-    // Handle both string and array for action text
+    // Use MCQ-style dynamic layout calculation
     const displayActionText = Array.isArray(stepsText) ? stepsText.join(' ') : actionText;
-    ctx.fillText(displayActionText, canvas.width / 2, 140);
+    const contentForMeasurement = Array.isArray(steps) && steps.length > 0 
+        ? steps.join('\n') 
+        : (job.data.content?.detailed_action || displayActionText);
     
-    // Action steps or main instruction
-    ctx.fillStyle = '#1E40AF'; // Darker blue for content
-    ctx.textAlign = 'left';
-    ctx.font = `bold 45px ${theme.fontFamily}`;
+    const measurements = calculateOptimalLayout(
+        ctx, 
+        contentForMeasurement, 
+        {}, 
+        canvas.width, 
+        canvas.height, 
+        theme.fontFamily
+    );
     
-    let currentY = 220;
-    const textMaxWidth = canvas.width - 160;
+    const positions = calculateDynamicPositions(measurements, canvas.height);
+    
+    // Content area with clean layout (no background box)
+    const HEADER_HEIGHT = 180;
+    const FOOTER_HEIGHT = 180;
+    const contentY = HEADER_HEIGHT + 40;
+    const contentHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT - 80;
+    const textMaxWidth = canvas.width - 100;
+    
+    // Start directly with content (no badge/header)
+    const stepsY = contentY;
+    const availableHeight = contentHeight;
     
     if (Array.isArray(steps) && steps.length > 0) {
-        // If we have step-by-step instructions
-        steps.slice(0, 4).forEach((step, index) => {
-            // Step number
-            ctx.fillStyle = '#3B82F6';
-            ctx.textAlign = 'center';
-            const stepNumX = 100;
-            const stepNumY = currentY;
-            const stepSize = 40;
-            
-            drawRoundRect(ctx, stepNumX - stepSize/2, stepNumY - stepSize/2, stepSize, stepSize, stepSize/2);
-            
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = `bold 25px ${theme.fontFamily}`;
-            ctx.fillText((index + 1).toString(), stepNumX, stepNumY + 5);
-            
-            // Step text
-            ctx.fillStyle = '#1E40AF';
-            ctx.textAlign = 'left';
-            ctx.font = `600 40px ${theme.fontFamily}`;
-            
-            const stepLines = wrapText(ctx, step, textMaxWidth - 120);
-            stepLines.forEach((line, lineIndex) => {
-                ctx.fillText(line, 140, stepNumY - 15 + (lineIndex * 45));
-            });
-            
-            currentY += Math.max(60, stepLines.length * 45 + 20);
+        // Step-by-step instructions with dynamic sizing
+        let currentY = stepsY;
+        const maxSteps = Math.min(4, steps.length);
+        const stepHeight = Math.max(80, Math.min(120, (availableHeight - (maxSteps * 15)) / maxSteps));
+        
+        steps.slice(0, maxSteps).forEach((step, index) => {
+            if (currentY + stepHeight <= contentY + contentHeight - 40) {
+                // Step number circle
+                ctx.fillStyle = Array.isArray(theme.feedback.correct) ? theme.feedback.correct[0] : theme.feedback.correct;
+                const stepNumX = 80;
+                const stepNumY = currentY + 30;
+                const stepSize = 40;
+                
+                ctx.beginPath();
+                ctx.arc(stepNumX, stepNumY, stepSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = theme.text.onAccent;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = `bold ${Math.min(24, stepSize * 0.6)}px ${theme.fontFamily}`;
+                ctx.fillText((index + 1).toString(), stepNumX, stepNumY);
+                
+                // Step text with dynamic sizing
+                const stepTextHeight = stepHeight - 20;
+                const stepMeasurement = measureQuestionContent(
+                    ctx,
+                    step,
+                    textMaxWidth - 120,
+                    theme.fontFamily,
+                    measurements.optionsFontSize || 36,
+                    28,
+                    stepTextHeight
+                );
+                
+                ctx.fillStyle = theme.text.primary;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.font = `600 ${stepMeasurement.fontSize}px ${theme.fontFamily}`;
+                
+                const stepTextStartY = currentY + 10;
+                stepMeasurement.lines.forEach((line, lineIndex) => {
+                    if (stepTextStartY + (lineIndex * stepMeasurement.fontSize * 1.2) < currentY + stepHeight - 10) {
+                        ctx.fillText(line, stepNumX + 50, stepTextStartY + (lineIndex * stepMeasurement.fontSize * 1.2));
+                    }
+                });
+                
+                currentY += stepHeight + 20;
+            }
         });
     } else {
-        // Single instruction text
-        const actionContent = job.data.content?.detailed_action || actionText;
-        ctx.textAlign = 'center';
-        const lines = wrapText(ctx, actionContent, textMaxWidth);
-        const lineHeight = 50 * 1.3;
+        // Single instruction text with proper measurement (like MCQ explanation style)
+        const actionContent = job.data.content?.detailed_action || displayActionText;
+        const textMeasurement = measureQuestionContent(
+            ctx,
+            actionContent,
+            textMaxWidth,
+            theme.fontFamily,
+            measurements.questionFontSize || 50,
+            32,
+            availableHeight
+        );
         
-        lines.forEach((line, index) => {
-            ctx.fillText(line, canvas.width / 2, currentY + (index * lineHeight));
+        ctx.fillStyle = theme.text.primary;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = `600 ${textMeasurement.fontSize}px ${theme.fontFamily}`;
+        
+        const totalTextHeight = textMeasurement.lines.length * textMeasurement.fontSize * 1.2;
+        const textStartY = stepsY + (availableHeight - totalTextHeight) / 2;
+        
+        textMeasurement.lines.forEach((line, index) => {
+            ctx.fillText(line, canvas.width / 2, textStartY + (index * textMeasurement.fontSize * 1.2));
         });
     }
     
     drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
-// Frame 3: Result Frame - "Why it works + science behind it"
+// Frame 3: Result Frame - "Why it works + science behind it" (MCQ explanation style)
 export function renderResultFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
     const ctx = canvas.getContext('2d');
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
     const resultText = job.data.content?.result || job.data.content?.why_it_works || "Here's why it works:";
-    const science = job.data.content?.science || job.data.content?.explanation || job.data.content?.answer || "Scientific backing";
-    const cta = job.data.content?.cta || "Follow for more health tips!";
+    const science = job.data.content?.science || job.data.content?.explanation || job.data.content?.answer || "";
     
-    // Main result explanation
+    // Combine both texts for single explanation display (like MCQ)
+    const fullExplanation = science && science !== "Scientific backing" && science !== resultText
+        ? `${resultText}\n\n${science}`
+        : resultText;
+    
+    // Calculate dynamic layout like MCQ explanation
+    const textMaxWidth = canvas.width - 160;
+    const textStartX = (canvas.width - textMaxWidth) / 2;
+    const HEADER_HEIGHT = 180;
+    const FOOTER_HEIGHT = 180;
+    const availableHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT;
+    
+    // Measure explanation content with larger starting font
+    const measurement = measureQuestionContent(
+        ctx, 
+        fullExplanation, 
+        textMaxWidth, 
+        theme.fontFamily, 
+        60,  // Start with larger font for explanations
+        32,  // Higher minimum readable size
+        availableHeight
+    );
+    
+    // Center the explanation vertically, but ensure it doesn't overlap footer
+    const unusedSpace = Math.max(0, availableHeight - measurement.height);
+    const idealStartY = HEADER_HEIGHT + (unusedSpace / 2);
+    const maxStartY = canvas.height - FOOTER_HEIGHT - measurement.height - 20; // 20px safety margin
+    const startY = Math.min(idealStartY, maxStartY);
+    
     ctx.fillStyle = theme.text.primary;
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.font = `bold 50px ${theme.fontFamily}`;
+    ctx.font = `600 ${measurement.fontSize}px ${theme.fontFamily}`;
     
-    const resultLines = wrapText(ctx, resultText, canvas.width - 120);
-    let currentY = 140;
-    
-    resultLines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, currentY + (index * 60));
+    // Draw explanation text (same style as MCQ explanation)
+    measurement.lines.forEach((line, index) => {
+        const lineHeight = measurement.fontSize * 1.4;
+        ctx.fillText(line, textStartX, startY + index * lineHeight);
     });
-    currentY += resultLines.length * 60 + 40;
-    
-    // Scientific explanation with background
-    ctx.fillStyle = '#F0FDF4'; // Light green background
-    const scienceBgHeight = 200;
-    drawRoundRect(ctx, 40, currentY, canvas.width - 80, scienceBgHeight, 15);
-    
-    ctx.fillStyle = '#059669'; // Green for science
-    ctx.font = `600 42px ${theme.fontFamily}`;
-    
-    const scienceLines = wrapText(ctx, science, canvas.width - 160);
-    const scienceStartY = currentY + 30;
-    
-    scienceLines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, scienceStartY + (index * 50));
-    });
-    currentY += scienceBgHeight + 40;
-    
-    // Add CTA button
-    const buttonWidth = 450;
-    const buttonHeight = 70;
-    const buttonX = (canvas.width - buttonWidth) / 2;
-    const buttonY = currentY;
-    
-    // Button shadow
-    applyShadow(ctx, 'rgba(0, 0, 0, 0.3)', 10, 0, 4);
-    
-    // Button background - health theme gradient
-    const gradient = ctx.createLinearGradient(buttonX, buttonY, buttonX, buttonY + buttonHeight);
-    gradient.addColorStop(0, '#059669');
-    gradient.addColorStop(1, '#047857');
-    ctx.fillStyle = gradient;
-    
-    drawRoundRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, 15);
-    clearShadow(ctx);
-    
-    // Button text
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = `bold 32px ${theme.fontFamily}`;
-    ctx.fillText(cta, canvas.width / 2, buttonY + buttonHeight / 2 + 5);
     
     drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }

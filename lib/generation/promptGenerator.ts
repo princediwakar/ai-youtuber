@@ -22,6 +22,8 @@ export interface JobConfig {
   // Format support
   preferredFormat?: string;
   formatDefinition?: any;
+  // Layout support
+  preferredLayout?: string;
 }
 
 export interface GeneratedPrompt {
@@ -49,12 +51,13 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
     topic,
     topicData,
     markers,
-    format: jobConfig.preferredFormat,
+    format: jobConfig.preferredFormat || jobConfig.preferredLayout,
     formatDefinition: jobConfig.formatDefinition
   };
   
-  // Use format-aware prompt generation for new formats
-  if (jobConfig.preferredFormat && jobConfig.preferredFormat !== 'mcq') {
+  // Use format-aware prompt generation for new formats or layouts
+  if ((jobConfig.preferredFormat && jobConfig.preferredFormat !== 'mcq') || 
+      (jobConfig.preferredLayout && jobConfig.preferredLayout !== 'mcq')) {
     prompt = generateFormatPrompt(promptConfig);
     // For new formats, we don't need the legacy JSON formatting
     return { prompt, markers };

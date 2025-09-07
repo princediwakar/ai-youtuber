@@ -1,16 +1,14 @@
-import { Canvas, CanvasRenderingContext2D } from 'canvas';
+import { Canvas } from 'canvas';
 import { QuizJob } from '@/lib/types';
 import { Theme } from '@/lib/visuals/themes';
 import { 
     drawHeader, 
     drawBackground,
     drawFooter, 
-    wrapText, 
     drawRoundRect,
-    applyShadow,
     applyFillStyle,
-    clearShadow,
-    measureQuestionContent
+    measureQuestionContent,
+    calculateOptimalLayout
 } from '../drawingUtils';
 
 /**
@@ -23,45 +21,52 @@ import {
 export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
     const ctx = canvas.getContext('2d');
     drawBackground(ctx, canvas.width, canvas.height, theme);
-    
-    // Draw header with persona branding
     drawHeader(ctx, canvas.width, theme, job);
     
-    // Main hook text - compelling question about health consequences
     const hookText = job.data.content?.hook || "What happens to your health when you...";
     
-    ctx.fillStyle = '#FFFFFF'; // White text for contrast
+    // Content area dimensions
+    const HEADER_HEIGHT = 160;
+    const FOOTER_HEIGHT = 140;
+    const contentY = HEADER_HEIGHT + 40;
+    const contentHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT - 80;
+    const textMaxWidth = canvas.width - 100;
+    
+    // Question mark icon at top
+    ctx.fillStyle = Array.isArray(theme.button.background) ? theme.button.background[0] : theme.button.background;
+    const iconSize = 100;
+    const iconX = canvas.width / 2;
+    const iconY = contentY + 60;
+    
+    
+    // Hook text below icon
+    const textY = iconY + iconSize / 2 + 60;
+    const availableHeightForText = contentHeight - (textY - contentY) - 40;
+    
+    // Measure and fit text
+    const measurement = measureQuestionContent(
+        ctx, 
+        hookText, 
+        textMaxWidth, 
+        theme.fontFamily, 
+        65,  // Start font size
+        35,  // Min font size
+        availableHeightForText
+    );
+    
+    // Draw hook text centered
+    ctx.fillStyle = theme.text.primary;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.textBaseline = 'top';
+    ctx.font = `900 ${measurement.fontSize}px ${theme.fontFamily}`;
     
-    // Large, bold text for maximum impact
-    const textMaxWidth = canvas.width - 120;
-    ctx.font = `900 75px ${theme.fontFamily}`; // Extra bold weight
-    const lines = wrapText(ctx, hookText, textMaxWidth);
+    const totalTextHeight = measurement.lines.length * measurement.fontSize * 1.2;
+    const textStartY = textY + (availableHeightForText - totalTextHeight) / 2;
     
-    const lineHeight = 75 * 1.2;
-    const totalTextHeight = lines.length * lineHeight;
-    const startY = (canvas.height - totalTextHeight) / 2;
-    
-    lines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight) + (lineHeight / 2));
+    measurement.lines.forEach((line, index) => {
+        const lineY = textStartY + (index * measurement.fontSize * 1.2);
+        ctx.fillText(line, canvas.width / 2, lineY);
     });
-    
-    // Add question mark icon to emphasize the hook
-    ctx.fillStyle = '#F59E0B'; // Amber color for question
-    const iconSize = 80;
-    const iconX = canvas.width / 2 - iconSize / 2;
-    const iconY = startY - 120;
-    
-    // Draw question mark circle background
-    ctx.beginPath();
-    ctx.arc(iconX + iconSize / 2, iconY + iconSize / 2, iconSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Draw question mark
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = `bold 50px ${theme.fontFamily}`;
-    ctx.fillText('?', iconX + iconSize / 2, iconY + iconSize / 2 + 8);
     
     drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
@@ -73,69 +78,118 @@ export function renderBeforeFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawHeader(ctx, canvas.width, theme, job);
     
     const beforeText = job.data.content?.before || job.data.content?.bad_habit || "Most people damage their health by...";
-    const consequences = job.data.content?.negative_effects || job.data.content?.damage || "Negative health consequences";
+    const consequences = job.data.content?.negative_effects || job.data.content?.damage || null;
     
-    // Background color for negative/before section
-    ctx.fillStyle = '#FEF2F2'; // Light red background for negative effects
-    const bgHeight = canvas.height - 200; // Leave space for header and footer
-    drawRoundRect(ctx, 40, 100, canvas.width - 80, bgHeight - 100, 20);
+    // Use MCQ-style measurement for optimal layout
+    const fullContent = consequences && consequences !== beforeText 
+        ? `${beforeText}\n\n${consequences}`
+        : beforeText;
     
-    // "BEFORE" label with warning styling
-    ctx.fillStyle = '#DC2626'; // Red color for negative
+    const measurements = calculateOptimalLayout(
+        ctx, 
+        fullContent, 
+        {}, 
+        canvas.width, 
+        canvas.height, 
+        theme.fontFamily
+    );
+    
+    
+    // Content area with proper spacing
+    const HEADER_HEIGHT = 180;
+    const FOOTER_HEIGHT = 180;
+    const contentY = HEADER_HEIGHT + 20;
+    const contentHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT - 40;
+    const contentWidth = canvas.width - 80;
+    const contentX = 40;
+    
+    // Background for entire content area
+    applyFillStyle(ctx, theme.page.background, { x: contentX, y: contentY, w: contentWidth, h: contentHeight });
+    drawRoundRect(ctx, contentX, contentY, contentWidth, contentHeight, 20);
+    
+    // Large "BEFORE" text with high contrast coloring
+    const titleY = contentY + 40;
+    
+    // Large colored "BEFORE" text
+    ctx.fillStyle = '#FF4757'; // High contrast red for warning
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.font = `bold 55px ${theme.fontFamily}`;
-    ctx.fillText("BEFORE", canvas.width / 2, 140);
+    ctx.font = `900 72px ${theme.fontFamily}`;
+    ctx.fillText("BEFORE", canvas.width / 2, titleY);
     
-    // Main before description
-    ctx.fillStyle = '#991B1B'; // Darker red for content
-    ctx.font = `600 48px ${theme.fontFamily}`;
+    // Warning icon positioned next to title
+    ctx.fillStyle = Array.isArray(theme.button.background) ? theme.button.background[0] : theme.button.background;
+    const iconSize = 50;
+    const iconX = canvas.width / 2 + 200;
+    const iconY = titleY + 36; // Center with title text
     
-    const textMaxWidth = canvas.width - 160;
-    const beforeLines = wrapText(ctx, beforeText, textMaxWidth);
-    let currentY = 220;
-    const lineHeight = 48 * 1.3;
     
-    beforeLines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, currentY + (index * lineHeight));
+    ctx.fillStyle = theme.button.text;
+    ctx.font = `bold 32px ${theme.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('!', iconX, iconY);
+    
+    // Main before text with dynamic sizing
+    const textY = titleY + 120;
+    const textMaxWidth = contentWidth - 80;
+    const availableHeight = contentY + contentHeight - textY - 40;
+    
+    const beforeMeasurement = measureQuestionContent(
+        ctx,
+        beforeText,
+        textMaxWidth,
+        theme.fontFamily,
+        measurements.questionFontSize || 42,
+        28,
+        consequences ? availableHeight * 0.6 : availableHeight
+    );
+    
+    ctx.fillStyle = theme.text.primary;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.font = `600 ${beforeMeasurement.fontSize}px ${theme.fontFamily}`;
+    
+    let currentY = textY;
+    beforeMeasurement.lines.forEach((line, index) => {
+        ctx.fillText(line, canvas.width / 2, currentY);
+        currentY += beforeMeasurement.fontSize * 1.2;
     });
-    currentY += beforeLines.length * lineHeight + 30;
     
-    // Show consequences in a darker section
-    if (consequences && consequences !== beforeText) {
-        ctx.fillStyle = 'rgba(220, 38, 38, 0.1)'; // Semi-transparent red overlay
-        const conseqBgHeight = 120;
-        drawRoundRect(ctx, 60, currentY, canvas.width - 120, conseqBgHeight, 15);
+    // Consequences section if available with better spacing
+    if (consequences && consequences !== beforeText && currentY + 80 < contentY + contentHeight - 40) {
+        currentY += 30;
         
-        ctx.fillStyle = '#7F1D1D'; // Very dark red for consequences
-        ctx.font = `500 42px ${theme.fontFamily}`;
+        // Consequence box with dynamic height
+        const remainingHeight = contentY + contentHeight - currentY - 40;
+        const conseqHeight = Math.min(160, Math.max(100, remainingHeight));
         
-        const conseqLines = wrapText(ctx, consequences, textMaxWidth - 40);
+        ctx.fillStyle = theme.header.background;
+        drawRoundRect(ctx, contentX + 30, currentY, contentWidth - 60, conseqHeight, 10);
+        
+        // Consequence text with dynamic sizing
+        const conseqMeasurement = measureQuestionContent(
+            ctx,
+            consequences,
+            textMaxWidth - 60,
+            theme.fontFamily,
+            Math.min(beforeMeasurement.fontSize, 36),
+            24,
+            conseqHeight - 50
+        );
+        
+        ctx.fillStyle = theme.text.secondary;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = `500 ${conseqMeasurement.fontSize}px ${theme.fontFamily}`;
+        
         const conseqStartY = currentY + 25;
-        
-        conseqLines.forEach((line, index) => {
-            ctx.fillText(line, canvas.width / 2, conseqStartY + (index * 50));
+        conseqMeasurement.lines.forEach((line, index) => {
+            if (conseqStartY + (index * conseqMeasurement.fontSize * 1.2) < currentY + conseqHeight - 25) {
+                ctx.fillText(line, canvas.width / 2, conseqStartY + (index * conseqMeasurement.fontSize * 1.2));
+            }
         });
     }
-    
-    // Add warning icon
-    ctx.fillStyle = '#DC2626';
-    ctx.strokeStyle = '#DC2626';
-    ctx.lineWidth = 6;
-    const warnX = canvas.width / 2 + 220;
-    const warnY = 180;
-    const warnSize = 30;
-    
-    // Triangle warning shape
-    ctx.beginPath();
-    ctx.moveTo(warnX, warnY - warnSize);
-    ctx.lineTo(warnX - warnSize * 0.8, warnY + warnSize * 0.5);
-    ctx.lineTo(warnX + warnSize * 0.8, warnY + warnSize * 0.5);
-    ctx.closePath();
-    ctx.stroke();
-    
-    // Exclamation mark
-    ctx.fillText('!', warnX, warnY + 5);
     
     drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
@@ -147,60 +201,49 @@ export function renderAfterFrame(canvas: Canvas, job: QuizJob, theme: Theme): vo
     drawHeader(ctx, canvas.width, theme, job);
     
     const afterText = job.data.content?.after || job.data.content?.good_habit || "But if you do THIS instead...";
-    const benefits = job.data.content?.positive_effects || job.data.content?.benefits || "Positive health outcomes";
+    const benefits = job.data.content?.positive_effects || job.data.content?.benefits || null;
     
-    // Background color for positive/after section
-    ctx.fillStyle = '#ECFDF5'; // Light green background for positive effects
-    const bgHeight = canvas.height - 200;
-    drawRoundRect(ctx, 40, 100, canvas.width - 80, bgHeight - 100, 20);
+    // Use MCQ-style measurement for optimal layout
+    const fullContent = benefits && benefits !== afterText 
+        ? `${afterText}\n\n${benefits}`
+        : afterText;
     
-    // "AFTER" label with positive styling
-    ctx.fillStyle = '#059669'; // Green color for positive
+    const measurements = calculateOptimalLayout(
+        ctx, 
+        fullContent, 
+        {}, 
+        canvas.width, 
+        canvas.height, 
+        theme.fontFamily
+    );
+    
+    
+    // Content area with proper spacing
+    const HEADER_HEIGHT = 180;
+    const FOOTER_HEIGHT = 180;
+    const contentY = HEADER_HEIGHT + 20;
+    const contentHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT - 40;
+    const contentWidth = canvas.width - 80;
+    const contentX = 40;
+    
+    // Background for entire content area  
+    applyFillStyle(ctx, theme.page.background, { x: contentX, y: contentY, w: contentWidth, h: contentHeight });
+    drawRoundRect(ctx, contentX, contentY, contentWidth, contentHeight, 20);
+    
+    // Large "AFTER" text with high contrast coloring
+    const titleY = contentY + 40;
+    
+    // Large colored "AFTER" text
+    ctx.fillStyle = '#2ED573'; // High contrast green for success
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.font = `bold 55px ${theme.fontFamily}`;
-    ctx.fillText("AFTER", canvas.width / 2, 140);
+    ctx.font = `900 72px ${theme.fontFamily}`;
+    ctx.fillText("AFTER", canvas.width / 2, titleY);
+
     
-    // Main after description
-    ctx.fillStyle = '#047857'; // Darker green for content
-    ctx.font = `600 48px ${theme.fontFamily}`;
-    
-    const textMaxWidth = canvas.width - 160;
-    const afterLines = wrapText(ctx, afterText, textMaxWidth);
-    let currentY = 220;
-    const lineHeight = 48 * 1.3;
-    
-    afterLines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, currentY + (index * lineHeight));
-    });
-    currentY += afterLines.length * lineHeight + 30;
-    
-    // Show benefits in a highlighted section
-    if (benefits && benefits !== afterText) {
-        ctx.fillStyle = 'rgba(5, 150, 105, 0.1)'; // Semi-transparent green overlay
-        const benefitBgHeight = 120;
-        drawRoundRect(ctx, 60, currentY, canvas.width - 120, benefitBgHeight, 15);
-        
-        ctx.fillStyle = '#064E3B'; // Very dark green for benefits
-        ctx.font = `500 42px ${theme.fontFamily}`;
-        
-        const benefitLines = wrapText(ctx, benefits, textMaxWidth - 40);
-        const benefitStartY = currentY + 25;
-        
-        benefitLines.forEach((line, index) => {
-            ctx.fillText(line, canvas.width / 2, benefitStartY + (index * 50));
-        });
-    }
-    
-    // Add success checkmark
-    ctx.strokeStyle = '#059669';
-    ctx.lineWidth = 6;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    
-    const checkX = canvas.width / 2 + 220;
-    const checkY = 180;
-    const checkSize = 35;
+    const checkX = canvas.width / 2 + 180;
+    const checkY = titleY + 36; // Center with title text
+    const checkSize = 40;
     
     ctx.beginPath();
     ctx.moveTo(checkX - checkSize/2, checkY);
@@ -208,78 +251,120 @@ export function renderAfterFrame(canvas: Canvas, job: QuizJob, theme: Theme): vo
     ctx.lineTo(checkX + checkSize/2, checkY - checkSize/3);
     ctx.stroke();
     
+    // Main after text with dynamic sizing
+    const textY = titleY + 120;
+    const textMaxWidth = contentWidth - 80;
+    const availableHeight = contentY + contentHeight - textY - 40;
+    
+    const afterMeasurement = measureQuestionContent(
+        ctx,
+        afterText,
+        textMaxWidth,
+        theme.fontFamily,
+        measurements.questionFontSize || 42,
+        28,
+        benefits ? availableHeight * 0.6 : availableHeight
+    );
+    
+    ctx.fillStyle = theme.text.primary;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.font = `600 ${afterMeasurement.fontSize}px ${theme.fontFamily}`;
+    
+    let currentY = textY;
+    afterMeasurement.lines.forEach((line, index) => {
+        ctx.fillText(line, canvas.width / 2, currentY);
+        currentY += afterMeasurement.fontSize * 1.2;
+    });
+    
+    // Benefits section if available with better spacing
+    if (benefits && benefits !== afterText && currentY + 80 < contentY + contentHeight - 40) {
+        currentY += 30;
+        
+        // Benefits box with dynamic height
+        const remainingHeight = contentY + contentHeight - currentY - 40;
+        const benefitHeight = Math.min(160, Math.max(100, remainingHeight));
+        
+        ctx.fillStyle = theme.header.background;
+        drawRoundRect(ctx, contentX + 30, currentY, contentWidth - 60, benefitHeight, 10);
+        
+        // Benefit text with dynamic sizing
+        const benefitMeasurement = measureQuestionContent(
+            ctx,
+            benefits,
+            textMaxWidth - 60,
+            theme.fontFamily,
+            Math.min(afterMeasurement.fontSize, 36),
+            24,
+            benefitHeight - 50
+        );
+        
+        ctx.fillStyle = theme.text.secondary;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.font = `500 ${benefitMeasurement.fontSize}px ${theme.fontFamily}`;
+        
+        const benefitStartY = currentY + 25;
+        benefitMeasurement.lines.forEach((line, index) => {
+            if (benefitStartY + (index * benefitMeasurement.fontSize * 1.2) < currentY + benefitHeight - 25) {
+                ctx.fillText(line, canvas.width / 2, benefitStartY + (index * benefitMeasurement.fontSize * 1.2));
+            }
+        });
+    }
+    
     drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
-// Frame 4: Proof Frame - "Here's the science + immediate action"
+// Frame 4: Proof Frame - Clean explanation style (inspired by MCQ explanation)
 export function renderProofFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
     const ctx = canvas.getContext('2d');
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const proofText = job.data.content?.proof || job.data.content?.science || "Here's the scientific proof:";
-    const evidence = job.data.content?.evidence || job.data.content?.research || job.data.content?.explanation || "Research shows...";
-    const actionText = job.data.content?.immediate_action || job.data.content?.next_step || "Start today:";
-    const cta = job.data.content?.cta || "Follow for more health insights!";
+    // Handle both traditional proof fields and simplified result field
+    const resultText = job.data.content?.result;
+    const evidence = job.data.content?.evidence || job.data.content?.research || job.data.content?.explanation || resultText || "Research shows...";
+    const actionText = job.data.content?.immediate_action || job.data.content?.next_step || "";
     
-    // Science section
-    ctx.fillStyle = '#1E40AF'; // Blue for science/authority
+    // Combine evidence and action into single explanation (like MCQ)
+    const fullExplanation = actionText && actionText !== "Start today:" && actionText !== evidence
+        ? `${evidence}\n\n${actionText}`
+        : evidence;
+    
+    // Calculate dynamic layout like MCQ explanation
+    const textMaxWidth = canvas.width - 160;
+    const textStartX = (canvas.width - textMaxWidth) / 2;
+    const HEADER_HEIGHT = 180;
+    const FOOTER_HEIGHT = 180;
+    const availableHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT;
+    
+    // Measure explanation content with larger starting font (like MCQ explanation)
+    const measurement = measureQuestionContent(
+        ctx, 
+        fullExplanation, 
+        textMaxWidth, 
+        theme.fontFamily, 
+        60,  // Start with larger font for explanations
+        32,  // Higher minimum readable size
+        availableHeight
+    );
+    
+    // Center the explanation vertically, but ensure it doesn't overlap footer
+    const unusedSpace = Math.max(0, availableHeight - measurement.height);
+    const idealStartY = HEADER_HEIGHT + (unusedSpace / 2);
+    const maxStartY = canvas.height - FOOTER_HEIGHT - measurement.height - 20; // 20px safety margin
+    const startY = Math.min(idealStartY, maxStartY);
+    
+    ctx.fillStyle = theme.text.primary;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.font = `bold 45px ${theme.fontFamily}`;
+    ctx.font = `600 ${measurement.fontSize}px ${theme.fontFamily}`;
     
-    const proofLines = wrapText(ctx, proofText, canvas.width - 120);
-    let currentY = 130;
-    
-    proofLines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, currentY + (index * 55));
+    // Draw explanation text (same style as MCQ explanation)
+    measurement.lines.forEach((line, index) => {
+        const lineHeight = measurement.fontSize * 1.4;
+        ctx.fillText(line, textStartX, startY + index * lineHeight);
     });
-    currentY += proofLines.length * 55 + 30;
-    
-    // Evidence background
-    ctx.fillStyle = '#EFF6FF'; // Light blue background
-    const evidenceBgHeight = 140;
-    drawRoundRect(ctx, 40, currentY, canvas.width - 80, evidenceBgHeight, 15);
-    
-    ctx.fillStyle = '#1D4ED8';
-    ctx.font = `500 38px ${theme.fontFamily}`;
-    
-    const evidenceLines = wrapText(ctx, evidence, canvas.width - 160);
-    const evidenceStartY = currentY + 25;
-    
-    evidenceLines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, evidenceStartY + (index * 45));
-    });
-    currentY += evidenceBgHeight + 40;
-    
-    // Immediate action call-out
-    ctx.fillStyle = '#F59E0B'; // Amber for action
-    ctx.font = `bold 40px ${theme.fontFamily}`;
-    ctx.fillText(actionText, canvas.width / 2, currentY);
-    currentY += 70;
-    
-    // Add CTA button
-    const buttonWidth = 500;
-    const buttonHeight = 70;
-    const buttonX = (canvas.width - buttonWidth) / 2;
-    const buttonY = currentY;
-    
-    // Button shadow
-    applyShadow(ctx, 'rgba(0, 0, 0, 0.3)', 10, 0, 4);
-    
-    // Button background - authority blue gradient
-    const gradient = ctx.createLinearGradient(buttonX, buttonY, buttonX, buttonY + buttonHeight);
-    gradient.addColorStop(0, '#3B82F6');
-    gradient.addColorStop(1, '#1D4ED8');
-    ctx.fillStyle = gradient;
-    
-    drawRoundRect(ctx, buttonX, buttonY, buttonWidth, buttonHeight, 15);
-    clearShadow(ctx);
-    
-    // Button text
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = `bold 30px ${theme.fontFamily}`;
-    ctx.fillText(cta, canvas.width / 2, buttonY + buttonHeight / 2 + 5);
     
     drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }

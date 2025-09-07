@@ -27,10 +27,8 @@ export async function POST(request: NextRequest) {
     // Auto-retry failed jobs with valid data
     await autoRetryFailedJobs();
     
-    // Get jobs for specific account if provided
-    const jobs = accountId ? 
-      (await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY)).filter(job => job.account_id === accountId) :
-      await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY);
+    // Get jobs; prefer SQL-side filtering by account to avoid LIMIT mismatches
+    const jobs = await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY, undefined, accountId);
       
     if (jobs.length === 0) {
       const message = accountId ? 

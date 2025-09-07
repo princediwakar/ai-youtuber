@@ -25,13 +25,21 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
 
-  // Generate a teaser/hook text instead of showing the full question
-  const question = job.data.content?.question || "";
-  let hookText = job.data.content?.hook;
+  // Get content with multiple fallbacks
+  const content = job.data.content as any || {};
+  const question = content.question || content.content || "";
+  let hookText = content.hook;
   
-  // If no specific hook provided, create one based on question type
+  // If no specific hook provided, create one based on question type or persona
   if (!hookText) {
-    if (question.toLowerCase().includes('true or false')) {
+    // Health personas get health-focused hooks
+    if (job.persona === 'brain_health_tips') {
+      hookText = "Want to boost your brain power? Let's test your knowledge! 🧠";
+    } else if (job.persona === 'eye_health_tips') {
+      hookText = "Protect your vision with this eye health fact! 👀";
+    } 
+    // English persona gets vocabulary hooks
+    else if (question.toLowerCase().includes('true or false')) {
       hookText = "Think you know English idioms? Let's test your knowledge! 🤔";
     } else if (question.toLowerCase().includes('which') || question.toLowerCase().includes('what')) {
       hookText = "Ready for a vocabulary challenge? Can you pick the right answer? 📚";
@@ -80,15 +88,15 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
 // Options frame - displays just the question and options without revealing answer
 export function renderOptionsFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   // Get question data from new content structure
-  const question = job.data.content;
+  const question = job.data.content as any;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
 
-  // ✨ MODIFIED: Determine the full text for measurement purposes
+  // ✨ MODIFIED: Determine the full text for measurement purposes with robust fallbacks
   const layoutQuestionText = question.question_type === 'assertion_reason'
     ? `Assertion (A): ${question.assertion}\n\nReason (R): ${question.reason}`
-    : question.question;
+    : (question.question || question.content || question.hook || question.action || "Question content not available");
   
   // Calculate optimal layout based on the full text
   const measurements = calculateOptimalLayout(
@@ -116,7 +124,7 @@ export function renderOptionsFrame(canvas: Canvas, job: QuizJob, theme: Theme): 
       );
   } else {
       actualQuestionEndY = drawQuestionText(
-          ctx, canvas, question.question, theme, positions.questionStartY, measurements.questionFontSize
+          ctx, canvas, (question.question || question.content || question.hook || "Question content"), theme, positions.questionStartY, measurements.questionFontSize
       );
   }
   
@@ -197,15 +205,17 @@ function drawAssertionReasonText(
 // Dynamic MCQ question frame with optimized layout
 export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   // Get question data from new content structure
-  const question = job.data.content;
+  const question = job.data.content as any;
+  
+  
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
 
-  // ✨ MODIFIED: Determine the full text for measurement purposes
+  // ✨ MODIFIED: Determine the full text for measurement purposes with robust fallbacks
   const layoutQuestionText = question.question_type === 'assertion_reason'
     ? `Assertion (A): ${question.assertion}\n\nReason (R): ${question.reason}`
-    : question.question;
+    : (question.question || question.content || question.hook || question.action || "Question content not available");
   
   // Calculate optimal layout based on the full text
   const measurements = calculateOptimalLayout(
@@ -233,7 +243,7 @@ export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme):
       );
   } else {
       actualQuestionEndY = drawQuestionText(
-          ctx, canvas, question.question, theme, positions.questionStartY, measurements.questionFontSize
+          ctx, canvas, (question.question || question.content || question.hook || "Question content"), theme, positions.questionStartY, measurements.questionFontSize
       );
   }
   
@@ -246,15 +256,15 @@ export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme):
 // Dynamic MCQ answer frame with optimized layout
 export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   // Get question data from new content structure
-  const question = job.data.content;
+  const question = job.data.content as any;
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
   
-  // ✨ MODIFIED: Determine the full text for measurement purposes
+  // ✨ MODIFIED: Determine the full text for measurement purposes with robust fallbacks
   const layoutQuestionText = question.question_type === 'assertion_reason'
     ? `Assertion (A): ${question.assertion}\n\nReason (R): ${question.reason}`
-    : question.question;
+    : (question.question || question.content || question.hook || question.action || "Question content not available");
 
   // Calculate optimal layout (same as question frame)
   const measurements = calculateOptimalLayout(
@@ -282,7 +292,7 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
       );
   } else {
       actualQuestionEndY = drawQuestionText(
-          ctx, canvas, question.question, theme, positions.questionStartY, measurements.questionFontSize
+          ctx, canvas, (question.question || question.content || question.hook || "Question content"), theme, positions.questionStartY, measurements.questionFontSize
       );
   }
   
@@ -295,7 +305,7 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
 // Dynamic explanation frame with optimized layout
 export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
   // Get question data from new content structure
-  const question = job.data.content;
+  const question = job.data.content as any;
   const explanation = question?.explanation || "Explanation content not available.";
   const ctx = canvas.getContext('2d');
   drawBackground(ctx, canvas.width, canvas.height, theme);
