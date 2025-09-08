@@ -26,13 +26,18 @@ interface AccountSchedules {
 const englishGenerationPattern: HourlySchedule = {
   6: ['english_vocab_builder'],   // Morning generation for daily uploads
   14: ['english_vocab_builder'],   // Morning generation for daily uploads
+  18: ['english_vocab_builder'],   // Evening generation for daily uploads
 };
 
 const englishUploadPattern: HourlySchedule = {
+  7: ['english_vocab_builder'],  // Morning global peak
   9: ['english_vocab_builder'],  // Morning global peak
   13: ['english_vocab_builder'], // Lunch break peak
   17: ['english_vocab_builder'], // After work peak
+  19: ['english_vocab_builder'], // Evening global peak
   21: ['english_vocab_builder'], // Evening global peak
+  22: ['english_vocab_builder'], // Evening global peak
+  23: ['english_vocab_builder'], // Evening global peak
 };
 
 /**
@@ -47,7 +52,8 @@ const healthGenerationPattern: HourlySchedule = {
 
 const healthUploadPattern: HourlySchedule = {
   8:  ['brain_health_tips'],  // Morning wellness routine
-  14: ['eye_health_tips'],    // Afternoon health break
+  10: ['eye_health_tips'],    // Afternoon health break
+  16: ['eye_health_tips'],    // Afternoon health break
   19: ['brain_health_tips'],  // Evening health awareness
   21: ['eye_health_tips'],  // Evening health awareness
   22: ['brain_health_tips'],  // Evening health awareness
