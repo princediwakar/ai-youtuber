@@ -5,6 +5,7 @@
 
 import { MasterPersonas } from '../personas';
 import { generateSSCExamPrompt } from './personas/sscPrompts';
+import { generateAstronomyPrompt } from './personas/astronomyPrompts';
 import {
   generateVariationMarkers,
   generateBrainHealthPrompt,
@@ -98,6 +99,14 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
     
     const rand = Math.random();
     const questionFormat = rand < 0.85 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason');
+    
+    prompt = addJsonFormatInstructions(prompt, questionFormat);
+  }
+  else if (persona === 'space_facts_quiz') {
+    prompt = generateAstronomyPrompt(promptConfig);
+    
+    // Astronomy content uses multiple choice format
+    const questionFormat = 'multiple_choice';
     
     prompt = addJsonFormatInstructions(prompt, questionFormat);
   }

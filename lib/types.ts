@@ -9,6 +9,7 @@
 // English quiz content structure
 export interface Question {
   question?: string; // Optional, as assertion/reason questions don't use this
+  content?: string; // Alternative field for content (used in some validation)
   assertion?: string; // For assertion/reason questions
   reason?: string; // For assertion/reason questions
   options: { [key: string]: string; };
@@ -45,6 +46,23 @@ export interface Question {
   right_example?: string;
   right_context?: string;
   practice_scenario?: string;
+  
+  // SSC Usage Demo Format
+  target_concept?: string;
+  wrong_scenario?: string;
+  right_scenario?: string;
+  
+  // SSC Challenge Format
+  challenge_question?: string;
+  time_limit?: string;
+  correct_answer?: string;
+  confidence_message?: string;
+  learning_tip?: string;
+  
+  // SSC Quick Tip Format
+  traditional_approach?: string;
+  smart_shortcut?: string;
+  application_example?: string;
   
   // Health Format Fields
   action?: string;

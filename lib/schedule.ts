@@ -78,6 +78,27 @@ const sscUploadPattern: HourlySchedule = {
   15: ['ssc_shots'],  // Afternoon study break
   18: ['ssc_shots'],  // Evening study start
   21: ['ssc_shots'],  // Night study session
+  23: ['ssc_shots'],  // Night study session
+};
+
+/**
+ * Astronomy Shots Account Schedules
+ * Focus: Space enthusiasts and curious learners during peak engagement times
+ * Strategy: 6 daily uploads targeting wonder and curiosity-driven audience
+ */
+const astronomyGenerationPattern: HourlySchedule = {
+  6: ['space_facts_quiz'],   // Morning generation for daily space content
+  14: ['space_facts_quiz'],  // Afternoon generation  
+  20: ['space_facts_quiz'],  // Evening generation
+};
+
+const astronomyUploadPattern: HourlySchedule = {
+  8: ['space_facts_quiz'],   // Morning curiosity peak
+  11: ['space_facts_quiz'],  // Late morning discovery time
+  15: ['space_facts_quiz'],  // Afternoon wonder break
+  18: ['space_facts_quiz'],  // Evening learning time
+  21: ['space_facts_quiz'],  // Prime time space facts
+  23: ['space_facts_quiz'],  // Night sky contemplation
 };
 
 // Account-specific schedules
@@ -142,6 +163,27 @@ const ACCOUNT_SCHEDULES: Record<string, AccountSchedules> = {
       4: sscUploadPattern, // Thursday
       5: sscUploadPattern, // Friday
       6: sscUploadPattern, // Saturday
+    }
+  },
+
+  astronomy_shots: {
+    generation: {
+      0: astronomyGenerationPattern, // Sunday
+      1: astronomyGenerationPattern, // Monday
+      2: astronomyGenerationPattern, // Tuesday
+      3: astronomyGenerationPattern, // Wednesday
+      4: astronomyGenerationPattern, // Thursday
+      5: astronomyGenerationPattern, // Friday
+      6: astronomyGenerationPattern, // Saturday
+    },
+    upload: {
+      0: astronomyUploadPattern, // Sunday
+      1: astronomyUploadPattern, // Monday
+      2: astronomyUploadPattern, // Tuesday
+      3: astronomyUploadPattern, // Wednesday
+      4: astronomyUploadPattern, // Thursday
+      5: astronomyUploadPattern, // Friday
+      6: astronomyUploadPattern, // Saturday
     }
   }
 };

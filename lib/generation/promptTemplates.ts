@@ -29,8 +29,15 @@ import {
 
 import { 
   generateSSCExamPrompt,
-  generateSSCQuickFactsPrompt
+  generateSSCCommonMistakePrompt,
+  generateSSCQuickTipPrompt,
+  generateSSCUsageDemoPrompt,
+  generateSSCChallengePrompt
 } from './personas/sscPrompts';
+
+import {
+  generateAstronomyPrompt
+} from './personas/astronomyPrompts';
 
 // Re-export shared utilities for backward compatibility
 export type { VariationMarkers, PromptConfig };
@@ -54,22 +61,37 @@ export {
  */
 export function generateFormatPrompt(config: PromptConfig): string {
   const format = config.format || 'mcq';
+  const persona = config.persona;
 
   switch (format) {
     case 'common_mistake':
-      return generateCommonMistakePrompt(config);
+      if (persona === 'ssc_shots') {
+        return generateSSCCommonMistakePrompt(config);
+      } else {
+        return generateCommonMistakePrompt(config);
+      }
     case 'quick_fix':
       return generateQuickFixPrompt(config);
     case 'usage_demo':
-      return generateUsageDemoPrompt(config);
+      if (persona === 'ssc_shots') {
+        return generateSSCUsageDemoPrompt(config);
+      } else {
+        return generateUsageDemoPrompt(config);
+      }
     case 'challenge':
-      return generateChallengePrompt(config);
+      if (persona === 'ssc_shots') {
+        return generateSSCChallengePrompt(config);
+      } else {
+        return generateChallengePrompt(config);
+      }
     case 'quick_tip':
-      return generateQuickTipPrompt(config);
+      if (persona === 'ssc_shots') {
+        return generateSSCQuickTipPrompt(config);
+      } else {
+        return generateQuickTipPrompt(config);
+      }
     case 'before_after':
       return generateBeforeAfterPrompt(config);
-    case 'quick_facts':
-      return generateSSCQuickFactsPrompt(config);
     case 'mcq':
     default:
       // Route to appropriate persona for MCQ format
@@ -81,6 +103,8 @@ export function generateFormatPrompt(config: PromptConfig): string {
         return generateEnglishPrompt(config);
       } else if (config.persona === 'ssc_shots') {
         return generateSSCExamPrompt(config);
+      } else if (config.persona === 'space_facts_quiz') {
+        return generateAstronomyPrompt(config);
       } else {
         return generateEnglishPrompt(config); // Default fallback
       }

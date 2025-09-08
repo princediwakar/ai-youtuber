@@ -30,7 +30,7 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
   const question = content.question || content.content || "";
   let hookText = content.hook;
   
-  // If no specific hook provided, create one based on question type or persona
+  // If no specific hook provided, create one based on persona
   if (!hookText) {
     // Health personas get health-focused hooks
     if (job.persona === 'brain_health_tips') {
@@ -38,7 +38,15 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     } else if (job.persona === 'eye_health_tips') {
       hookText = "Protect your vision with this eye health fact! 👀";
     } 
-    // English persona gets vocabulary hooks
+    // Space/astronomy persona gets space-focused hooks
+    else if (job.persona === 'space_facts_quiz') {
+      hookText = "Mind-blowing space fact coming up! Are you ready? 🚀";
+    }
+    // SSC persona gets exam-focused hooks
+    else if (job.persona === 'ssc_shots') {
+      hookText = "SSC exam question ahead! Can you crack this? 📚";
+    }
+    // English persona gets vocabulary hooks (fallback)
     else if (question.toLowerCase().includes('true or false')) {
       hookText = "Think you know English idioms? Let's test your knowledge! 🤔";
     } else if (question.toLowerCase().includes('which') || question.toLowerCase().includes('what')) {
@@ -362,7 +370,7 @@ function renderOptions(
   job: QuizJob, 
   theme: Theme, 
   isAnswerFrame: boolean,
-  fontSize: number = 45
+  fontSize: number = 48
 ) {
 const { options, answer } = job.data.content;
 

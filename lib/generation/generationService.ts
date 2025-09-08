@@ -25,7 +25,8 @@ const PERSONA_LAYOUT_MAP: Record<string, LayoutType[]> = {
   'english_vocab_builder': ['mcq', 'common_mistake', 'quick_fix', 'usage_demo'],
   'brain_health_tips': ['mcq', 'quick_tip', 'before_after', 'challenge'],
   'eye_health_tips': ['mcq', 'quick_tip', 'before_after', 'challenge'],
-  'ssc_shots': ['mcq', 'challenge'],
+  'ssc_shots': ['mcq', 'challenge', 'common_mistake', 'usage_demo', 'quick_tip'],
+  'space_facts_quiz': ['mcq'], // MCQ only for astronomy content as requested
 };
 
 /**

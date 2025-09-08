@@ -43,6 +43,13 @@ export const PersonaThemeMap: Record<string, string[]> = {
     'SakuraGrove',      // Calm and trustworthy
     'CanyonSunset',     // Warm institutional colors
   ],
+
+  // Astronomy content - cosmic and space-themed visuals for wonder and amazement
+  space_facts_quiz: [
+    'CosmicDawn',       // Perfect for space content with cosmic gradients
+    'EmeraldSea',       // Deep space colors
+    // Removed shared themes to ensure complete isolation from other content
+  ],
   
   // A default set of themes for any new persona not explicitly listed.
   default: ['MintyFresh', 'VintageScroll', 'SakuraGrove'],

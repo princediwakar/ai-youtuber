@@ -95,6 +95,11 @@ export function parseAndValidateResponse(content: string, persona: string, layou
       return validateSSCContent(data, layout);
     }
 
+    // Astronomy content validation
+    if (persona === 'space_facts_quiz') {
+      return validateAstronomyContent(data, layout);
+    }
+
     return {
       success: false,
       error: `Unsupported persona for validation: ${persona}`
@@ -181,7 +186,13 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
 function validateSSCContent(data: any, format?: string): ValidationResult {
   // Format-specific validation for SSC content
   if (format === 'challenge') {
-    return validateChallengeFormat(data);
+    return validateSSCChallengeFormat(data);
+  } else if (format === 'common_mistake') {
+    return validateSSCCommonMistakeFormat(data);
+  } else if (format === 'usage_demo') {
+    return validateSSCUsageDemoFormat(data);
+  } else if (format === 'quick_tip') {
+    return validateSSCQuickTipFormat(data);
   }
 
   // Default MCQ validation for SSC content
@@ -228,6 +239,46 @@ function validateSSCContent(data: any, format?: string): ValidationResult {
         error: 'Multiple choice SSC question answer must be A, B, C, or D'
       };
     }
+  }
+  
+  // Apply length limits to all content
+  enforceLengthLimits(data);
+  
+  return { success: true, data };
+}
+
+/**
+ * Validates Astronomy content structure
+ */
+function validateAstronomyContent(data: any, format?: string): ValidationResult {
+  // Currently only MCQ format is supported for astronomy content
+  // Check required fields - for MCQ format, we expect either 'question' or 'content' field
+  const hasQuestion = data.question && typeof data.question === 'string';
+  const hasContent = data.content && typeof data.content === 'string';
+  
+  if ((!hasQuestion && !hasContent) ||
+      !data.options || typeof data.options !== 'object' ||
+      !data.answer || typeof data.answer !== 'string' ||
+      !data.explanation || typeof data.explanation !== 'string' ||
+      !data.cta || typeof data.cta !== 'string') {
+    return {
+      success: false,
+      error: 'Astronomy question response missing required fields'
+    };
+  }
+  
+  // Multiple choice validation - astronomy uses A, B, C, D format
+  if (!data.options.A || !data.options.B || !data.options.C || !data.options.D) {
+    return {
+      success: false,
+      error: 'Multiple choice astronomy question must have options A, B, C, and D'
+    };
+  }
+  if (!['A', 'B', 'C', 'D'].includes(data.answer)) {
+    return {
+      success: false,
+      error: 'Multiple choice astronomy question answer must be A, B, C, or D'
+    };
   }
   
   // Apply length limits to all content
@@ -395,14 +446,86 @@ function validateChallengeFormat(data: any): ValidationResult {
   return { success: true, data };
 }
 
+// SSC-specific format validation functions
+
+/**
+ * Validates SSC Challenge format structure
+ */
+function validateSSCChallengeFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'challenge_question', 'time_limit', 'correct_answer', 'confidence_message', 'learning_tip', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `SSC Challenge format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
+/**
+ * Validates SSC Common Mistake format structure
+ */
+function validateSSCCommonMistakeFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'mistake', 'correct', 'practice', 'explanation', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `SSC Common Mistake format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
+/**
+ * Validates SSC Usage Demo format structure
+ */
+function validateSSCUsageDemoFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'target_concept', 'wrong_scenario', 'wrong_context', 'right_scenario', 'right_context', 'practice', 'practice_scenario', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `SSC Usage Demo format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
+/**
+ * Validates SSC Quick Tip format structure
+ */
+function validateSSCQuickTipFormat(data: any): ValidationResult {
+  const requiredFields = ['hook', 'traditional_approach', 'smart_shortcut', 'application_example', 'explanation', 'cta'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `SSC Quick Tip format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
 /**
  * Generates a content hash for duplicate detection and tracking
  */
 export function generateContentHash(content: ContentData): string {
   const contentString = JSON.stringify({
-    main: content.question || content.hook || content.target_word,
-    answer: content.answer || content.correct || content.advanced_word,
-    content_type: content.question_type || 'format_based'
+    main: content.question || content.hook || content.target_word || content.target_concept || 
+          content.challenge_question || content.traditional_approach || content.content,
+    answer: content.answer || content.correct || content.advanced_word || content.smart_shortcut || 
+            content.correct_answer || content.result,
+    content_type: content.question_type || content.content_type || content.challenge_type || 'format_based'
   });
 
   // Simple hash function (for production, use crypto.createHash)

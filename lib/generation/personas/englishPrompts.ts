@@ -5,9 +5,6 @@
 
 import { 
   PromptConfig, 
-  generateRandomizationElements, 
-  generateContextInjections, 
-  getPromptVariation,
   getTopicGuidelines 
 } from '../shared/promptUtils';
 
