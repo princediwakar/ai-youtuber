@@ -1,8 +1,8 @@
 /**
  * Multi-Account YouTube Content Generation & Upload Schedule
  *
- * English Shots Strategy: 3 daily uploads with 1 generation batch (3 quizzes/day = perfect match)
- * Health Shots Strategy: 2 daily uploads with 1 generation batch (3 quizzes/day = 1 buffer)
+ * English Shots Strategy: 4 daily uploads with 2 generation batches (6 quizzes/day = optimal growth)
+ * Health Shots Strategy: 3 daily uploads with 2 generation batches (6 quizzes/day = healthy buffer)
  *
  * Each generation batch creates 3 quizzes. Optimized for quality over quantity.
  */
@@ -29,24 +29,28 @@ const englishGenerationPattern: HourlySchedule = {
 };
 
 const englishUploadPattern: HourlySchedule = {
-  10: ['english_vocab_builder'], // Mid-morning global peak
-  16: ['english_vocab_builder'], // Afternoon global peak  
+  9: ['english_vocab_builder'],  // Morning global peak
+  13: ['english_vocab_builder'], // Lunch break peak
+  17: ['english_vocab_builder'], // After work peak
   21: ['english_vocab_builder'], // Evening global peak
 };
 
 /**
  * Health Shots Account Schedules  
  * Focus: Health-conscious audiences during key wellness moments
- * Strategy: 2 daily uploads for optimal engagement without oversaturation
+ * Strategy: 3 daily uploads for optimal engagement without oversaturation
  */
 const healthGenerationPattern: HourlySchedule = {
   5: ['brain_health_tips'],      // Early morning generation for daily wellness content
-  6: ['eye_health_tips'],      // Early morning generation for daily wellness content
+  6: ['eye_health_tips'],        // Early morning generation for daily wellness content
 };
 
 const healthUploadPattern: HourlySchedule = {
   8:  ['brain_health_tips'],  // Morning wellness routine
-  19: ['eye_health_tips'],    // Evening health awareness
+  14: ['eye_health_tips'],    // Afternoon health break
+  19: ['brain_health_tips'],  // Evening health awareness
+  21: ['eye_health_tips'],  // Evening health awareness
+  22: ['brain_health_tips'],  // Evening health awareness
 };
 
 // Account-specific schedules

@@ -437,7 +437,7 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
   }
   
   // Improved reading speed calculation: 8-10 chars/second for comfortable video reading
-  const CHARS_PER_SECOND = 9; // Conservative speed for video text comprehension
+  const CHARS_PER_SECOND = 10; // Conservative speed for video text comprehension
   const MIN_DURATION = 3; // Minimum time to register visual content
   const EXTRA_PROCESSING_TIME = 1.5; // Extra time for comprehension and visual processing
   

@@ -63,15 +63,22 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     const unusedSpace = Math.max(0, availableHeightForWord - measurement.height);
     const startY = wordY + (unusedSpace / 2);
     
-    ctx.font = `bold ${measurement.fontSize}px ${theme.fontFamily}`;
-    ctx.fillStyle = theme.text.primary;
-    ctx.fillText(measurement.lines.join('\n'), canvas.width / 2, startY);
+    // --- FIX: Simplified and corrected gradient text logic ---
 
-    ctx.globalCompositeOperation = 'source-in';
-    const textHeight = measurement.height;
-    applyFillStyle(ctx, theme.button.background, {x:0, y:startY, w:canvas.width, h: textHeight});
-    ctx.fillRect(0, startY, canvas.width, textHeight);
-    ctx.globalCompositeOperation = 'source-over';
+    // 1. Set the context's fill style to be a gradient spanning the text area.
+    const totalTextHeight = measurement.lines.length * (measurement.fontSize * 1.4);
+    applyFillStyle(ctx, theme.button.background, {x: 0, y: startY, w: canvas.width, h: totalTextHeight});
+
+    // 2. Set the font and other text properties.
+    ctx.font = `bold ${measurement.fontSize}px ${theme.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    // 3. Draw each line of the wrapped text. The canvas will automatically use the gradient fill style.
+    measurement.lines.forEach((line, index) => {
+        const lineHeight = measurement.fontSize * 1.4;
+        ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight));
+    });
     
     drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }

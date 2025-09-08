@@ -16,6 +16,7 @@ export interface Question {
   explanation: string;
   topic: string;
   question_type?: 'multiple_choice' | 'true_false' | 'assertion_reason';
+  content_type?: 'multiple_choice' | 'true_false' | 'assertion_reason'; // AI responses use this field
   cta: string; // For the call-to-action frame
   
   // Format-specific properties for new layouts

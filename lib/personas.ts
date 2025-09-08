@@ -12,7 +12,7 @@ import { PersonaConfig } from './types';
 export const MasterPersonas: PersonaConfig = {
   // English Learning Content
   english_vocab_builder: {
-    displayName: 'Vocabulary Shots',
+    displayName: '@EnglishShotsDaily',
     subCategories: [
       // --- Core Vocabulary Skills ---
       { key: 'eng_vocab_word_meaning', displayName: 'What Does This Word Mean? 📖' },
@@ -35,7 +35,7 @@ export const MasterPersonas: PersonaConfig = {
 
   // Health Content - Brain Health
   brain_health_tips: {
-    displayName: 'Brain Health Tips',
+    displayName: '@HealthShotsDaily',
     subCategories: [
       { key: 'memory_techniques', displayName: 'Memory Enhancement Techniques 🧠' },
       { key: 'focus_tips', displayName: 'Focus & Concentration Tips 🎯' },
@@ -50,7 +50,7 @@ export const MasterPersonas: PersonaConfig = {
 
   // Health Content - Eye Health  
   eye_health_tips: {
-    displayName: 'Eye Health Tips',
+    displayName: '@HealthShotsDaily',
     subCategories: [
       { key: 'screen_protection', displayName: 'Screen Time Safety & Blue Light Protection 📱' },
       { key: 'eye_exercises', displayName: 'Eye Exercises & Vision Training 👁️' },

@@ -151,7 +151,7 @@ export function renderAfterFrame(canvas: Canvas, job: QuizJob, theme: Theme): vo
     clearShadow(ctx);
     
     const innerPadding = 40;
-    drawFrameTitle(ctx, "AFTER ✅", cardY + innerPadding, canvas.width, theme, true);
+    drawFrameTitle(ctx, "AFTER ✔️", cardY + innerPadding, canvas.width, theme, true);
     
     const contentY = cardY + innerPadding + 70;
     const textMaxWidth = cardWidth - (innerPadding * 2);

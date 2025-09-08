@@ -360,36 +360,42 @@ function generateVideoMetadata(job: QuizJob, playlistId: string | undefined, acc
 }
 
 /**
- * Generates account-specific viral-worthy, SEO-optimized titles.
+ * Generates account-specific professional, SEO-optimized titles without emojis.
  */
 function generateTitle(accountId: string, persona: string, topicName: string): string {
   const titleTemplates: Record<string, Record<string, string[]>> = {
     english_shots: {
       english_vocab_builder: [
-        `🧠 English Vocabulary Quiz | ${topicName}`,
-        `🏆 Can You Answer This? | English Vocab Challenge`,
-        `🤔 9/10 Fail This Vocabulary Test | ${topicName}`,
-        `🇬🇧 Daily English Vocabulary Quiz | ${topicName}`,
+        `English Vocabulary Quiz | ${topicName}`,
+        `Can You Answer This? | English Vocab Challenge`,
+        `9/10 Fail This Vocabulary Test | ${topicName}`,
+        `Daily English Vocabulary Quiz | ${topicName}`,
+        `English Quiz Challenge | ${topicName}`,
+        `Test Your English Skills | ${topicName}`,
       ]
     },
     health_shots: {
       brain_health_tips: [
-        `🧠 Brain Health Tip | ${topicName}`,
-        `🎯 Boost Your Memory | ${topicName}`,
-        `💡 Neurologist's Secret | ${topicName}`,
-        `🚀 Brain Power Boost | ${topicName}`,
+        `Brain Health Tip | ${topicName}`,
+        `Boost Your Memory | ${topicName}`,
+        `Neurologist's Secret | ${topicName}`,
+        `Brain Power Boost | ${topicName}`,
+        `Memory Enhancement | ${topicName}`,
+        `Cognitive Health Tips | ${topicName}`,
       ],
       eye_health_tips: [
-        `👁️ Eye Health Tip | ${topicName}`,
-        `💻 Screen Time Safety | ${topicName}`,
-        `✨ Protect Your Vision | ${topicName}`,
-        `🎯 Optometrist's Advice | ${topicName}`,
+        `Eye Health Tip | ${topicName}`,
+        `Screen Time Safety | ${topicName}`,
+        `Protect Your Vision | ${topicName}`,
+        `Optometrist's Advice | ${topicName}`,
+        `Vision Care Tips | ${topicName}`,
+        `Eye Safety Guide | ${topicName}`,
       ]
     }
   };
   
   const accountTemplates = titleTemplates[accountId] || {};
-  const templates = accountTemplates[persona] || [`📚 ${topicName} | Expert Tips`];
+  const templates = accountTemplates[persona] || [`${topicName} | Expert Tips`];
   return templates[Math.floor(Math.random() * templates.length)];
 }
 
@@ -412,37 +418,90 @@ function generateHashtags(accountId: string, persona: string, category: string):
 }
 
 /**
- * Creates account-specific engaging video descriptions.
+ * Creates account-specific engaging video descriptions with format-aware content extraction.
  */
 function generateDescription(accountId: string, contentData: any, topicName: string, hashtags: string, playlistId?: string): string {
+  console.log(`[generateDescription] Processing ${accountId} with format: ${contentData.format_type || 'unknown'}`);
+  console.log(`[generateDescription] Content data keys:`, Object.keys(contentData || {}));
+  
   // English account description
   if (accountId === 'english_shots') {
-    const hooks = [
-      "🤔 Think you know this word?",
-      "⚡ Test your English vocabulary!",
-      "🧠 Only 10% get this right!",
-      "🎯 Can you master this English quiz?"
-    ];
-    
-    const hook = hooks[Math.floor(Math.random() * hooks.length)];
-    
-    const playlistLink = playlistId ? 
-      `📺 For more questions on ${topicName}, check out the full playlist:\nhttps://www.youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
+    return generateEnglishDescription(contentData, topicName, hashtags, playlistId);
+  }
 
+  // Health account description
+  if (accountId === 'health_shots') {
+    return generateHealthDescription(contentData, topicName, hashtags, playlistId);
+  }
+
+  // Fallback description
+  const questionText = extractMainContent(contentData);
+  const explanationText = extractExplanation(contentData);
+  return `${questionText}\n\n${explanationText}\n\n${hashtags}`;
+}
+
+/**
+ * Generates English account descriptions with format-aware content extraction
+ */
+function generateEnglishDescription(contentData: any, topicName: string, hashtags: string, playlistId?: string): string {
+  const hooks = [
+    "🤔 Think you know this word?",
+    "⚡ Test your English vocabulary!",
+    "🧠 Only 10% get this right!",
+    "🎯 Can you master this English quiz?"
+  ];
+  
+  const hook = hooks[Math.floor(Math.random() * hooks.length)];
+  
+  const playlistLink = playlistId ? 
+    `📺 For more questions on ${topicName}, check out the full playlist:\nhttps://www.youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
+
+  // Format-specific content extraction for English
+  const formatType = contentData.format_type;
+  let questionSection = '';
+  let optionsSection = '';
+  let answerSection = '';
+  let explanationSection = '';
+
+  if (formatType === 'quick_fix') {
+    // Quick Fix format: hook, basic_word, advanced_word, usage_example, explanation
+    questionSection = `📚 VOCABULARY UPGRADE:\n${contentData.hook || 'Upgrade your vocabulary!'}`;
+    optionsSection = `🔄 REPLACE:\n"${contentData.basic_word || 'Basic word'}" → "${contentData.advanced_word || 'Advanced word'}"`;
+    answerSection = `✅ USAGE EXAMPLE:\n${contentData.usage_example || 'See the video for usage example!'}`;
+    explanationSection = contentData.explanation || 'Watch for explanation!';
+  } else if (formatType === 'common_mistake') {
+    // Common Mistake format: hook, mistake, correct, practice, explanation
+    questionSection = `📚 COMMON MISTAKE:\n${contentData.hook || 'Avoid this mistake!'}`;
+    optionsSection = `❌ WRONG: ${contentData.mistake || 'Common mistake'}\n✅ RIGHT: ${contentData.correct || 'Correct usage'}`;
+    answerSection = `🎯 PRACTICE:\n${contentData.practice || 'Practice with the example!'}`;
+    explanationSection = contentData.explanation || 'Watch for explanation!';
+  } else if (formatType === 'usage_demo') {
+    // Usage Demo format: hook, target_word, wrong_example, right_example, practice
+    questionSection = `📚 WORD USAGE:\n${contentData.hook || 'Learn proper usage!'}`;
+    optionsSection = `🎯 WORD: "${contentData.target_word || 'Target word'}"\n❌ WRONG: ${contentData.wrong_example || 'Wrong example'}\n✅ RIGHT: ${contentData.right_example || 'Right example'}`;
+    answerSection = `🎯 PRACTICE:\n${contentData.practice || 'Practice with the examples!'}`;
+    explanationSection = contentData.explanation || 'Watch for explanation!';
+  } else {
+    // MCQ format (default): question/content, options, answer, explanation
+    const mainQuestion = contentData.question || contentData.content || contentData.assertion || 'English vocabulary question';
+    questionSection = `📚 QUESTION:\n${mainQuestion}`;
+    
     const optionsText = contentData.options ? 
       Object.entries(contentData.options).map(([key, value]) => `${key}) ${value}`).join('\n') : '';
+    optionsSection = `🔤 OPTIONS:\n${optionsText}`;
     
-    return `${hook}\n${playlistLink}📚 QUESTION:
-${contentData.question || contentData.assertion}
+    answerSection = `✅ ANSWER: \nThe correct answer is revealed in the video!`;
+    explanationSection = contentData.explanation || 'Watch the video for a detailed explanation!';
+  }
 
-🔤 OPTIONS:
-${optionsText}
+  return `${hook}\n${playlistLink}${questionSection}
 
-✅ ANSWER: 
-The correct answer is revealed in the video!
+${optionsSection}
+
+${answerSection}
 
 💡 EXPLANATION:
-${contentData.explanation || 'Watch the video for a detailed explanation!'}
+${explanationSection}
 
 🏆 Join thousands of learners improving their English daily!
 
@@ -452,27 +511,56 @@ ${contentData.explanation || 'Watch the video for a detailed explanation!'}
 ⚡ Share with your study partners!
 
 ${hashtags}`;
+}
+
+/**
+ * Generates Health account descriptions with format-aware content extraction
+ */
+function generateHealthDescription(contentData: any, topicName: string, hashtags: string, playlistId?: string): string {
+  const hooks = [
+    "🌟 Transform your health today!",
+    "💡 Expert health tip coming up!",
+    "🎯 Science-backed advice ahead!",
+    "🚀 Boost your wellness journey!"
+  ];
+  
+  const hook = hooks[Math.floor(Math.random() * hooks.length)];
+  
+  const playlistLink = playlistId ? 
+    `📺 For more tips on ${topicName}, check out the full playlist:\nhttps://www.youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
+
+  // Format-specific content extraction for Health
+  const formatType = contentData.format_type;
+  let contentSection = '';
+  let answerSection = '';
+
+  if (formatType === 'quick_tip') {
+    // Quick Tip format: hook, action, result, cta
+    contentSection = `💡 HEALTH TIP:\n${contentData.hook || 'Health tip coming up!'}\n\n🎯 ACTION:\n${contentData.action || 'Take this action'}`;
+    answerSection = `✨ RESULT:\n${contentData.result || 'See the benefits!'}`;
+  } else if (formatType === 'before_after') {
+    // Before/After format: hook, before, after, result, cta
+    contentSection = `💡 HEALTH TRANSFORMATION:\n${contentData.hook || 'Transform your health!'}\n\n❌ BEFORE:\n${contentData.before || 'Before state'}\n\n✅ AFTER:\n${contentData.after || 'After state'}`;
+    answerSection = `🎯 RESULT:\n${contentData.result || 'See the transformation!'}`;
+  } else if (formatType === 'challenge') {
+    // Challenge format: hook, setup, instructions, challenge_type, reveal, answer
+    contentSection = `🎯 HEALTH CHALLENGE:\n${contentData.hook || 'Take this challenge!'}\n\n📋 SETUP:\n${contentData.setup || 'Challenge setup'}\n\n🎮 INSTRUCTIONS:\n${contentData.instructions || 'Follow the instructions'}`;
+    answerSection = `🎉 REVEAL:\n${contentData.reveal || 'Challenge results revealed in video!'}\n\n✅ ANSWER:\n${contentData.answer || 'Watch for the answer!'}`;
+  } else {
+    // MCQ format (default): question, options, answer, explanation
+    const mainQuestion = contentData.question || contentData.content || 'Health knowledge question';
+    contentSection = `❓ HEALTH QUIZ:\n${mainQuestion}`;
+    
+    const answerText = contentData.answer === 'A' ? 'TRUE' : 
+                      contentData.answer === 'B' ? 'FALSE' : 
+                      contentData.answer || 'Answer revealed in video';
+    const explanationText = contentData.explanation || 'Watch for explanation!';
+    answerSection = `🎯 ANSWER & EXPLANATION:\n${answerText} - ${explanationText}`;
   }
 
-  // Health account description
-  if (accountId === 'health_shots') {
-    const hooks = [
-      "🌟 Transform your health today!",
-      "💡 Expert health tip coming up!",
-      "🎯 Science-backed advice ahead!",
-      "🚀 Boost your wellness journey!"
-    ];
-    
-    const hook = hooks[Math.floor(Math.random() * hooks.length)];
-    
-    const playlistLink = playlistId ? 
-      `📺 For more tips on ${topicName}, check out the full playlist:\nhttps://www.youtube.com/playlist?list=${playlistId}\n\n-------------------------------------------------\n` : '';
+  return `${hook}\n${playlistLink}${contentSection}
 
-    return `${hook}\n${playlistLink}❓ HEALTH QUIZ:
-${contentData.question}
-
-🎯 ANSWER & EXPLANATION:
-${contentData.answer === 'A' ? 'TRUE' : 'FALSE'} - ${contentData.explanation}
+${answerSection}
 
 🏆 Join thousands improving their health knowledge!
 
@@ -482,10 +570,28 @@ ${contentData.answer === 'A' ? 'TRUE' : 'FALSE'} - ${contentData.explanation}
 ⚡ Share with friends who care about their health!
 
 ${hashtags}`;
-  }
+}
 
-  // Fallback description
-  return `${contentData.question || 'Expert content'}\n\n${contentData.explanation || 'Professional advice for better health and wellness.'}\n\n${hashtags}`;
+/**
+ * Extracts the main content/question from any format
+ */
+function extractMainContent(contentData: any): string {
+  return contentData.question || 
+         contentData.content || 
+         contentData.hook || 
+         contentData.assertion || 
+         contentData.target_word || 
+         'Expert content';
+}
+
+/**
+ * Extracts explanation from any format
+ */
+function extractExplanation(contentData: any): string {
+  return contentData.explanation || 
+         contentData.result || 
+         contentData.reason || 
+         'Professional advice for better health and wellness.';
 }
 
 /**

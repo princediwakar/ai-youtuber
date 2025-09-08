@@ -120,7 +120,7 @@ export async function generateAndStoreContent(
         : jobConfig.generationDate,
       topic: topicKey,
       topic_display_name: topicData?.displayName || topicKey,
-      question_format: contentData.question_type || 'multiple_choice',
+      question_format: contentData.content_type || contentData.question_type || selectedLayout,
       step: 2, // Next step is frame creation
       status: 'frames_pending',
       account_id: account.id,
