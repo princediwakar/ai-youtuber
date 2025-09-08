@@ -448,7 +448,7 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
       const optionsText = questionData.options ? Object.values(questionData.options).join(" ") : '';
       const textLength = hookText.length + optionsText.length;
       const baseTime = Math.ceil(textLength / CHARS_PER_SECOND);
-      return Math.max(MIN_DURATION, Math.min(8, baseTime + EXTRA_PROCESSING_TIME));
+      return Math.max(MIN_DURATION, Math.min(3, baseTime + EXTRA_PROCESSING_TIME));
       
     case 2: // Second Frame (varies by format)
       // MCQ: question+options, Common Mistake: mistake, Quick Fix: before, Quick Tip: action, Before/After: before

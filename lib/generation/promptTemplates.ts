@@ -138,14 +138,14 @@ ${questionFormat === 'multiple_choice'
       : `• STATEMENT: Present ${randomization.approach} brain health fact targeting ${contextInjection.demographic}\n• DESIGN: Create statements that reveal ${randomization.tone} truths or challenge assumptions\n• IMPACT: Ensure the answer provides ${contextInjection.urgency} practical value`}
 
 CRITICAL LENGTH REQUIREMENTS:
-• "question": MAXIMUM 180 characters - be concise and punchy
-• "options": Each option MAXIMUM 70 characters - short, clear answers only
+• "question": MAXIMUM 120 characters - be concise and punchy
+• "options": Each option MAXIMUM 45 characters - short, clear answers only
 • "explanation": MAXIMUM 120 characters - brief but valuable insight
 • "cta": MAXIMUM 35 characters - short action phrase (avoid repetitive CTAs)
 
 MANDATORY OUTPUT:
-• "question": ${questionFormat === 'multiple_choice' ? 'Engaging scenario-based or fact-testing multiple choice question (MAX 180 chars)' : 'Surprising or myth-busting true/false statement (MAX 180 chars)'} 
-• "options": ${questionFormat === 'multiple_choice' ? 'Object with "A", "B", "C", "D" - one correct answer, three clever distractors (each MAX 70 chars)' : 'Object with "A": "True", "B": "False"'}
+• "question": ${questionFormat === 'multiple_choice' ? 'Engaging scenario-based or fact-testing multiple choice question (MAX 120 chars)' : 'Surprising or myth-busting true/false statement (MAX 120 chars)'} 
+• "options": ${questionFormat === 'multiple_choice' ? 'Object with "A", "B", "C", "D" - one correct answer, three clever distractors (each MAX 45 chars)' : 'Object with "A": "True", "B": "False"'}
 • "answer": ${questionFormat === 'multiple_choice' ? 'Single letter "A", "B", "C", or "D"' : 'Either "A" or "B"'}
 • "explanation": Why this matters + practical application (MAX 120 characters)
 • "cta": Action-oriented CTA (MAX 35 chars) - use creative seed to avoid repetitive phrases
@@ -233,15 +233,15 @@ ${questionFormat === 'multiple_choice'
   URGENCY: Highlight ${contextInjection.urgency} actions viewers can take to protect their vision`}
 
 CRITICAL LENGTH REQUIREMENTS:
-• "question": MAXIMUM 180 characters - be concise and punchy
-• "options": Each option MAXIMUM 70 characters - short, clear answers only
+• "question": MAXIMUM 120 characters - be concise and punchy
+• "options": Each option MAXIMUM 45 characters - short, clear answers only
 • "explanation": MAXIMUM 120 characters - brief but valuable insight
 • "cta": MAXIMUM 35 characters - short action phrase (avoid repetitive CTAs)
 
 MANDATORY OUTPUT:
-• "question": ${questionFormat === 'multiple_choice' ? 'Scenario-based multiple choice addressing modern vision challenges (MAX 180 chars)'
-      : 'Eye-opening true/false statement about vision health (MAX 180 chars)'}
-• "options": ${questionFormat === 'multiple_choice' ? 'Object with "A", "B", "C", "D" - practical solution + three plausible alternatives (each MAX 70 chars)' : 'Object with "A": "True", "B": "False"'}
+• "question": ${questionFormat === 'multiple_choice' ? 'Scenario-based multiple choice addressing modern vision challenges (MAX 120 chars)'
+      : 'Eye-opening true/false statement about vision health (MAX 120 chars)'}
+• "options": ${questionFormat === 'multiple_choice' ? 'Object with "A", "B", "C", "D" - practical solution + three plausible alternatives (each MAX 45 chars)' : 'Object with "A": "True", "B": "False"'}
 • "answer": ${questionFormat === 'multiple_choice' ? 'Single letter "A", "B", "C", or "D"' : 'Either "A" or "B"'}
 • "explanation": Why this protects vision + immediate action step (MAX 120 characters)
 • "cta": Urgent action CTA (MAX 35 chars) - use creative seed to create unique phrases
@@ -289,7 +289,7 @@ MANDATORY OUTPUT:
 • "question": Clear, practical vocabulary question that tests real-world usage
 • "options": Object with "A", "B", "C", "D" - one perfect answer, three smart distractors based on common errors
 • "answer": Single letter "A", "B", "C", or "D"
-• "explanation": Why this answer elevates communication + usage tip (under 150 characters)
+• "explanation": Why this answer elevates communication + usage tip (under 120 characters)
 • "cta": Motivational CTA (under 40 chars): "Follow for fluency!", "Like if you got it!", "Level up your English!"
 • "question_type": Will be set automatically
 
@@ -304,7 +304,7 @@ REQUIREMENTS:
 • PRACTICAL: Focus on words used in professional and academic contexts
 • DISTRACTORS: Include common learner mistakes and plausible alternatives
 • ENGAGEMENT: Create immediate "vocabulary upgrade" value
-• EXPLANATION: Provide usage insight that elevates communication (under 150 characters)
+• EXPLANATION: Provide usage insight that elevates communication (under 120 characters)
 
 Make learners feel accomplished and eager to share their new knowledge. [${timeMarker}-${tokenMarker}]`;
   }
@@ -315,9 +315,9 @@ Make learners feel accomplished and eager to share their new knowledge. [${timeM
  */
 export function addJsonFormatInstructions(prompt: string, questionFormat: string): string {
   if (questionFormat === 'multiple_choice') {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "content", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", "cta", and "content_type" (set to "multiple_choice"). Explanation must be under 150 characters.';
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "content", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", "cta", and "content_type" (set to "multiple_choice"). Explanation must be under 120 characters.';
   } else if (questionFormat === 'true_false') {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "content", "options" (an object with keys "A": "True", "B": "False"), "answer" (either "A" or "B"), "explanation", "cta", and "content_type" (set to "true_false"). Explanation must be under 150 characters.';
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "content", "options" (an object with keys "A": "True", "B": "False"), "answer" (either "A" or "B"), "explanation", "cta", and "content_type" (set to "true_false"). Explanation must be under 120 characters.';
   } else if (questionFormat === 'assertion_reason') {
     return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "assertion", "reason", "options", "answer", "explanation", "cta", and "question_type" (set to "assertion_reason"). 
 
@@ -326,7 +326,7 @@ MANDATORY JSON STRUCTURE:
 • "reason": A statement explaining the assertion.
 • "options": Must be the standard A/B/C/D object.
 • "answer": A single letter "A", "B", "C", or "D".
-• "explanation": Max 2 short sentences (under 150 characters).
+• "explanation": Max 2 short sentences (under 120 characters).
 • "cta": A short call-to-action text.`;
   }
 
