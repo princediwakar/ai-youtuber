@@ -433,8 +433,13 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
 
 function getFrameDuration(questionData: any, frameNumber: number): number {
   if (!questionData || typeof questionData !== 'object') {
-    return 4; // Safe fallback for invalid data
+    return 5; // Safe fallback for invalid data - increased from 4
   }
+  
+  // Improved reading speed calculation: 8-10 chars/second for comfortable video reading
+  const CHARS_PER_SECOND = 9; // Conservative speed for video text comprehension
+  const MIN_DURATION = 3; // Minimum time to register visual content
+  const EXTRA_PROCESSING_TIME = 1.5; // Extra time for comprehension and visual processing
   
   switch (frameNumber) {
     case 1: // First Frame (Hook/Question)
@@ -442,33 +447,37 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
       const hookText = questionData.hook || questionData.question || '';
       const optionsText = questionData.options ? Object.values(questionData.options).join(" ") : '';
       const textLength = hookText.length + optionsText.length;
-      return Math.max(2, Math.min(7, Math.ceil(textLength / 20)));
+      const baseTime = Math.ceil(textLength / CHARS_PER_SECOND);
+      return Math.max(MIN_DURATION, Math.min(8, baseTime + EXTRA_PROCESSING_TIME));
       
     case 2: // Second Frame (varies by format)
       // MCQ: question+options, Common Mistake: mistake, Quick Fix: before, Quick Tip: action, Before/After: before
       const secondText = questionData.question || questionData.mistake || questionData.before || questionData.action || questionData.answer || '';
       const secondOptions = questionData.options ? Object.values(questionData.options).join(" ") : '';
       const secondLength = secondText.length + secondOptions.length;
-      return Math.max(4, Math.min(6, Math.ceil(secondLength / 15)));
+      const secondBaseTime = Math.ceil(secondLength / CHARS_PER_SECOND);
+      return Math.max(4, Math.min(8, secondBaseTime + EXTRA_PROCESSING_TIME));
       
     case 3: // Third Frame (varies by format)
       // MCQ: answer, Common Mistake: correct, Quick Fix: after, Quick Tip: result, Before/After: after
       const thirdText = questionData.answer || questionData.correct || questionData.after || questionData.result || questionData.right || '';
-      return Math.max(4, Math.min(5, Math.ceil(thirdText.length / 15)));
+      const thirdBaseTime = Math.ceil(thirdText.length / CHARS_PER_SECOND);
+      return Math.max(4, Math.min(7, thirdBaseTime + EXTRA_PROCESSING_TIME));
       
     case 4: // Fourth Frame (if exists)
       // MCQ: explanation, Common Mistake: practice, Before/After: result/proof
       const fourthText = questionData.explanation || questionData.practice || questionData.result || '';
       if (fourthText.length > 0) {
-        return Math.max(3, Math.min(6, Math.ceil(fourthText.length / 15)));
+        const fourthBaseTime = Math.ceil(fourthText.length / CHARS_PER_SECOND);
+        return Math.max(4, Math.min(8, fourthBaseTime + EXTRA_PROCESSING_TIME));
       }
-      return 3; // Standard duration for CTA or final frame
+      return 4; // Standard duration for CTA or final frame - increased from 3
       
     case 5: // Fifth Frame (if exists - rare, but possible for future formats)
-      return 3; // Standard duration for additional frames
+      return 4; // Standard duration for additional frames - increased from 3
       
     default:
-      return 4; // Fallback
+      return 5; // Fallback - increased from 4
   }
 }
 // --- MODIFICATION END ---

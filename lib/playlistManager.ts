@@ -45,8 +45,8 @@ function detectFormatFromJob(jobData: QuizJob): LayoutType {
     return formatType as LayoutType;
   }
   
-  // Detect from content structure
-  if (contentData) {
+  // Detect from content structure with safe property access
+  if (contentData && typeof contentData === 'object') {
     if (contentData.hook && contentData.mistake && contentData.correct && contentData.practice) {
       return 'common_mistake';
     }
@@ -74,8 +74,9 @@ function detectFormatFromJob(jobData: QuizJob): LayoutType {
 /**
  * Generates a consistent, URL-safe key from multiple identifying parts.
  */
-export function generateCanonicalKey(...parts: string[]): string {
-  const sanitize = (str: string) => str.toLowerCase().trim().replace(/[\s&]+/g, '-');
+export function generateCanonicalKey(...parts: (string | undefined | null)[]): string {
+  const sanitize = (str: string | undefined | null) => 
+    str ? str.toLowerCase().trim().replace(/[\s&]+/g, '-') : '';
   return parts.map(sanitize).filter(Boolean).join('-');
 }
 
@@ -516,20 +517,25 @@ export async function getOrCreatePlaylist(
   // Detect format from job data
   const detectedFormat = detectFormatFromJob(jobData);
   
-  const topic_display_name = jobData.topic_display_name || data.topic_display_name;
+  const topic_display_name = jobData.topic_display_name || data?.topic_display_name || topic;
   let canonicalKey: string;
   let playlistTitle: string;
 
   const personaData = MasterPersonas[persona];
   let topicDisplayName = topic_display_name;
 
-  // Get proper topic display name
-  const topicKey = (data.content as any)?.topic || (data.question as any)?.topic || topic;
-  topicDisplayName = personaData?.subCategories?.find(cat => cat.key === topicKey)?.displayName || topic_display_name;
+  // Get proper topic display name with null checks
+  const topicKey = (data?.content as any)?.topic || (data?.question as any)?.topic || topic;
+  if (personaData?.subCategories) {
+    const foundCategory = personaData.subCategories.find(cat => cat.key === topicKey);
+    topicDisplayName = foundCategory?.displayName || topic_display_name || topic;
+  } else {
+    topicDisplayName = topic_display_name || topic;
+  }
   
   // Generate account-specific canonical key and title with format
-  canonicalKey = generateCanonicalKey(accountId, persona, topicKey, detectedFormat);
-  playlistTitle = generatePlaylistTitle(accountId, persona, topicDisplayName, detectedFormat);
+  canonicalKey = generateCanonicalKey(accountId, persona, topicKey || topic, detectedFormat);
+  playlistTitle = generatePlaylistTitle(accountId, persona, topicDisplayName || topic, detectedFormat);
     
   if (playlistMap.has(canonicalKey)) {
     return playlistMap.get(canonicalKey)!;

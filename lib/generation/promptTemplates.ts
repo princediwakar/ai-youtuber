@@ -38,11 +38,11 @@ function generateRandomizationElements() {
   const approaches = ['scientific', 'practical', 'surprising', 'urgent', 'interactive'];
   const tones = ['authoritative', 'conversational', 'alarming', 'encouraging', 'investigative'];
   const perspectives = ['expert', 'researcher', 'practitioner', 'educator', 'investigator'];
-  
+
   const randomApproach = approaches[Math.floor(Math.random() * approaches.length)];
   const randomTone = tones[Math.floor(Math.random() * tones.length)];
   const randomPerspective = perspectives[Math.floor(Math.random() * perspectives.length)];
-  
+
   return {
     creativeSeed,
     approach: randomApproach,
@@ -58,7 +58,7 @@ function generateContextInjections() {
   const timeContexts = ['morning routine', 'work break', 'evening wind-down', 'weekend activity', 'travel situation'];
   const demographicContexts = ['busy professionals', 'students', 'parents', 'seniors', 'athletes'];
   const urgencyLevels = ['immediate', 'within 24 hours', 'this week', 'starting today', 'right now'];
-  
+
   return {
     timeContext: timeContexts[Math.floor(Math.random() * timeContexts.length)],
     demographic: demographicContexts[Math.floor(Math.random() * demographicContexts.length)],
@@ -73,35 +73,35 @@ export function generateBrainHealthPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = TOPIC_GUIDELINES[config.topic];
-  
+
   // Generate randomization elements
   const randomization = generateRandomizationElements();
   const contextInjection = generateContextInjections();
-  
+
   // Create timestamp-based variation in prompt structure
   const hour = new Date().getHours();
   const promptVariation = hour % 3; // Creates 3 different prompt structures
-  
+
   let basePrompt = '';
   let expertRole = '';
   let contentStrategy = '';
-  
+
   // Prompt structure variation based on time
   switch (promptVariation) {
     case 0:
-      expertRole = `You are a ${randomization.perspective} neuroscientist with a ${randomization.tone} approach`;
+      expertRole = `You are a ${randomization.perspective} brain health coach with a ${randomization.tone} approach`;
       contentStrategy = `Take a ${randomization.approach} angle focusing on ${contextInjection.demographic}`;
       break;
     case 1:
-      expertRole = `As a brain research expert specializing in ${randomization.perspective} communication`;
-      contentStrategy = `Use ${randomization.tone} language with ${randomization.approach} evidence for ${contextInjection.timeContext}`;
+      expertRole = `As a mental health expert specializing in ${randomization.perspective} communication`;
+      contentStrategy = `Use ${randomization.tone} language with ${randomization.approach} tips for ${contextInjection.timeContext}`;
       break;
     case 2:
-      expertRole = `You're a cognitive science educator with ${randomization.tone} presentation style`;
+      expertRole = `You're a brain fitness trainer with ${randomization.tone} presentation style`;
       contentStrategy = `Frame content as ${randomization.approach} insights targeting ${contextInjection.demographic} during ${contextInjection.timeContext}`;
       break;
   }
-  
+
   basePrompt = `${expertRole} creating viral brain health content for YouTube Shorts.
 
 CREATIVE SEED: [${randomization.creativeSeed}] - Use this to ensure unique creative direction
@@ -110,7 +110,7 @@ TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Advanced brain healt
 RANDOMIZED APPROACH:
 • CONTENT STYLE: ${randomization.approach} with ${randomization.tone} tone from ${randomization.perspective} perspective
 • CONTEXT: Target ${contextInjection.demographic} in ${contextInjection.timeContext} scenarios
-• URGENCY: Position as ${contextInjection.urgency} actionable insight
+• URGENCY: Position as ${contextInjection.urgency} simple brain tip
 
 VIRAL CONTENT STRATEGY:
 • HOOK: ${guidelines?.hook || 'Present surprising brain health insights that challenge common assumptions'}
@@ -125,7 +125,7 @@ ANTI-REPETITION CONSTRAINTS:
 
 Generate a ${questionFormat === 'multiple_choice' ? 'multiple choice' : 'true/false'} question that:
 
-TARGET AUDIENCE: Health-conscious adults (25-55) seeking cognitive enhancement and brain longevity
+TARGET AUDIENCE: Health-conscious adults (25-55) who want a sharper memory and better focus
 CONTENT APPROACH:
 • Lead with ${randomization.tone} ${randomization.approach} insights
 • Present evidence-based information tailored to ${contextInjection.demographic}
@@ -133,9 +133,9 @@ CONTENT APPROACH:
 • Create "I need to share this with ${contextInjection.demographic}" moments
 
 QUESTION STRUCTURE (${questionFormat}):
-${questionFormat === 'multiple_choice' 
-  ? `• STEM: Present scenario using ${randomization.approach} angle for ${contextInjection.demographic}\n• CORRECT ANSWER: The scientifically accurate response with ${contextInjection.urgency} practical value\n• SMART DISTRACTORS: Common misconceptions, partially correct answers, believable alternatives\n• DIFFICULTY: Challenging enough to educate but achievable for motivated viewers` 
-  : `• STATEMENT: Present ${randomization.approach} brain health fact targeting ${contextInjection.demographic}\n• DESIGN: Create statements that reveal ${randomization.tone} truths or challenge assumptions\n• IMPACT: Ensure the answer provides ${contextInjection.urgency} practical value`}
+${questionFormat === 'multiple_choice'
+      ? `• STEM: Present scenario using ${randomization.approach} angle for ${contextInjection.demographic}\n• CORRECT ANSWER: The scientifically accurate response with ${contextInjection.urgency} practical value\n• SMART DISTRACTORS: Common misconceptions, partially correct answers, believable alternatives\n• DIFFICULTY: Challenging enough to educate but achievable for motivated viewers`
+      : `• STATEMENT: Present ${randomization.approach} brain health fact targeting ${contextInjection.demographic}\n• DESIGN: Create statements that reveal ${randomization.tone} truths or challenge assumptions\n• IMPACT: Ensure the answer provides ${contextInjection.urgency} practical value`}
 
 CRITICAL LENGTH REQUIREMENTS:
 • "question": MAXIMUM 180 characters - be concise and punchy
@@ -163,35 +163,35 @@ export function generateEyeHealthPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = TOPIC_GUIDELINES[config.topic];
-  
+
   // Generate randomization elements
   const randomization = generateRandomizationElements();
   const contextInjection = generateContextInjections();
-  
+
   // Create timestamp-based variation in prompt structure
   const hour = new Date().getHours();
   const promptVariation = hour % 3; // Creates 3 different prompt structures
-  
+
   let basePrompt = '';
   let expertRole = '';
   let contentStrategy = '';
-  
+
   // Prompt structure variation based on time
   switch (promptVariation) {
     case 0:
-      expertRole = `You are a ${randomization.perspective} optometrist with ${randomization.tone} communication style`;
-      contentStrategy = `Deliver ${randomization.approach} vision insights for ${contextInjection.demographic}`;
+      expertRole = `You are a ${randomization.perspective} eye health expert with ${randomization.tone} communication style`;
+      contentStrategy = `Deliver ${randomization.approach} vision tips for ${contextInjection.demographic}`;
       break;
     case 1:
-      expertRole = `As a vision health specialist focusing on ${randomization.perspective} education`;
+      expertRole = `As a vision wellness coach focusing on ${randomization.perspective} education`;
       contentStrategy = `Present ${randomization.tone} ${randomization.approach} guidance targeting ${contextInjection.timeContext}`;
       break;
     case 2:
-      expertRole = `You're an eye care researcher with ${randomization.tone} presentation approach`;
-      contentStrategy = `Frame insights as ${randomization.approach} revelations for ${contextInjection.demographic} in ${contextInjection.timeContext}`;
+      expertRole = `You're an eye care specialist with ${randomization.tone} presentation approach`;
+      contentStrategy = `Frame insights as ${randomization.approach} tips for ${contextInjection.demographic} in ${contextInjection.timeContext}`;
       break;
   }
-  
+
   basePrompt = `${expertRole} creating viral eye health content for YouTube Shorts.
 
 CREATIVE SEED: [${randomization.creativeSeed}] - Use this to ensure unique creative direction
@@ -200,7 +200,7 @@ TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Advanced eye health 
 RANDOMIZED APPROACH:
 • CONTENT STYLE: ${randomization.approach} with ${randomization.tone} tone from ${randomization.perspective} perspective
 • CONTEXT: Target ${contextInjection.demographic} during ${contextInjection.timeContext} scenarios
-• URGENCY: Position as ${contextInjection.urgency} vision protection insight
+• URGENCY: Position as ${contextInjection.urgency} eye care tip
 
 VIRAL CONTENT STRATEGY:
 • HOOK: ${guidelines?.hook || 'Reveal shocking truths about daily habits that damage vision'}
@@ -223,9 +223,14 @@ CONTENT APPROACH:
 • Create urgency about vision protection using ${randomization.perspective} credibility
 
 QUESTION STRUCTURE (${questionFormat}):
-${questionFormat === 'multiple_choice' 
-  ? `• STEM: Present eye health scenario using ${randomization.approach} angle for ${contextInjection.demographic}\n• CORRECT ANSWER: Evidence-based solution with ${contextInjection.urgency} practical application\n• SMART DISTRACTORS: Common eye care myths, partially correct advice, believable misconceptions\n• RELEVANCE: Focus on digital age challenges specific to ${contextInjection.timeContext}` 
-  : `• STATEMENT: Present ${randomization.approach} eye health fact that challenges ${contextInjection.demographic} assumptions\n• IMPACT: Create "I had no idea my ${contextInjection.timeContext} habits were hurting my eyes" moments\n• URGENCY: Highlight ${contextInjection.urgency} actions viewers can take to protect their vision`}
+${questionFormat === 'multiple_choice'
+      ? `• STEM: Present eye health scenario using ${randomization.approach} angle for ${contextInjection.demographic}\n• 
+  CORRECT ANSWER: Evidence-based solution with ${contextInjection.urgency} practical application\n• 
+  SMART DISTRACTORS: Common eye care myths, partially correct advice, believable misconceptions\n• 
+  RELEVANCE: Focus on digital age challenges specific to ${contextInjection.timeContext}`
+      : `• STATEMENT: Present ${randomization.approach} eye health fact that challenges ${contextInjection.demographic} assumptions\n• 
+  IMPACT: Create "I had no idea my ${contextInjection.timeContext} habits were hurting my eyes" moments\n• 
+  URGENCY: Highlight ${contextInjection.urgency} actions viewers can take to protect their vision`}
 
 CRITICAL LENGTH REQUIREMENTS:
 • "question": MAXIMUM 180 characters - be concise and punchy
@@ -234,7 +239,8 @@ CRITICAL LENGTH REQUIREMENTS:
 • "cta": MAXIMUM 35 characters - short action phrase (avoid repetitive CTAs)
 
 MANDATORY OUTPUT:
-• "question": ${questionFormat === 'multiple_choice' ? 'Scenario-based multiple choice addressing modern vision challenges (MAX 180 chars)' : 'Eye-opening true/false statement about vision health (MAX 180 chars)'}
+• "question": ${questionFormat === 'multiple_choice' ? 'Scenario-based multiple choice addressing modern vision challenges (MAX 180 chars)'
+      : 'Eye-opening true/false statement about vision health (MAX 180 chars)'}
 • "options": ${questionFormat === 'multiple_choice' ? 'Object with "A", "B", "C", "D" - practical solution + three plausible alternatives (each MAX 70 chars)' : 'Object with "A": "True", "B": "False"'}
 • "answer": ${questionFormat === 'multiple_choice' ? 'Single letter "A", "B", "C", or "D"' : 'Either "A" or "B"'}
 • "explanation": Why this protects vision + immediate action step (MAX 120 characters)
@@ -253,7 +259,7 @@ export function generateEnglishPrompt(config: PromptConfig): string {
   const { topicData, topic, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = TOPIC_GUIDELINES[topic];
-  
+
   if (topicData) {
     return `You are a viral English education expert creating addictive vocabulary content for YouTube Shorts.
 
@@ -323,7 +329,7 @@ MANDATORY JSON STRUCTURE:
 • "explanation": Max 2 short sentences (under 150 characters).
 • "cta": A short call-to-action text.`;
   }
-  
+
   return prompt;
 }
 
@@ -337,7 +343,7 @@ MANDATORY JSON STRUCTURE:
 export function generateCommonMistakePrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  
+
   return `You are a native English speaker creating viral "Common Mistake" content for YouTube Shorts.
 
 TOPIC: "${topicData.displayName}" - Focus on mistakes that 99% of learners make
@@ -374,7 +380,7 @@ Create content that makes learners feel embarrassed about their mistake but exci
 export function generateQuickFixPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  
+
   return `You are an English fluency coach creating viral "Quick Fix" content for YouTube Shorts.
 
 TOPIC: "${topicData.displayName}" - Instant vocabulary upgrades
@@ -411,7 +417,7 @@ export function generateQuickTipPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = TOPIC_GUIDELINES[config.topic];
-  
+
   return `You are a health expert creating viral "Quick Tip" content for YouTube Shorts.
 
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Immediate health improvements'}
@@ -445,7 +451,7 @@ export function generateBeforeAfterPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = TOPIC_GUIDELINES[config.topic];
-  
+
   return `You are a health expert creating viral "Before/After" content for YouTube Shorts.
 
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Health consequences and transformations'}
@@ -480,7 +486,7 @@ Create content that makes viewers realize they need to change immediately. [${ti
 export function generateUsageDemoPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  
+
   return `You are an English fluency expert creating viral "Usage Demo" content for YouTube Shorts.
 
 TOPIC: "${topicData.displayName}" - Contextual word mastery
@@ -521,7 +527,7 @@ export function generateChallengePrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = TOPIC_GUIDELINES[config.topic];
-  
+
   return `You are a brain training expert creating viral "Challenge" content for YouTube Shorts.
 
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Interactive brain/memory challenges'}
@@ -537,10 +543,10 @@ CONTENT REQUIREMENTS:
 • HOOK: Exciting challenge invitation 
 • SETUP: Clear instructions for the challenge
 • CHALLENGE: Interactive test (memory, visual, logic)
-• REVEAL: Solution + cognitive science explanation
+• REVEAL: Solution + brain science explanation
 • ENGAGEMENT: Viewers must actively participate
 
-TARGET: People seeking brain training and cognitive improvement
+TARGET: People who want to train their brain and improve memory
 
 MANDATORY OUTPUT JSON:
 • "hook": Exciting challenge invitation (under 60 chars)
@@ -565,7 +571,7 @@ Create interactive content that viewers must engage with actively. [${timeMarker
  */
 export function generateFormatPrompt(config: PromptConfig): string {
   const format = config.format || 'mcq';
-  
+
   switch (format) {
     case 'common_mistake':
       return generateCommonMistakePrompt(config);
