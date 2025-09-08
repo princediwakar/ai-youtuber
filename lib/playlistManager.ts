@@ -15,6 +15,7 @@ const PERSONA_FORMAT_MAP: Record<string, LayoutType[]> = {
   'english_vocab_builder': ['mcq', 'common_mistake', 'quick_fix', 'usage_demo'],
   'brain_health_tips': ['mcq', 'quick_tip', 'before_after', 'challenge'],
   'eye_health_tips': ['mcq', 'quick_tip', 'before_after', 'challenge'],
+  'ssc_shots': ['mcq', 'quick_tip'],
 };
 
 // Format display names for better playlist organization
@@ -91,6 +92,9 @@ function generateHashtags(accountId: string, persona: string, topicDisplayName: 
     health_shots: {
       brain_health_tips: ['#BrainHealth', '#Memory', '#Focus', '#CognitiveHealth', '#Wellness'],
       eye_health_tips: ['#EyeHealth', '#VisionCare', '#ScreenTime', '#EyeCare', '#HealthyEyes']
+    },
+    ssc_shots: {
+      ssc_shots: ['#SSC', '#GovernmentJobs', '#CompetitiveExams', '#SSCPrep', '#StudyTips']
     }
   };
 
@@ -158,6 +162,17 @@ function generatePlaylistTitle(accountId: string, persona: string, topicDisplayN
         'quick_fix': `Eye Health: ${topicDisplayName} | Quick Fixes`,
         'usage_demo': `Eye Health: ${topicDisplayName} | Usage Examples`
       }
+    },
+    ssc_shots: {
+      ssc_shots: {
+        'mcq': `SSC Exam Prep: ${topicDisplayName} | Practice Questions`,
+        'quick_tip': `SSC Exam Prep: ${topicDisplayName} | Quick Tips`,
+        'before_after': `SSC Exam Prep: ${topicDisplayName} | Before & After`,
+        'challenge': `SSC Exam Prep: ${topicDisplayName} | Challenges`,
+        'common_mistake': `SSC Exam Prep: ${topicDisplayName} | Common Mistakes`,
+        'quick_fix': `SSC Exam Prep: ${topicDisplayName} | Quick Fixes`,
+        'usage_demo': `SSC Exam Prep: ${topicDisplayName} | Examples`
+      }
     }
   };
 
@@ -179,6 +194,9 @@ function generateSEOKeywords(accountId: string, persona: string, topicDisplayNam
     health_shots: {
       brain_health_tips: ['brain health', 'memory improvement', 'cognitive function', 'mental wellness', 'focus techniques', 'brain exercises'],
       eye_health_tips: ['eye health', 'vision care', 'screen time protection', 'eye exercises', 'digital eye strain', 'eye safety']
+    },
+    ssc_shots: {
+      ssc_shots: ['SSC exam preparation', 'government jobs', 'competitive exams', 'SSC study material', 'exam tips', 'government exam prep']
     }
   };
 
@@ -436,6 +454,80 @@ ${hashtags}
 
 ${tag}`;
     }
+  }
+
+  if (accountId === 'ssc_shots') {
+    const sscFormatDescriptions: Record<LayoutType, string> = {
+      'mcq': `📚 Master ${topicDisplayName} with targeted SSC practice questions! Government exam preparation made effective.
+
+✅ What you'll get:
+• Exam-pattern multiple choice questions
+• Detailed explanations for every answer
+• Topic-wise preparation strategy
+• Quick 30-second learning videos`,
+      'quick_tip': `📚 Ace ${topicDisplayName} with expert SSC preparation tips! Government exam success in bite-sized content.
+
+✅ What you'll get:
+• Exam-specific shortcuts and techniques
+• Time-saving strategies for competitive exams
+• Essential facts and formulas
+• Expert guidance for government jobs`,
+      'before_after': `📚 Transform your ${topicDisplayName} preparation with proven SSC strategies! See how proper preparation changes everything.
+
+✅ What you'll get:
+• Wrong vs right preparation approaches  
+• Common study mistakes to avoid
+• Effective preparation transformations
+• Success story examples`,
+      'challenge': `📚 Challenge your ${topicDisplayName} knowledge with SSC practice tests! Interactive preparation for government exams.
+
+✅ What you'll get:
+• Timed practice challenges
+• Competitive exam simulations
+• Knowledge assessment tests
+• Progress tracking exercises`,
+      'common_mistake': `📚 Avoid ${topicDisplayName} mistakes that cost exam marks! Learn what 90% of SSC aspirants get wrong.
+
+✅ What you'll get:
+• Common exam errors identified
+• Correct problem-solving approaches
+• Trap questions revealed
+• Expert mistake prevention tips`,
+      'quick_fix': `📚 Fix your ${topicDisplayName} weak areas instantly! Quick solutions for SSC exam preparation gaps.
+
+✅ What you'll get:
+• Rapid improvement techniques
+• Concept clarification shortcuts
+• Last-minute preparation fixes  
+• Confidence-building solutions`,
+      'usage_demo': `📚 Master ${topicDisplayName} application with real SSC examples! Learn the right way to solve exam problems.
+
+✅ What you'll get:
+• Step-by-step problem solving
+• Correct vs incorrect approaches
+• Exam-pattern examples
+• Practical application methods`
+    };
+    
+    const formatContent = sscFormatDescriptions[format] || sscFormatDescriptions['mcq'];
+    
+    return `${formatContent}
+
+🎯 Why choose this playlist?
+• Designed specifically for SSC exam patterns
+• Created by government exam preparation experts  
+• Covers all major SSC topics systematically
+• Proven to improve exam performance and confidence
+
+💡 Study Plan: Watch daily → Practice → Revise → Clear your government exam!
+🔔 New ${formatName.toLowerCase()} uploaded regularly for consistent preparation!
+
+🏆 Join thousands of successful SSC aspirants who achieved government jobs with our help!
+
+Keywords: ${seoKeywords}
+${hashtags}
+
+${tag}`;
   }
 
   // Fallback description

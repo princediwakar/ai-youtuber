@@ -90,6 +90,11 @@ export function parseAndValidateResponse(content: string, persona: string, layou
       return validateEnglishContent(data, layout);
     }
 
+    // SSC exam preparation validation
+    if (persona === 'ssc_shots') {
+      return validateSSCContent(data, layout);
+    }
+
     return {
       success: false,
       error: `Unsupported persona for validation: ${persona}`
@@ -160,6 +165,67 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
       return {
         success: false,
         error: 'Multiple choice health question answer must be A, B, C, or D'
+      };
+    }
+  }
+  
+  // Apply length limits to all content
+  enforceLengthLimits(data);
+  
+  return { success: true, data };
+}
+
+/**
+ * Validates SSC content structure
+ */
+function validateSSCContent(data: any, format?: string): ValidationResult {
+  // Format-specific validation for SSC content
+  if (format === 'challenge') {
+    return validateChallengeFormat(data);
+  }
+
+  // Default MCQ validation for SSC content
+  // Check required fields - for MCQ format, we expect either 'question' or 'content' field
+  const hasQuestion = data.question && typeof data.question === 'string';
+  const hasContent = data.content && typeof data.content === 'string';
+  
+  if ((!hasQuestion && !hasContent) ||
+      !data.options || typeof data.options !== 'object' ||
+      !data.answer || typeof data.answer !== 'string' ||
+      !data.explanation || typeof data.explanation !== 'string' ||
+      !data.cta || typeof data.cta !== 'string') {
+    return {
+      success: false,
+      error: 'SSC exam question response missing required fields'
+    };
+  }
+  
+  // Validate options structure based on question type
+  if (data.question_type === 'true_false') {
+    if (!data.options.A || !data.options.B || data.options.A !== 'True' || data.options.B !== 'False') {
+      return {
+        success: false,
+        error: 'True/false SSC question must have options A: "True", B: "False"'
+      };
+    }
+    if (!['A', 'B'].includes(data.answer)) {
+      return {
+        success: false,
+        error: 'True/false SSC question answer must be A or B'
+      };
+    }
+  } else {
+    // Multiple choice validation
+    if (!data.options.A || !data.options.B || !data.options.C || !data.options.D) {
+      return {
+        success: false,
+        error: 'Multiple choice SSC question must have options A, B, C, and D'
+      };
+    }
+    if (!['A', 'B', 'C', 'D'].includes(data.answer)) {
+      return {
+        success: false,
+        error: 'Multiple choice SSC question answer must be A, B, C, or D'
       };
     }
   }

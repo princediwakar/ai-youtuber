@@ -1,8 +1,9 @@
 /**
  * Multi-Account YouTube Content Generation & Upload Schedule
  *
- * English Shots Strategy: 4 daily uploads with 2 generation batches (6 quizzes/day = optimal growth)
- * Health Shots Strategy: 3 daily uploads with 2 generation batches (6 quizzes/day = healthy buffer)
+ * English Shots Strategy: 8 daily uploads with 3 generation batches (daily vocab building)
+ * Health Shots Strategy: 6 daily uploads with 2 generation batches (wellness content)
+ * SSC Shots Strategy: 6 daily uploads with 3 generation batches (exam preparation)
  *
  * Each generation batch creates 3 quizzes. Optimized for quality over quantity.
  */
@@ -59,6 +60,26 @@ const healthUploadPattern: HourlySchedule = {
   22: ['brain_health_tips'],  // Evening health awareness
 };
 
+/**
+ * SSC Shots Account Schedules
+ * Focus: SSC exam aspirants during optimal study times
+ * Strategy: 6 daily uploads targeting serious exam preparation audience
+ */
+const sscGenerationPattern: HourlySchedule = {
+  5: ['ssc_shots'],   // Early morning generation
+  14: ['ssc_shots'],  // Post-lunch generation  
+  20: ['ssc_shots'],  // Evening generation
+};
+
+const sscUploadPattern: HourlySchedule = {
+  6: ['ssc_shots'],   // Early morning study time
+  9: ['ssc_shots'],   // Morning study session
+  12: ['ssc_shots'],  // Lunch break revision
+  15: ['ssc_shots'],  // Afternoon study break
+  18: ['ssc_shots'],  // Evening study start
+  21: ['ssc_shots'],  // Night study session
+};
+
 // Account-specific schedules
 const ACCOUNT_SCHEDULES: Record<string, AccountSchedules> = {
   english_shots: {
@@ -100,6 +121,27 @@ const ACCOUNT_SCHEDULES: Record<string, AccountSchedules> = {
       4: healthUploadPattern, // Thursday
       5: healthUploadPattern, // Friday
       6: healthUploadPattern, // Saturday
+    }
+  },
+
+  ssc_shots: {
+    generation: {
+      0: sscGenerationPattern, // Sunday
+      1: sscGenerationPattern, // Monday
+      2: sscGenerationPattern, // Tuesday
+      3: sscGenerationPattern, // Wednesday
+      4: sscGenerationPattern, // Thursday
+      5: sscGenerationPattern, // Friday
+      6: sscGenerationPattern, // Saturday
+    },
+    upload: {
+      0: sscUploadPattern, // Sunday
+      1: sscUploadPattern, // Monday
+      2: sscUploadPattern, // Tuesday
+      3: sscUploadPattern, // Wednesday
+      4: sscUploadPattern, // Thursday
+      5: sscUploadPattern, // Friday
+      6: sscUploadPattern, // Saturday
     }
   }
 };

@@ -36,6 +36,14 @@ export const PersonaThemeMap: Record<string, string[]> = {
     'CosmicDawn'        // Dramatic but eye-conscious gradients
   ],
   
+  // SSC exam preparation - professional and authoritative themes for government exam content
+  ssc_shots: [
+    'VintageScroll',    // Professional scholarly feel
+    'MintyFresh',       // Clean and focused  
+    'SakuraGrove',      // Calm and trustworthy
+    'CanyonSunset',     // Warm institutional colors
+  ],
+  
   // A default set of themes for any new persona not explicitly listed.
   default: ['MintyFresh', 'VintageScroll', 'SakuraGrove'],
 };

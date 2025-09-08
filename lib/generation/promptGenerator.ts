@@ -4,6 +4,7 @@
  */
 
 import { MasterPersonas } from '../personas';
+import { generateSSCExamPrompt } from './personas/sscPrompts';
 import {
   generateVariationMarkers,
   generateBrainHealthPrompt,
@@ -86,6 +87,14 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
   // English content generation
   else if (persona === 'english_vocab_builder') {
     prompt = generateEnglishPrompt(promptConfig);
+    
+    const rand = Math.random();
+    const questionFormat = rand < 0.85 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason');
+    
+    prompt = addJsonFormatInstructions(prompt, questionFormat);
+  }
+  else if (persona === 'ssc_shots') {
+    prompt = generateSSCExamPrompt(promptConfig);
     
     const rand = Math.random();
     const questionFormat = rand < 0.85 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason');

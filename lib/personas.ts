@@ -5,9 +5,10 @@ import { PersonaConfig } from './types';
  * 
  * English Persona: Comprehensive vocabulary builder for automated short-form video quizzes
  * Health Personas: Brain and eye health tips for wellness-focused content
+ * SSC Persona: Government exam preparation content for competitive exam aspirants
  *
- * Updated on: 2025-09-03
- * Rationale: Extended to support multi-account architecture with health content personas
+ * Updated on: 2025-09-08
+ * Rationale: Extended to support three-channel architecture with SSC exam preparation content
  */
 export const MasterPersonas: PersonaConfig = {
   // English Learning Content
@@ -60,6 +61,35 @@ export const MasterPersonas: PersonaConfig = {
       { key: 'eye_safety', displayName: 'Eye Safety & Protection Tips 🥽' },
       { key: 'vision_myths', displayName: 'Eye Health Myths & Facts 🔍' },
       { key: 'eye_fatigue', displayName: 'Preventing Eye Strain & Fatigue 😴' }
+    ],
+  },
+
+  // SSC Exam Preparation Content
+  ssc_shots: {
+    displayName: '@SSCShotsDaily',
+    subCategories: [
+      // General Studies
+      { key: 'ssc_history', displayName: 'Indian History Facts 📚' },
+      { key: 'ssc_geography', displayName: 'Geography Quick Facts 🌍' },
+      { key: 'ssc_polity', displayName: 'Constitution & Governance 🏛️' },
+      { key: 'ssc_economics', displayName: 'Economy Basics 💰' },
+
+      // Quantitative Aptitude  
+      { key: 'ssc_math_basics', displayName: 'Math Shortcuts & Tricks ➕' },
+      { key: 'ssc_percentages', displayName: 'Percentage Problems 📊' },
+      { key: 'ssc_ratio_proportion', displayName: 'Ratio & Proportion ⚖️' },
+
+      // Reasoning
+      { key: 'ssc_logical_reasoning', displayName: 'Logical Reasoning 🧠' },
+      { key: 'ssc_verbal_reasoning', displayName: 'Verbal Reasoning 💭' },
+      { key: 'ssc_coding_decoding', displayName: 'Coding-Decoding 🔐' },
+
+      // English
+      { key: 'ssc_grammar', displayName: 'Grammar Rules 📝' },
+      { key: 'ssc_vocabulary', displayName: 'SSC Vocabulary 📖' },
+
+      // Current Affairs
+      { key: 'ssc_current_affairs', displayName: 'Current Affairs Flash' },
     ],
   },
 };
