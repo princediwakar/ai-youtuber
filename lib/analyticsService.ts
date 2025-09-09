@@ -26,6 +26,8 @@ export interface AIAnalyticsInsights {
   performanceAnalysis: string;
   contentRecommendations: string[];
   topicOptimization: string[];
+  timingOptimization: string[];
+  formatOptimization: string[];
   engagementStrategies: string[];
   personaSpecificAdvice: string[];
   predictiveInsights: string[];
@@ -53,6 +55,20 @@ export interface AnalyticsDataForAI {
     engagementTrend: 'increasing' | 'decreasing' | 'stable';
     viewsTrend: 'increasing' | 'decreasing' | 'stable';
     topicPerformanceShifts: string[];
+  };
+  timingInsights?: {
+    bestHours: number[];
+    bestDays: number[];
+    worstHours: number[];
+    worstDays: number[];
+    hourlyData: Array<{ hour: number; avgEngagementRate: number; videoCount: number; }>;
+    weeklyData: Array<{ dayOfWeek: number; dayName: string; avgEngagementRate: number; videoCount: number; }>;
+  };
+  formatInsights?: {
+    bestFormat: string;
+    worstFormat: string;
+    mostConsistent: string;
+    formatData: Array<{ format: string; avgEngagementRate: number; videoCount: number; consistency: string; }>;
   };
 }
 
@@ -163,7 +179,7 @@ class AnalyticsService {
   }
 
   /**
-   * Store analytics data in the database
+   * Store analytics data in the database with enhanced timing data
    */
   async storeAnalytics(analytics: VideoAnalytics[]): Promise<void> {
     if (analytics.length === 0) return;
@@ -172,11 +188,35 @@ class AnalyticsService {
 
     for (const data of analytics) {
       try {
+        // Get additional job data for timing and format analysis
+        const jobData = await query(`
+          SELECT qj.question_format, qj.topic_display_name, uv.uploaded_at
+          FROM quiz_jobs qj
+          JOIN uploaded_videos uv ON qj.id = uv.job_id
+          WHERE qj.id = $1
+        `, [data.jobId]);
+
+        if (jobData.rows.length === 0) {
+          console.warn(`[AnalyticsService] No job data found for ${data.jobId}`);
+          continue;
+        }
+
+        const job = jobData.rows[0];
+        const uploadedAt = new Date(job.uploaded_at);
+        
+        // Convert to IST (UTC + 5:30) for timing analysis
+        const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
+        const istDate = new Date(uploadedAt.getTime() + istOffset);
+        
+        const uploadHour = istDate.getHours();
+        const uploadDayOfWeek = istDate.getDay(); // 0=Sunday, 6=Saturday
+
         await query(`
           INSERT INTO video_analytics (
             video_id, job_id, account_id, views, likes, comments, dislikes,
-            engagement_rate, like_ratio, video_uploaded_at, collected_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+            engagement_rate, like_ratio, video_uploaded_at, collected_at,
+            upload_hour, upload_day_of_week, question_format, topic_display_name
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11, $12, $13, $14)
         `, [
           data.videoId,
           data.jobId,
@@ -187,7 +227,11 @@ class AnalyticsService {
           data.dislikes,
           data.engagementRate,
           data.likeRatio,
-          data.videoUploadedAt
+          data.videoUploadedAt,
+          uploadHour,
+          uploadDayOfWeek,
+          job.question_format,
+          job.topic_display_name
         ]);
       } catch (error) {
         console.error(`[AnalyticsService] Error storing analytics for video ${data.videoId}:`, error);
@@ -195,7 +239,7 @@ class AnalyticsService {
       }
     }
 
-    console.log(`[AnalyticsService] Successfully stored analytics for ${analytics.length} videos`);
+    console.log(`[AnalyticsService] Successfully stored enhanced analytics for ${analytics.length} videos`);
   }
 
   /**
@@ -386,6 +430,10 @@ class AnalyticsService {
       trend.recent_views > trend.prev_views * 1.1 ? 'increasing' :
       trend.recent_views < trend.prev_views * 0.9 ? 'decreasing' : 'stable';
 
+    // Get timing and format insights
+    const timingAnalytics = await this.getTimingAnalytics(accountId, persona);
+    const formatAnalytics = await this.getFormatAnalytics(accountId, persona);
+
     return {
       accountId,
       persona,
@@ -408,6 +456,204 @@ class AnalyticsService {
         engagementTrend,
         viewsTrend,
         topicPerformanceShifts: []
+      },
+      timingInsights: {
+        bestHours: timingAnalytics.bestTimingRecommendations.bestHours,
+        bestDays: timingAnalytics.bestTimingRecommendations.bestDays,
+        worstHours: timingAnalytics.bestTimingRecommendations.worstHours,
+        worstDays: timingAnalytics.bestTimingRecommendations.worstDays,
+        hourlyData: timingAnalytics.hourlyPerformance.map(h => ({
+          hour: h.hour,
+          avgEngagementRate: h.avgEngagementRate,
+          videoCount: h.videoCount
+        })),
+        weeklyData: timingAnalytics.weeklyPerformance.map(d => ({
+          dayOfWeek: d.dayOfWeek,
+          dayName: d.dayName,
+          avgEngagementRate: d.avgEngagementRate,
+          videoCount: d.videoCount
+        }))
+      },
+      formatInsights: {
+        bestFormat: formatAnalytics.formatRecommendations.bestFormat,
+        worstFormat: formatAnalytics.formatRecommendations.worstFormat,
+        mostConsistent: formatAnalytics.formatRecommendations.mostConsistent,
+        formatData: formatAnalytics.formatPerformance.map(f => ({
+          format: f.format,
+          avgEngagementRate: f.avgEngagementRate,
+          videoCount: f.videoCount,
+          consistency: f.consistency
+        }))
+      }
+    };
+  }
+
+  /**
+   * Get timing performance analytics
+   */
+  async getTimingAnalytics(accountId: string, persona?: string): Promise<{
+    hourlyPerformance: Array<{
+      hour: number;
+      avgEngagementRate: number;
+      avgViews: number;
+      videoCount: number;
+    }>;
+    weeklyPerformance: Array<{
+      dayOfWeek: number;
+      dayName: string;
+      avgEngagementRate: number;
+      avgViews: number;
+      videoCount: number;
+    }>;
+    bestTimingRecommendations: {
+      bestHours: number[];
+      bestDays: number[];
+      worstHours: number[];
+      worstDays: number[];
+    };
+  }> {
+    const personaFilter = persona ? 'AND qj.persona = $2' : '';
+    const params = persona ? [accountId, persona] : [accountId];
+
+    // Hourly performance
+    const hourlyData = await query(`
+      SELECT 
+        va.upload_hour as hour,
+        ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
+        ROUND(AVG(va.views), 0) as avg_views,
+        COUNT(*) as video_count
+      FROM video_analytics va
+      JOIN quiz_jobs qj ON va.job_id = qj.id
+      WHERE va.account_id = $1 ${personaFilter}
+        AND va.upload_hour IS NOT NULL
+        AND va.collected_at > NOW() - INTERVAL '60 days'
+      GROUP BY va.upload_hour
+      HAVING COUNT(*) >= 2
+      ORDER BY va.upload_hour
+    `, params);
+
+    // Weekly performance
+    const weeklyData = await query(`
+      SELECT 
+        va.upload_day_of_week as day_of_week,
+        ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
+        ROUND(AVG(va.views), 0) as avg_views,
+        COUNT(*) as video_count
+      FROM video_analytics va
+      JOIN quiz_jobs qj ON va.job_id = qj.id
+      WHERE va.account_id = $1 ${personaFilter}
+        AND va.upload_day_of_week IS NOT NULL
+        AND va.collected_at > NOW() - INTERVAL '60 days'
+      GROUP BY va.upload_day_of_week
+      HAVING COUNT(*) >= 2
+      ORDER BY va.upload_day_of_week
+    `, params);
+
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    const hourlyPerformance = hourlyData.rows.map(row => ({
+      hour: parseInt(row.hour),
+      avgEngagementRate: parseFloat(row.avg_engagement_rate),
+      avgViews: parseInt(row.avg_views),
+      videoCount: parseInt(row.video_count)
+    }));
+
+    const weeklyPerformance = weeklyData.rows.map(row => ({
+      dayOfWeek: parseInt(row.day_of_week),
+      dayName: dayNames[parseInt(row.day_of_week)],
+      avgEngagementRate: parseFloat(row.avg_engagement_rate),
+      avgViews: parseInt(row.avg_views),
+      videoCount: parseInt(row.video_count)
+    }));
+
+    // Calculate recommendations
+    const sortedByEngagement = [...hourlyPerformance].sort((a, b) => b.avgEngagementRate - a.avgEngagementRate);
+    const sortedDaysByEngagement = [...weeklyPerformance].sort((a, b) => b.avgEngagementRate - a.avgEngagementRate);
+
+    const bestHours = sortedByEngagement.slice(0, 3).map(h => h.hour);
+    const worstHours = sortedByEngagement.slice(-2).map(h => h.hour);
+    const bestDays = sortedDaysByEngagement.slice(0, 3).map(d => d.dayOfWeek);
+    const worstDays = sortedDaysByEngagement.slice(-2).map(d => d.dayOfWeek);
+
+    return {
+      hourlyPerformance,
+      weeklyPerformance,
+      bestTimingRecommendations: {
+        bestHours,
+        bestDays,
+        worstHours,
+        worstDays
+      }
+    };
+  }
+
+  /**
+   * Get format performance analytics
+   */
+  async getFormatAnalytics(accountId: string, persona?: string): Promise<{
+    formatPerformance: Array<{
+      format: string;
+      avgEngagementRate: number;
+      avgViews: number;
+      videoCount: number;
+      engagementStddev: number;
+      consistency: 'high' | 'medium' | 'low';
+    }>;
+    formatRecommendations: {
+      bestFormat: string;
+      worstFormat: string;
+      mostConsistent: string;
+      leastConsistent: string;
+    };
+  }> {
+    const personaFilter = persona ? 'AND qj.persona = $2' : '';
+    const params = persona ? [accountId, persona] : [accountId];
+
+    const formatData = await query(`
+      SELECT 
+        va.question_format as format,
+        ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
+        ROUND(AVG(va.views), 0) as avg_views,
+        COUNT(*) as video_count,
+        ROUND(STDDEV(va.engagement_rate), 2) as engagement_stddev,
+        MIN(va.engagement_rate) as min_engagement,
+        MAX(va.engagement_rate) as max_engagement
+      FROM video_analytics va
+      JOIN quiz_jobs qj ON va.job_id = qj.id
+      WHERE va.account_id = $1 ${personaFilter}
+        AND va.question_format IS NOT NULL
+        AND va.collected_at > NOW() - INTERVAL '60 days'
+      GROUP BY va.question_format
+      HAVING COUNT(*) >= 3
+      ORDER BY avg_engagement_rate DESC
+    `, params);
+
+    const formatPerformance = formatData.rows.map(row => {
+      const stddev = parseFloat(row.engagement_stddev || '0');
+      let consistency: 'high' | 'medium' | 'low' = 'medium';
+      
+      if (stddev < 1.0) consistency = 'high';
+      else if (stddev > 2.0) consistency = 'low';
+
+      return {
+        format: row.format,
+        avgEngagementRate: parseFloat(row.avg_engagement_rate),
+        avgViews: parseInt(row.avg_views),
+        videoCount: parseInt(row.video_count),
+        engagementStddev: stddev,
+        consistency
+      };
+    });
+
+    const sortedByConsistency = [...formatPerformance].sort((a, b) => a.engagementStddev - b.engagementStddev);
+
+    return {
+      formatPerformance,
+      formatRecommendations: {
+        bestFormat: formatPerformance[0]?.format || 'multiple_choice',
+        worstFormat: formatPerformance[formatPerformance.length - 1]?.format || 'multiple_choice',
+        mostConsistent: sortedByConsistency[0]?.format || 'multiple_choice',
+        leastConsistent: sortedByConsistency[sortedByConsistency.length - 1]?.format || 'multiple_choice'
       }
     };
   }
@@ -479,6 +725,25 @@ class AnalyticsService {
       `- ${t.topic}: ${t.engagementRate}% engagement, ${t.views} avg views (${t.videoCount} videos)`
     ).join('\n');
 
+    // Build timing insights section
+    const timingSection = data.timingInsights ? `
+UPLOAD TIMING ANALYSIS:
+- Best Performing Hours (IST): ${data.timingInsights.bestHours.map(h => `${h}:00`).join(', ')}
+- Best Performing Days: ${data.timingInsights.bestDays.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}
+- Worst Performing Hours: ${data.timingInsights.worstHours.map(h => `${h}:00`).join(', ')}
+- Hourly Engagement Data: ${data.timingInsights.hourlyData.slice(0, 5).map(h => 
+    `${h.hour}:00 (${h.avgEngagementRate}% engagement, ${h.videoCount} videos)`).join(', ')}
+` : '';
+
+    // Build format insights section  
+    const formatSection = data.formatInsights ? `
+CONTENT FORMAT ANALYSIS:
+- Best Format: ${data.formatInsights.bestFormat} (highest engagement)
+- Most Consistent: ${data.formatInsights.mostConsistent} (lowest variability)
+- Format Performance: ${data.formatInsights.formatData.map(f => 
+    `${f.format} (${f.avgEngagementRate}% avg, ${f.consistency} consistency)`).join(', ')}
+` : '';
+
     return `Analyze this YouTube channel's performance data and provide actionable insights:
 
 CHANNEL CONTEXT:
@@ -497,18 +762,24 @@ TOP PERFORMING TOPICS:
 ${topTopics || 'None with sufficient data'}
 
 UNDERPERFORMING TOPICS:
-${underTopics || 'None identified'}
+${underTopics || 'None identified'}${timingSection}${formatSection}
 
 Please provide analysis in this exact format:
 
 PERFORMANCE_ANALYSIS:
-[2-3 sentences analyzing overall performance, trends, and key patterns]
+[2-3 sentences analyzing overall performance, trends, and key patterns including timing and format insights]
 
 CONTENT_RECOMMENDATIONS:
 [3-5 specific content topic/format recommendations based on data]
 
 TOPIC_OPTIMIZATION:
 [2-4 suggestions for optimizing topic selection and presentation]
+
+TIMING_OPTIMIZATION:
+[2-3 specific recommendations for upload timing based on the timing analysis data]
+
+FORMAT_OPTIMIZATION:
+[2-3 recommendations for content format optimization based on format performance data]
 
 ENGAGEMENT_STRATEGIES:
 [3-5 tactical strategies to improve engagement rates]
@@ -543,6 +814,8 @@ Keep recommendations specific, actionable, and based on the provided data.`;
       performanceAnalysis: this.extractSection(response, 'PERFORMANCE_ANALYSIS:'),
       contentRecommendations: this.extractListSection(response, 'CONTENT_RECOMMENDATIONS:'),
       topicOptimization: this.extractListSection(response, 'TOPIC_OPTIMIZATION:'),
+      timingOptimization: this.extractListSection(response, 'TIMING_OPTIMIZATION:'),
+      formatOptimization: this.extractListSection(response, 'FORMAT_OPTIMIZATION:'),
       engagementStrategies: this.extractListSection(response, 'ENGAGEMENT_STRATEGIES:'),
       personaSpecificAdvice: this.extractListSection(response, 'PERSONA_SPECIFIC_ADVICE:'),
       predictiveInsights: this.extractListSection(response, 'PREDICTIVE_INSIGHTS:')
@@ -607,6 +880,22 @@ Keep recommendations specific, actionable, and based on the provided data.`;
       topicOptimization: [
         'Analyze successful topic patterns and create variations',
         'Test timing and seasonality effects on topic performance'
+      ],
+      timingOptimization: [
+        data.timingInsights?.bestHours.length 
+          ? `Focus uploads during peak hours: ${data.timingInsights.bestHours.map(h => `${h}:00`).join(', ')} IST`
+          : 'Experiment with different upload times to identify peak engagement windows',
+        data.timingInsights?.bestDays.length
+          ? `Schedule more content on high-performing days: ${data.timingInsights.bestDays.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}`
+          : 'Test various days of the week to optimize scheduling strategy'
+      ],
+      formatOptimization: [
+        data.formatInsights?.bestFormat
+          ? `Prioritize ${data.formatInsights.bestFormat} format which shows highest engagement`
+          : 'Test multiple content formats to identify most effective approach',
+        data.formatInsights?.mostConsistent
+          ? `Consider ${data.formatInsights.mostConsistent} format for consistent performance`
+          : 'Focus on maintaining consistent quality across all content formats'
       ],
       engagementStrategies: [
         'Improve titles with more compelling questions or emotional hooks',

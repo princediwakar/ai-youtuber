@@ -538,10 +538,6 @@ function generateHealthDescription(contentData: any, topicName: string, hashtags
     // Quick Tip format: hook, action, result, cta
     contentSection = `💡 HEALTH TIP:\n${contentData.hook || 'Health tip coming up!'}\n\n🎯 ACTION:\n${contentData.action || 'Take this action'}`;
     answerSection = `✨ RESULT:\n${contentData.result || 'See the benefits!'}`;
-  } else if (formatType === 'before_after') {
-    // Before/After format: hook, before, after, result, cta
-    contentSection = `💡 HEALTH TRANSFORMATION:\n${contentData.hook || 'Transform your health!'}\n\n❌ BEFORE:\n${contentData.before || 'Before state'}\n\n✅ AFTER:\n${contentData.after || 'After state'}`;
-    answerSection = `🎯 RESULT:\n${contentData.result || 'See the transformation!'}`;
   } else if (formatType === 'challenge') {
     // Challenge format: hook, setup, instructions, challenge_type, reveal, answer
     contentSection = `🎯 HEALTH CHALLENGE:\n${contentData.hook || 'Take this challenge!'}\n\n📋 SETUP:\n${contentData.setup || 'Challenge setup'}\n\n🎮 INSTRUCTIONS:\n${contentData.instructions || 'Follow the instructions'}`;

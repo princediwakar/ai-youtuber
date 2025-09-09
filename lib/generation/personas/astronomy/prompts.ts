@@ -4,14 +4,96 @@
  */
 
 import { 
-  PromptConfig, 
-  getTopicGuidelines,
+  PromptConfig,
+  TopicGuideline, 
   addJsonFormatInstructions,
   generateRandomizationElements,
   generateContextInjections,
   getPromptVariation,
   createBasePromptStructure
-} from '../shared/promptUtils';
+} from '../../shared/utils';
+import { ContentComponents } from '../../shared/components';
+
+/**
+ * Astronomy-specific topic guidelines
+ * Moved from topicGuidelines.ts for better organization and reduced dependencies
+ */
+const ASTRONOMY_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
+  // Astronomy Content - Mind-Blowing Space Facts
+  space_scale_comparisons: {
+    focus: 'One mind-blowing size comparison that puts space scale in perspective',
+    hook: 'This space fact will make you feel incredibly small',
+    scenarios: ['Earth vs other planets', 'Solar system vs galaxy', 'observable universe scale'],
+    engagement: 'Share this fact to blow someone\'s mind'
+  },
+  space_speed_facts: {
+    focus: 'One incredible speed in space that defies comprehension',
+    hook: 'This space speed will break your brain',
+    scenarios: ['planet rotation speeds', 'orbital velocities', 'cosmic phenomena speeds'],
+    engagement: 'Try to imagine this speed right now'
+  },
+  space_temperature_extremes: {
+    focus: 'One extreme temperature in space that sounds impossible',
+    hook: 'This space temperature is beyond your wildest imagination',
+    scenarios: ['planetary temperatures', 'stellar temperatures', 'space phenomena'],
+    engagement: 'Compare this to the hottest/coldest place on Earth'
+  },
+  space_time_facts: {
+    focus: 'One time-related space fact that sounds impossible but is true',
+    hook: 'Time works differently in space - here\'s proof',
+    scenarios: ['planetary day lengths', 'orbital periods', 'relativistic effects'],
+    engagement: 'Think about what this means for space travel'
+  },
+  space_myths_busted: {
+    focus: 'One popular space myth that most people believe but is completely wrong',
+    hook: 'This space "fact" everyone believes is totally FALSE',
+    scenarios: ['popular misconceptions', 'movie myths', 'common space beliefs'],
+    engagement: 'Share this to shock your friends who believe this myth'
+  },
+  space_discovery_facts: {
+    focus: 'One recent space discovery that changes everything we thought we knew',
+    hook: 'This space discovery will change how you see the universe',
+    scenarios: ['recent telescope findings', 'new planets', 'cosmic phenomena'],
+    engagement: 'Research more about this discovery after the video'
+  },
+  space_record_numbers: {
+    focus: 'One record-breaking number from space that sounds made up',
+    hook: 'This space number is so big it\'s almost meaningless',
+    scenarios: ['distances', 'quantities', 'measurements', 'time periods'],
+    engagement: 'Try to write this number out and count the zeros'
+  },
+  space_coincidences: {
+    focus: 'One cosmic coincidence that seems too perfect to be real',
+    hook: 'This cosmic coincidence is so perfect it seems planned',
+    scenarios: ['eclipse mechanics', 'orbital resonances', 'size ratios'],
+    engagement: 'Wonder at the incredible precision of the universe'
+  },
+  planet_comparisons: {
+    focus: 'One planet vs planet comparison that reveals something shocking',
+    hook: 'This planet comparison will surprise you',
+    scenarios: ['size differences', 'atmospheric differences', 'unique features'],
+    engagement: 'Decide which planet you\'d rather visit'
+  },
+  space_would_you_rather: {
+    focus: 'One impossible space choice that makes you think about physics',
+    hook: 'This space "would you rather" has no good answer',
+    scenarios: ['survival scenarios', 'physics dilemmas', 'exploration choices'],
+    engagement: 'Comment your choice and explain why'
+  },
+  space_what_if: {
+    focus: 'One "what if" space scenario with a mind-bending answer',
+    hook: 'What would happen if... (the answer will shock you)',
+    scenarios: ['physics thought experiments', 'astronomical events', 'cosmic changes'],
+    engagement: 'Try to guess the answer before we reveal it'
+  }
+};
+
+/**
+ * Get astronomy-specific topic guidelines with fallback
+ */
+function getAstronomyTopicGuidelines(topic: string): TopicGuideline | undefined {
+  return ASTRONOMY_TOPIC_GUIDELINES[topic];
+}
 
 /**
  * Generates main astronomy prompt for MCQ format
@@ -19,7 +101,8 @@ import {
 export function generateAstronomyPrompt(config: PromptConfig): string {
   const { topicData, topic, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getTopicGuidelines(topic);
+  const guidelines = getAstronomyTopicGuidelines(topic);
+  const randomCTA = ContentComponents.getRandomCTA('space_facts_quiz');
   
   // Generate randomization elements for variety
   const randomization = generateRandomizationElements();
@@ -62,7 +145,7 @@ MANDATORY OUTPUT:
 • "options": Object with "A", "B", "C", "D" - KEEP OPTIONS VERY SHORT (max 6 words each) for YouTube Shorts video frame - one perfect answer, three smart distractors based on misconceptions
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this fact is mind-blowing + cosmic context (under 120 characters)
-• "cta": Wonder-inspiring CTA (under 40 chars): "Follow for space facts!", "Like if amazed!", "Mind = blown! 🤯"
+• "cta": Use "${randomCTA}" or similar wonder-inspiring CTA (under 40 chars)
 
 Create astronomy content that makes viewers feel amazed about the universe and eager to share. [${timeMarker}-${tokenMarker}]`;
   } else {

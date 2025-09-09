@@ -5,6 +5,7 @@ import { getAccountConfig } from '@/lib/accounts';
 import { generatePrompt, type JobConfig } from './promptGenerator';
 import { parseAndValidateResponse, generateContentHash } from './contentValidator';
 import { LayoutType } from '@/lib/visuals/layouts/layoutSelector';
+import { analyticsService, type AIAnalyticsInsights } from '../../analyticsService';
 
 const deepseekClient = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
@@ -23,8 +24,8 @@ export interface GenerationJobConfig extends JobConfig {
  */
 const PERSONA_LAYOUT_MAP: Record<string, LayoutType[]> = {
   'english_vocab_builder': ['mcq', 'common_mistake', 'quick_fix', 'usage_demo'],
-  'brain_health_tips': ['mcq', 'quick_tip', 'before_after', 'challenge'],
-  'eye_health_tips': ['mcq', 'quick_tip', 'before_after', 'challenge'],
+  'brain_health_tips': ['mcq', 'quick_tip', 'challenge'],
+  'eye_health_tips': ['mcq', 'quick_tip', 'challenge'],
   'ssc_shots': ['mcq', 'challenge', 'common_mistake', 'usage_demo', 'quick_tip'],
   'space_facts_quiz': ['mcq'], // MCQ only for astronomy content as requested
 };
@@ -63,7 +64,7 @@ const AI_TIMEOUT = 30000; // 30 seconds
 
 /**
  * The main service function that orchestrates the generation and storage of content.
- * Now supports both English quizzes and Health tips with format selection.
+ * Enhanced with analytics-driven optimization for improved performance.
  */
 export async function generateAndStoreContent(
   jobConfig: GenerationJobConfig
@@ -72,13 +73,32 @@ export async function generateAndStoreContent(
     // Get account configuration using the provided accountId
     const account = await getAccountConfig(jobConfig.accountId);
     
+    // Get analytics insights for this persona (with fallback)
+    let analyticsInsights: AIAnalyticsInsights | undefined;
+    try {
+      const analyticsResult = await analyticsService.analyzePerformanceWithAI(jobConfig.accountId, jobConfig.persona);
+      analyticsInsights = analyticsResult.aiInsights;
+      console.log(`[Analytics] Loaded insights for ${jobConfig.persona} (${jobConfig.accountId})`);
+    } catch (error) {
+      console.warn(`[Analytics] Could not load insights for ${jobConfig.persona}:`, error);
+      // Continue without analytics insights
+    }
+
+    // Determine upload timing for prompt optimization
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST = UTC + 5:30
+    const istTime = new Date(now.getTime() + istOffset);
+    const uploadHour = istTime.getHours();
+    
     // Select appropriate layout for this persona
     const selectedLayout: LayoutType = selectLayoutForPersona(jobConfig.persona, jobConfig.preferredLayout);
     
-    // Create enhanced job config with layout information
+    // Create enhanced job config with layout and analytics information
     const enhancedJobConfig: GenerationJobConfig = {
       ...jobConfig,
       preferredLayout: selectedLayout,
+      analyticsInsights,
+      uploadHour,
     };
     
     // Generate prompt and get variation markers

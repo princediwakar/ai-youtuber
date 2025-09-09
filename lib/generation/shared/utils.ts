@@ -3,35 +3,18 @@
  * Common functions, interfaces, and JSON formatting
  */
 
-import { TOPIC_GUIDELINES } from '../topicGuidelines';
+import { TOPIC_GUIDELINES } from './guidelines';
+import { ContentComponents } from './components';
+import type { 
+  VariationMarkers, 
+  PromptConfig, 
+  RandomizationElements, 
+  ContextInjection,
+  TopicGuideline 
+} from './types';
 
-export interface VariationMarkers {
-  timeMarker: string;
-  tokenMarker: string;
-}
-
-export interface PromptConfig {
-  persona: string;
-  topic: string;
-  topicData: any;
-  markers: VariationMarkers;
-  questionFormat?: string;
-  format?: string;
-  formatDefinition?: any;
-}
-
-export interface RandomizationElements {
-  creativeSeed: string;
-  approach: string;
-  tone: string;
-  perspective: string;
-}
-
-export interface ContextInjection {
-  timeContext: string;
-  demographic: string;
-  urgency: string;
-}
+// Re-export types for convenience
+export type { VariationMarkers, PromptConfig, RandomizationElements, ContextInjection, TopicGuideline };
 
 /**
  * Generates unique variation markers for content diversity
@@ -65,54 +48,29 @@ export function generateRandomizationElements(): RandomizationElements {
 }
 
 /**
- * Generates random context injections to break repetitive patterns
+ * Generates random context injections using centralized ContentComponents
+ * Simplified to avoid duplication with contentComponents.ts
  */
 export function generateContextInjections(persona?: string): ContextInjection {
+  // Map persona patterns to standardized persona names for ContentComponents
+  let standardizedPersona = 'default';
+  
   if (persona?.includes('astronomy') || persona?.includes('space')) {
-    const spaceTimeContexts = ['stargazing session', 'cosmic discovery', 'space exploration', 'universe contemplation', 'stellar observation'];
-    const spaceDemographicContexts = ['space enthusiasts', 'curious minds', 'cosmic explorers', 'universe lovers', 'stargazers'];
-    const spaceUrgencyLevels = ['mind-blowing revelation', 'cosmic breakthrough', 'universe-changing fact', 'stellar discovery', 'galactic insight'];
-
-    return {
-      timeContext: spaceTimeContexts[Math.floor(Math.random() * spaceTimeContexts.length)],
-      demographic: spaceDemographicContexts[Math.floor(Math.random() * spaceDemographicContexts.length)],
-      urgency: spaceUrgencyLevels[Math.floor(Math.random() * spaceUrgencyLevels.length)]
-    };
+    standardizedPersona = 'space_facts_quiz';
+  } else if (persona?.includes('health') || persona?.includes('brain')) {
+    standardizedPersona = 'brain_health_tips';
+  } else if (persona?.includes('eye')) {
+    standardizedPersona = 'eye_health_tips';
+  } else if (persona?.includes('english') || persona?.includes('vocab')) {
+    standardizedPersona = 'english_vocab_builder';
+  } else if (persona?.includes('ssc')) {
+    standardizedPersona = 'ssc_shots';
   }
-
-  if (persona?.includes('health') || persona?.includes('brain') || persona?.includes('eye')) {
-    const healthTimeContexts = ['daily wellness routine', 'health break', 'morning health habit', 'evening care routine', 'wellness moment'];
-    const healthDemographicContexts = ['health-conscious individuals', 'wellness seekers', 'busy professionals', 'screen users', 'health enthusiasts'];
-    const healthUrgencyLevels = ['immediate health benefit', 'daily wellness', 'long-term health', 'preventive care', 'wellness optimization'];
-
-    return {
-      timeContext: healthTimeContexts[Math.floor(Math.random() * healthTimeContexts.length)],
-      demographic: healthDemographicContexts[Math.floor(Math.random() * healthDemographicContexts.length)],
-      urgency: healthUrgencyLevels[Math.floor(Math.random() * healthUrgencyLevels.length)]
-    };
-  }
-
-  if (persona?.includes('english') || persona?.includes('vocab')) {
-    const englishTimeContexts = ['language learning session', 'vocabulary building', 'daily English practice', 'speaking improvement', 'word mastery'];
-    const englishDemographicContexts = ['English learners', 'language enthusiasts', 'students', 'professionals', 'communication improvers'];
-    const englishUrgencyLevels = ['vocabulary boost', 'speaking confidence', 'language mastery', 'communication skills', 'word power'];
-
-    return {
-      timeContext: englishTimeContexts[Math.floor(Math.random() * englishTimeContexts.length)],
-      demographic: englishDemographicContexts[Math.floor(Math.random() * englishDemographicContexts.length)],
-      urgency: englishUrgencyLevels[Math.floor(Math.random() * englishUrgencyLevels.length)]
-    };
-  }
-
-  // Default generic contexts for other personas
-  const timeContexts = ['morning routine', 'work break', 'evening wind-down', 'weekend activity', 'travel situation'];
-  const demographicContexts = ['busy professionals', 'students', 'parents', 'seniors', 'athletes'];
-  const urgencyLevels = ['immediate', 'within 24 hours', 'this week', 'starting today', 'right now'];
 
   return {
-    timeContext: timeContexts[Math.floor(Math.random() * timeContexts.length)],
-    demographic: demographicContexts[Math.floor(Math.random() * demographicContexts.length)],
-    urgency: urgencyLevels[Math.floor(Math.random() * urgencyLevels.length)]
+    timeContext: ContentComponents.getRandomContext(standardizedPersona),
+    demographic: ContentComponents.getRandomDemographic(standardizedPersona),
+    urgency: ContentComponents.getRandomUrgency(standardizedPersona)
   };
 }
 

@@ -3,7 +3,7 @@
  * Handles parsing and validation of AI responses
  */
 
-import { ContentData } from '../types';
+import { ContentData } from '@/lib/types';
 
 // Length limits for different content elements
 const LENGTH_LIMITS = {
@@ -121,8 +121,6 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
   // Format-specific validation for health content
   if (format === 'quick_tip') {
     return validateQuickTipFormat(data);
-  } else if (format === 'before_after') {
-    return validateBeforeAfterFormat(data);
   } else if (format === 'challenge') {
     return validateChallengeFormat(data);
   }
@@ -395,22 +393,6 @@ function validateQuickTipFormat(data: any): ValidationResult {
   return { success: true, data };
 }
 
-/**
- * Validates Before/After format structure (for health)
- */
-function validateBeforeAfterFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'before', 'after', 'result', 'cta'];
-  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
-  
-  if (missingFields.length > 0) {
-    return {
-      success: false,
-      error: `Before/After format missing required fields: ${missingFields.join(', ')}`
-    };
-  }
-
-  return { success: true, data };
-}
 
 /**
  * Validates Challenge format structure (for health)

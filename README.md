@@ -1,221 +1,291 @@
+# AI YouTuber - Multi-Channel Educational Content Generator
 
------
+> **Automated YouTube Shorts generation system for educational content across multiple specialized channels**
 
-# YouTube Shorts English Vocabulary Quiz Generator
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Latest-blue)](https://www.postgresql.org/)
 
-A comprehensive Next.js application that serves as an automated English vocabulary quiz video generator, specifically designed for a global audience of English language learners.
+## 🌟 Overview
 
-## 🌟 Features
+AI YouTuber is a complete automation system for generating and uploading educational YouTube Shorts content. It supports multiple specialized channels with account-specific branding, personas, and content strategies.
 
-### Automated Vocabulary Quiz Generator
+### 🎯 Key Features
 
-  - **Targeted Vocabulary Content**: Specialized quiz generation for a wide range of topics, including Synonyms, Antonyms, Idioms, Phrasal Verbs, and more.
-  - **Global Audience Focus**: Designed for English learners of all levels, worldwide.
-  - **Automated Pipeline**: 4-step process from AI question generation to final YouTube upload.
-  - **Smart Scheduling**: Global time-zone optimized with 8 daily uploads for consistent engagement.
-  - **Multi-format Support**: Generates both Multiple-Choice (MCQ) and True/False questions.
+- **Multi-Channel Support**: Manage multiple YouTube channels with isolated content and branding
+- **AI-Powered Content**: DeepSeek API integration for intelligent content generation
+- **Automated Pipeline**: 4-step process from content generation to YouTube upload
+- **Visual Variety**: Multiple layout formats (MCQ, tips, demonstrations, challenges)
+- **Analytics Integration**: Performance tracking and content optimization
+- **Secure Credential Management**: Database-encrypted account credentials
+
+### 🏗 Architecture
+
+- **Frontend**: Next.js 14 with App Router, TypeScript, TailwindCSS
+- **Authentication**: NextAuth.js with Google OAuth (YouTube scopes)
+- **Database**: PostgreSQL with Neon hosting
+- **AI Services**: DeepSeek API for content generation
+- **Media Processing**: Canvas API, FFmpeg, Cloudinary
+- **Deployment**: Vercel with automatic CI/CD
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-  - Node.js 18+
-  - PostgreSQL database (Neon recommended)
-  - Google Cloud Project with YouTube Data API v3 enabled
-  - Cloudinary account for media processing
-  - DeepSeek AI API key
+Before you begin, ensure you have:
 
-### Installation
+- **Node.js 18+** and npm
+- **PostgreSQL database** (Neon recommended for cloud hosting)
+- **Google Cloud Project** with YouTube Data API v3 enabled
+- **Cloudinary account** for media storage
+- **DeepSeek API key** for AI content generation
 
-1.  **Clone and Install**
+### 1. Installation
 
-    ```bash
-    git clone <repository-url>
-    cd ai-youtuber
-    npm install
-    ```
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/ai-youtuber.git
+cd ai-youtuber
 
-2.  **Environment Setup**
-    Create a `.env.local` file with the following:
+# Install dependencies
+npm install
+```
 
-    ```env
-    NEXTAUTH_URL=http://localhost:3000
-    NEXTAUTH_SECRET=your-secret-key
-    GOOGLE_CLIENT_ID=your-google-client-id
-    GOOGLE_CLIENT_SECRET=your-google-client-secret
-    CLOUDINARY_CLOUD_NAME=your-cloudinary-name
-    CLOUDINARY_API_KEY=your-cloudinary-key
-    CLOUDINARY_API_SECRET=your-cloudinary-secret
-    DEEPSEEK_API_KEY=your-deepseek-api-key
-    CRON_SECRET=your-cron-job-secret
-    DEBUG_MODE=true
-    ```
+### 2. Environment Configuration
 
-3.  **Database Setup**
+Create a `.env.local` file in the root directory:
 
-    ```bash
-    node setup-database.js
-    ```
+```env
+# Application URLs
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secure-secret-key-here
 
-4.  **Start Development**
+# AI Content Generation
+DEEPSEEK_API_KEY=your-deepseek-api-key
 
-    ```bash
-    npm run dev
-    ```
+# Security
+CRON_SECRET=your-cron-job-secret
 
-Visit `http://localhost:3000` to access the application dashboard.
+# Development
+DEBUG_MODE=true
+```
+
+**Important**: Account-specific credentials (Google OAuth, Cloudinary) are stored in the database, not environment variables.
+
+### 3. Database Setup
+
+```bash
+# Initialize database schema
+node setup-database.js
+```
+
+### 4. Account Configuration
+
+Add your YouTube channels and credentials to the database:
+
+```bash
+# Use the populate-accounts.js script or add via dashboard
+node populate-accounts.js
+```
+
+### 5. Start Development
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000` to access the dashboard.
 
 ## 📁 Project Structure
 
 ```
+ai-youtuber/
 ├── app/                          # Next.js App Router
-│   ├── api/                     # API routes
-│   │   ├── auth/               # NextAuth.js authentication
-│   │   └── jobs/               # English Vocabulary Quiz generation pipeline
-│   └── page.tsx               # Monitoring Dashboard UI
-├── lib/                        # Core utilities and services
-│   ├── auth.ts                # NextAuth configuration
-│   ├── database.ts            # PostgreSQL utilities
-│   ├── generationService.ts   # AI quiz generation service
-│   ├── personas.ts           # Defines the 'english_vocab_builder' persona
-│   ├── schedule.ts           # Defines daily generation & upload schedules
-│   └── visuals/              # Video frame generation
-│       ├── layouts/          # Question layout templates
-│       └── themes.ts         # Visual themes
-├── database/                  # Database schema and setup
-├── public/                   # Static assets
-│   ├── audio/               # Background music
-│   └── fonts/               # Custom fonts
-└── generated-videos/         # Local video storage (debug mode)
+│   ├── api/                      # API endpoints
+│   │   ├── auth/                 # NextAuth authentication
+│   │   ├── jobs/                 # Content generation pipeline
+│   │   └── analytics/            # Performance analytics
+│   ├── page.tsx                  # Main dashboard
+│   └── layout.tsx                # Root layout
+├── lib/                          # Core business logic
+│   ├── generation/               # AI content generation system
+│   │   ├── core/                 # Core generation logic
+│   │   ├── personas/             # Account-specific personas
+│   │   ├── routing/              # Content routing
+│   │   └── shared/               # Shared utilities
+│   ├── visuals/                  # Video frame generation
+│   │   ├── layouts/              # Frame layout systems
+│   │   └── themes.ts             # Visual themes
+│   ├── accounts.ts               # Account management
+│   ├── database.ts               # Database utilities
+│   └── config.ts                 # Configuration
+├── database/                     # Database schema and migrations
+│   ├── schema.sql                # Complete database schema
+│   └── migrations/               # Schema updates
+└── public/                       # Static assets
+    ├── audio/                    # Background music
+    └── fonts/                    # Custom fonts
 ```
 
-## 🎯 Core Functionality
+## 🎨 Content System
 
-### Automated Vocabulary Quiz Generator
+### Supported Channel Types
 
-**Content Focus Area:**
+1. **English Vocabulary**: Educational quizzes for language learners
+2. **Health & Wellness**: Brain health tips, eye care, wellness advice
+3. **Academic**: SSC exam preparation, competitive exam content
+4. **Science**: Astronomy facts, space education content
 
-  - **`english_vocab_builder`**: A single, comprehensive persona covering practical English vocabulary, including Synonyms, Antonyms, Idioms, Phrasal Verbs, Commonly Confused Words, and Thematic Vocabulary.
+### Content Formats
 
-**Generation Pipeline:**
-
-1.  **Question Generation**: AI-powered vocabulary question creation using DeepSeek API.
-2.  **Frame Creation**: Visual frame generation with clean, engaging themes and layouts.
-3.  **Video Assembly**: FFmpeg-based video compilation with background audio.
-4.  **YouTube Upload**: Automated upload to YouTube Shorts with SEO-optimized metadata.
-
-**Scheduling System:**
-
-  - **Daily Generation**: 3 batches producing 9 quizzes to maintain a content buffer.
-  - **Content Distribution**: 8 daily uploads spread throughout the day for global reach.
-  - **Upload Optimization**: Targeted upload times to engage learners in different time zones.
-
-## 🛠️ API Routes
-
-### Authentication
-
-  - `GET/POST /api/auth/*` - NextAuth.js authentication endpoints
-
-### Quiz Generation Pipeline
-
-  - `POST /api/jobs/generate-quiz` - Create vocabulary quiz questions
-  - `POST /api/jobs/create-frames` - Generate video frames
-  - `POST /api/jobs/assemble-video` - Compile video with FFmpeg
-  - `POST /api/jobs/upload-quiz-videos` - Upload generated quizzes to YouTube
-
-### Dashboard & Monitoring
-
-  - `GET /api/quiz-dashboard` - Quiz generation statistics for the dashboard
-  - `GET /api/test-db` - Database connectivity test
-
-## 🎨 Content & Visual System
-
-### Persona Structure
-
-The system uses a single-persona approach for deep and consistent content:
-
-  - **English Vocabulary Shots**: A comprehensive persona covering all key aspects of practical vocabulary needed for fluency and exams like IELTS and TOEFL.
+- **MCQ (Multiple Choice)**: Interactive quiz questions
+- **Quick Tips**: Short, actionable advice
+- **Common Mistakes**: Error correction content
+- **Usage Demos**: Practical demonstrations
+- **Challenges**: Engaging challenge content
+- **Before/After**: Comparison-based content
 
 ### Visual Themes
 
-Multiple visual themes optimized for short-form video quizzes:
+Each account can have customized visual themes:
+- Color schemes and branding
+- Typography and layouts
+- Account-specific overlays
+- Themed backgrounds and graphics
 
-  - Clean, minimalist designs for high readability on mobile devices.
-  - Engaging animations and consistent branding.
+## 🔧 API Reference
 
-## 🔧 Configuration
-
-### Essential Commands
+### Content Generation Pipeline
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production (required before commits)
-npm run start        # Start production server
-npm run lint         # Run ESLint
-node setup-database.js  # Initialize database
+# Generate AI content
+POST /api/jobs/generate-quiz
+Body: { "accountId": "english_shots" }
+
+# Create video frames
+POST /api/jobs/create-frames
+Body: { "accountId": "english_shots" }
+
+# Assemble final video
+POST /api/jobs/assemble-video
+Body: { "accountId": "english_shots" }
+
+# Upload to YouTube
+POST /api/jobs/upload-quiz-videos
+Body: { "accountId": "english_shots" }
 ```
 
-### Environment Variables
+### Analytics & Monitoring
 
-| Variable | Description | Required |
-| --- | --- | --- |
-| `NEXTAUTH_URL` | Application URL | Yes |
-| `NEXTAUTH_SECRET` | Authentication secret | Yes |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | Yes |
-| `GOOGLE_CLIENT_SECRET`| Google OAuth secret | Yes |
-| `CLOUDINARY_CLOUD_NAME`| Cloudinary cloud name | Yes |
-| `CLOUDINARY_API_KEY` | Cloudinary API key | Yes |
-| `CLOUDINARY_API_SECRET`| Cloudinary API secret | Yes |
-| `DEEPSEEK_API_KEY` | DeepSeek AI API Key | Yes |
-| `CRON_SECRET` | Secret to authorize cron jobs | Yes |
-| `DEBUG_MODE` | Save videos locally (true/false)| No |
+```bash
+# Get dashboard data
+GET /api/dashboard
+
+# Analytics collection
+POST /api/analytics/collect
+
+# Performance insights
+GET /api/analytics/summary
+```
 
 ## 📊 Database Schema
 
-**Primary Tables:**
+### Core Tables
 
-  - `quiz_jobs` - Tracks the state of each job in the quiz generation pipeline.
-  - `uploaded_videos` - Stores a history of all videos uploaded to YouTube, with metadata.
+- **`accounts`**: Account configurations and encrypted credentials
+- **`quiz_jobs`**: Content generation pipeline tracking
+- **`uploaded_videos`**: YouTube upload records
+- **`video_analytics`**: Performance metrics and insights
 
-**PostgreSQL Database:** Hosted on Neon.
+### Account Management
 
-## 🚀 Production Deployment
+All sensitive credentials are encrypted and stored in the database:
+- Google OAuth tokens (client ID, secret, refresh token)
+- Cloudinary API credentials
+- Account-specific configurations and branding
 
-**Live URL:** [https://aiyoutuber.vercel.app/](https://aiyoutuber.vercel.app/)
+## 🚀 Deployment
 
-**Deployment Platform:** Vercel with automatic deployments from the main branch.
+### Vercel Deployment
 
-## 🤝 Development Workflow
+1. **Connect Repository**: Link your GitHub repository to Vercel
+2. **Environment Variables**: Add required environment variables in Vercel dashboard
+3. **Database**: Set up Neon PostgreSQL and add connection string
+4. **Deploy**: Automatic deployments on every push to main branch
 
-1.  Make your changes.
-2.  Test locally with `npm run dev`.
-3.  Run `npm run build` to ensure production builds successfully.
-4.  Commit changes only if the build succeeds.
-5.  Push to trigger automatic deployment.
+### Production Checklist
 
-## 📈 Monitoring & Analytics
+- [ ] Environment variables configured
+- [ ] Database schema deployed
+- [ ] Account credentials added
+- [ ] Google OAuth configured with production URLs
+- [ ] Cloudinary accounts set up
+- [ ] YouTube API quotas verified
 
-  - **Real-time Dashboard**: `/` - Monitor quiz generation and upload statistics in real-time.
-  - **Upload Tracking**: Built-in progress monitoring with detailed job status.
-  - **Cache Management**: Intelligent caching for YouTube playlist data.
-  - **Error Handling**: Comprehensive error tracking and automated job retry mechanism.
+## 🔒 Security Features
 
-## 🔒 Security & Privacy
+- **Credential Encryption**: All sensitive data encrypted in database
+- **OAuth 2.0 Flow**: Secure Google authentication
+- **API Route Protection**: Secured with secret keys
+- **Content Validation**: AI-generated content validation
+- **Error Handling**: Comprehensive error tracking and recovery
 
-  - **OAuth 2.0**: Secure Google authentication with specific YouTube scopes.
-  - **Data Protection**: No video content is stored permanently on the server after upload.
-  - **API Security**: Cron job endpoints are secured with a secret key.
-  - **Content Policy**: All generated content is designed to be educational and family-friendly.
+## 📈 Analytics & Optimization
 
-## 🎓 Learning Impact
+### Performance Tracking
 
-This system is designed to support English learners worldwide by providing:
+- **Upload Success Rates**: Monitor pipeline performance
+- **Content Engagement**: Track YouTube video performance
+- **AI Content Quality**: Validation and feedback loops
+- **System Health**: Real-time monitoring dashboard
 
-  - **Consistent Content**: Daily vocabulary quiz videos to encourage regular practice.
-  - **Global Scheduling**: An upload schedule designed to reach learners in different time zones.
-  - **Practical Vocabulary**: A wide range of topics relevant for both conversational English and standardized tests.
-  - **Engaging Format**: A visual quiz format optimized for learning on mobile devices.
+### Content Optimization
 
------
+- **A/B Testing**: Test different content formats
+- **Engagement Analysis**: Optimize based on performance data
+- **Schedule Optimization**: Adjust upload timing for better reach
+- **Quality Improvements**: Continuous refinement of AI prompts
 
-**For English Learners Worldwide • Powered by AI • Built with Next.js**
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Workflow
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Test** your changes (`npm run build`)
+5. **Push** to the branch (`git push origin feature/amazing-feature`)
+6. **Open** a Pull Request
+
+### Code Style
+
+- Use TypeScript for all new code
+- Follow existing naming conventions
+- Add comments for complex logic
+- Write tests for new features
+- Ensure `npm run build` passes
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **DeepSeek AI** for content generation capabilities
+- **Cloudinary** for media processing and storage
+- **Neon** for PostgreSQL hosting
+- **Vercel** for deployment and hosting
+- **YouTube Data API** for upload functionality
+
+## 📞 Support
+
+- **Documentation**: Check the [CLAUDE.md](CLAUDE.md) for detailed project information
+- **Issues**: Report bugs and request features via GitHub Issues
+- **Discussions**: Join our community discussions for help and ideas
+
+---
+
+**Built with ❤️ for content creators and educators worldwide**

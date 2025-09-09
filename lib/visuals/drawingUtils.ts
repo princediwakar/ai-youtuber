@@ -208,9 +208,8 @@ export const measureQuestionContent = (
         ctx.font = `bold ${fontSize}px ${fontFamily}`;
         lines = wrapText(ctx, text, maxWidth);
         lineHeight = fontSize * 1.4;
-        // Account for proper line spacing - use (lines.length - 1) for spacing between lines
-        // plus one line height for the actual text height
-        totalHeight = lines.length > 0 ? (lines.length - 1) * lineHeight + fontSize : 0;
+        // Account for proper line spacing - use consistent lineHeight for all lines
+        totalHeight = lines.length > 0 ? lines.length * lineHeight : 0;
         
         // If no height constraint or content fits, use this size
         if (!maxHeight || totalHeight <= maxHeight || fontSize <= minFontSize) {

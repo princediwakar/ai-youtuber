@@ -2,6 +2,7 @@ import { youtube_v3 } from 'googleapis';
 import { MasterPersonas } from './personas';
 import { QuizJob } from './types';
 import { LayoutType, detectLayoutType } from '@/lib/visuals/layouts/layoutSelector';
+import { PersonaType, FormatType } from './generation/shared/types';
 
 // --- Constants and Configuration ---
 
@@ -10,12 +11,18 @@ const playlistCreationLocks = new Map<string, Promise<string>>();
 
 const FORMAT_DISPLAY_NAMES: Record<LayoutType, string> = {
   mcq: 'Quiz Questions', common_mistake: 'Common Mistakes', quick_fix: 'Quick Fixes', 
-  usage_demo: 'Usage Examples', quick_tip: 'Quick Tips', before_after: 'Before & After', 
+  usage_demo: 'Usage Examples', quick_tip: 'Quick Tips', 
   challenge: 'Interactive Challenges'
 };
 
-// A centralized configuration for generating titles and descriptions per account/persona.
-const CONTENT_CONFIG: Record<string, any> = {
+// Centralized configuration for generating titles and descriptions per account/persona
+interface ContentConfig {
+  prefix: string;
+  outro: string;
+  intros: Partial<Record<FormatType, string>>;
+}
+
+const CONTENT_CONFIG: Record<string, ContentConfig> = {
   english_shots: {
     prefix: 'English Vocabulary',
     outro: `🎯 Why choose this playlist?\n• Perfect for all levels (Beginner to Advanced)\n• Helps you prepare for exams like IELTS, TOEFL, and TOEIC\n\n💡 Study Plan: Watch daily → Practice → Learn → Speak with confidence!`,
@@ -23,6 +30,9 @@ const CONTENT_CONFIG: Record<string, any> = {
       mcq: `🚀 Master {TOPIC} with interactive quiz questions! Test your knowledge and boost your English vocabulary.`,
       common_mistake: `🚀 Stop making {TOPIC} mistakes that 99% of learners make! Fix your English errors instantly.`,
       quick_fix: `🚀 Upgrade your {TOPIC} vocabulary instantly! Transform basic words into sophisticated expressions.`,
+      usage_demo: `🚀 See {TOPIC} in action! Real-world usage examples that make English natural.`,
+      quick_tip: `🚀 Master {TOPIC} with lightning-fast tips! English fluency shortcuts revealed.`,
+      challenge: `🚀 Take the {TOPIC} challenge! Can you beat these tricky English questions?`,
     }
   },
   brain_health_tips: {
@@ -31,6 +41,7 @@ const CONTENT_CONFIG: Record<string, any> = {
     intros: {
       mcq: `🧠 Test your {TOPIC} knowledge with brain health quizzes! Science-backed questions for cognitive wellness.`,
       quick_tip: `🧠 Boost your brain health with {TOPIC} quick tips! 30-second science-backed advice for cognitive wellness.`,
+      challenge: `🧠 Take the {TOPIC} brain challenge! Test your cognitive wellness knowledge.`,
     }
   },
   eye_health_tips: {
@@ -39,6 +50,7 @@ const CONTENT_CONFIG: Record<string, any> = {
     intros: {
       mcq: `👁️ Test your {TOPIC} knowledge with eye health quizzes! Professional vision care questions for digital age protection.`,
       quick_tip: `👁️ Protect your eyes with {TOPIC} quick tips! 30-second vision care advice from eye health experts.`,
+      challenge: `👁️ Take the {TOPIC} vision challenge! How well do you know eye health?`,
     }
   },
   ssc_shots: {
@@ -48,15 +60,17 @@ const CONTENT_CONFIG: Record<string, any> = {
       mcq: `📚 Master {TOPIC} with targeted SSC practice questions! Government exam preparation made effective.`,
       quick_tip: `📚 Ace {TOPIC} with expert SSC preparation tips! Government exam success in bite-sized content.`,
       common_mistake: `📚 Avoid {TOPIC} mistakes that cost exam marks! Learn what 90% of SSC aspirants get wrong.`,
+      challenge: `📚 Take the {TOPIC} SSC challenge! Are you ready for the government exam?`,
     }
   },
-  astronomy_shots: {
+  space_facts_quiz: {
     prefix: 'Space Facts',
     outro: `🎯 Why choose this playlist?\n• Mind-blowing facts that sound impossible but are true\n• Perfect for space enthusiasts and curious minds\n\n💡 Your cosmic journey: Watch → Wonder → Share → Explore the universe!`,
     intros: {
       mcq: `🚀 Test your {TOPIC} knowledge with mind-blowing space quizzes! Universe facts that will leave you speechless.`,
       common_mistake: `🚀 Stop believing {TOPIC} space myths! Learn what 99% of people get wrong about the universe.`,
       quick_tip: `🚀 Blow your mind with {TOPIC} cosmic facts! 30-second space revelations that change everything.`,
+      challenge: `🚀 Take the {TOPIC} space challenge! How well do you know the universe?`,
     }
   }
 };
@@ -83,40 +97,69 @@ function detectFormatFromJob(job: QuizJob): LayoutType {
 }
 
 /** Generates a playlist title. */
-function generatePlaylistTitle(accountId: string, persona: string, topic: string, format: LayoutType): string {
-  const configKey = accountId === 'health_shots' ? persona : accountId;
+function generatePlaylistTitle(accountId: string, persona: PersonaType, topic: string, format: FormatType): string {
+  const configKey = accountId === 'health_shots' ? persona : (persona === 'space_facts_quiz' ? 'space_facts_quiz' : accountId);
   const config = CONTENT_CONFIG[configKey] || {};
-  const prefix = config.prefix || topic;
-  const formatName = FORMAT_DISPLAY_NAMES[format];
+  const prefix = (config as any).prefix || topic;
+  const formatName = FORMAT_DISPLAY_NAMES[format as LayoutType];
   return `${prefix}: ${topic} | ${formatName}`;
 }
 
-/** Generates hashtags and SEO keywords. */
-function generateTags(accountId: string, persona: string, topic: string, format: LayoutType): { hashtags: string, keywords: string } {
-  // Define base and format-specific tags here to keep it concise
+/** Generates hashtags and SEO keywords based on persona and format. */
+function generateTags(accountId: string, persona: PersonaType, topic: string, format: FormatType): { hashtags: string, keywords: string } {
   const baseHashtags = ['#Learn', '#Tips', `#${topic.replace(/\s/g, '')}`];
   const baseKeywords = ['educational content', 'learning', topic.toLowerCase()];
   
-  // In a real implementation, you would have your full maps here.
-  // This is a simplified placeholder.
-  const hashtags = [...baseHashtags, `#${format}`].slice(0, 6).join(' ');
-  const keywords = [...baseKeywords, format].slice(0, 10).join(', ');
+  // Add persona-specific tags
+  const personaHashtags: Record<PersonaType, string[]> = {
+    english_vocab_builder: ['#English', '#Vocabulary', '#Grammar', '#IELTS', '#TOEFL'],
+    brain_health_tips: ['#BrainHealth', '#Memory', '#Focus', '#Wellness', '#Neuroscience'],
+    eye_health_tips: ['#EyeHealth', '#Vision', '#ScreenTime', '#EyeCare', '#DigitalWellness'],
+    ssc_shots: ['#SSC', '#GovernmentExam', '#Study', '#Preparation', '#CurrentAffairs'],
+    space_facts_quiz: ['#Space', '#Astronomy', '#Science', '#Universe', '#Facts']
+  };
   
-  return { hashtags, keywords };
+  const formatHashtags: Record<FormatType, string[]> = {
+    mcq: ['#Quiz', '#Test', '#MCQ'],
+    common_mistake: ['#Mistakes', '#Fix', '#Avoid'],
+    quick_fix: ['#QuickFix', '#Upgrade', '#Improve'],
+    usage_demo: ['#Example', '#Usage', '#Demo'],
+    quick_tip: ['#QuickTip', '#Hack', '#Secret'],
+    challenge: ['#Challenge', '#Game', '#Interactive']
+  };
+  
+  const allHashtags = [
+    ...baseHashtags,
+    ...personaHashtags[persona] || [],
+    ...formatHashtags[format] || []
+  ].slice(0, 8);
+  
+  const allKeywords = [
+    ...baseKeywords,
+    persona.replace(/_/g, ' '),
+    format.replace(/_/g, ' '),
+    'short video',
+    'educational'
+  ].slice(0, 12);
+  
+  return { 
+    hashtags: allHashtags.join(' '), 
+    keywords: allKeywords.join(', ') 
+  };
 }
 
 /** Generates a playlist description using the centralized config. */
-async function generatePlaylistDescription(accountId: string, persona: string, topic: string, format: LayoutType, key: string): Promise<string> {
-  const configKey = accountId === 'health_shots' ? persona : accountId;
+async function generatePlaylistDescription(accountId: string, persona: PersonaType, topic: string, format: FormatType, key: string): Promise<string> {
+  const configKey = accountId === 'health_shots' ? persona : (persona === 'space_facts_quiz' ? 'space_facts_quiz' : accountId);
   const config = CONTENT_CONFIG[configKey];
-  const formatName = FORMAT_DISPLAY_NAMES[format];
+  const formatName = FORMAT_DISPLAY_NAMES[format as LayoutType];
   const { hashtags, keywords } = generateTags(accountId, persona, topic, format);
   
   if (!config) {
     return `Educational content on ${topic}.\n\nKeywords: ${keywords}\n${hashtags}\n\n${MANAGER_TAG(key)}`;
   }
 
-  const intro = (config.intros[format] || config.intros.mcq).replace('{TOPIC}', topic);
+  const intro = (config.intros[format] || config.intros.mcq || `Learn about ${topic} with interactive content!`).replace('{TOPIC}', topic);
   const outro = `${config.outro}\n🔔 New ${formatName.toLowerCase()} uploaded regularly!`;
 
   return `${intro}\n\n${outro}\n\nKeywords: ${keywords}\n${hashtags}\n\n${MANAGER_TAG(key)}`;
@@ -175,10 +218,10 @@ export async function getOrCreatePlaylist(
   playlistMap: Map<string, string>
 ): Promise<string> {
   const { account_id, persona, topic, data } = job;
-  const format = detectFormatFromJob(job);
+  const format = detectFormatFromJob(job) as FormatType;
 
   const topicKey = data?.content?.topic || data?.question?.topic || topic;
-  const subCat = MasterPersonas[persona]?.subCategories?.find(c => c.key === topicKey);
+  const subCat = MasterPersonas[persona as PersonaType]?.subCategories?.find(c => c.key === topicKey);
   const topicName = subCat?.displayName || job.topic_display_name || data?.topic_display_name || topic;
 
   const canonicalKey = generateCanonicalKey(account_id, persona, topicKey, format);
@@ -187,8 +230,8 @@ export async function getOrCreatePlaylist(
   if (playlistCreationLocks.has(canonicalKey)) return playlistCreationLocks.get(canonicalKey)!;
 
   const creationPromise = (async () => {
-    const title = generatePlaylistTitle(account_id, persona, topicName, format);
-    const description = await generatePlaylistDescription(account_id, persona, topicName, format, canonicalKey);
+    const title = generatePlaylistTitle(account_id, persona as PersonaType, topicName, format);
+    const description = await generatePlaylistDescription(account_id, persona as PersonaType, topicName, format, canonicalKey);
     const newPlaylistId = await createPlaylist(youtube, title, description);
     playlistMap.set(canonicalKey, newPlaylistId);
     return newPlaylistId;

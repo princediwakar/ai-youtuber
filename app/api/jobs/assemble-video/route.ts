@@ -442,36 +442,36 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
   const EXTRA_PROCESSING_TIME = 1.5; // Extra time for comprehension and visual processing
   
   switch (frameNumber) {
-    case 1: // First Frame (Hook/Question)
-      // Try different text fields based on format
-      const hookText = questionData.hook || questionData.question || '';
-      const optionsText = questionData.options ? Object.values(questionData.options).join(" ") : '';
-      const textLength = hookText.length + optionsText.length;
-      const baseTime = Math.ceil(textLength / CHARS_PER_SECOND);
-      return Math.max(MIN_DURATION, Math.min(3, baseTime + EXTRA_PROCESSING_TIME));
+    case 1: // First Frame (Question/Main content - hookframe removed)
+      // MCQ: question+options, Common Mistake: mistake, Quick Fix: basic_word, Quick Tip: action, 
+      const firstText = questionData.question || questionData.mistake || questionData.basic_word || questionData.action || questionData.wrong_example || questionData.setup || '';
+      const firstOptions = questionData.options ? Object.values(questionData.options).join(" ") : '';
+      const firstLength = firstText.length + firstOptions.length;
+      const firstBaseTime = Math.ceil(firstLength / CHARS_PER_SECOND);
+      return Math.max(4, Math.min(8, firstBaseTime + EXTRA_PROCESSING_TIME));
       
     case 2: // Second Frame (varies by format)
-      // MCQ: question+options, Common Mistake: mistake, Quick Fix: before, Quick Tip: action, Before/After: before
-      const secondText = questionData.question || questionData.mistake || questionData.before || questionData.action || questionData.answer || '';
-      const secondOptions = questionData.options ? Object.values(questionData.options).join(" ") : '';
-      const secondLength = secondText.length + secondOptions.length;
-      const secondBaseTime = Math.ceil(secondLength / CHARS_PER_SECOND);
-      return Math.max(4, Math.min(8, secondBaseTime + EXTRA_PROCESSING_TIME));
+      // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
+      const secondText = questionData.answer || questionData.correct || questionData.advanced_word || questionData.result || questionData.right_example || questionData.challenge || '';
+      const secondBaseTime = Math.ceil(secondText.length / CHARS_PER_SECOND);
+      return Math.max(4, Math.min(7, secondBaseTime + EXTRA_PROCESSING_TIME));
       
-    case 3: // Third Frame (varies by format)
-      // MCQ: answer, Common Mistake: correct, Quick Fix: after, Quick Tip: result, Before/After: after
-      const thirdText = questionData.answer || questionData.correct || questionData.after || questionData.result || questionData.right || '';
-      const thirdBaseTime = Math.ceil(thirdText.length / CHARS_PER_SECOND);
-      return Math.max(4, Math.min(7, thirdBaseTime + EXTRA_PROCESSING_TIME));
-      
-    case 4: // Fourth Frame (if exists)
-      // MCQ: explanation, Common Mistake: practice, Before/After: result/proof
-      const fourthText = questionData.explanation || questionData.practice || questionData.result || '';
-      if (fourthText.length > 0) {
-        const fourthBaseTime = Math.ceil(fourthText.length / CHARS_PER_SECOND);
-        return Math.max(4, Math.min(8, fourthBaseTime + EXTRA_PROCESSING_TIME));
+    case 3: // Third Frame (if exists)
+      // MCQ: explanation, Common Mistake: practice, Usage Demo: practice, Challenge: reveal
+      const thirdText = questionData.explanation || questionData.practice || questionData.reveal || '';
+      if (thirdText.length > 0) {
+        const thirdBaseTime = Math.ceil(thirdText.length / CHARS_PER_SECOND);
+        return Math.max(4, Math.min(8, thirdBaseTime + EXTRA_PROCESSING_TIME));
       }
       return 4; // Standard duration for CTA or final frame - increased from 3
+      
+    case 4: // Fourth Frame (if exists - Challenge: cta)
+      const fourthText = questionData.cta || '';
+      if (fourthText.length > 0) {
+        const fourthBaseTime = Math.ceil(fourthText.length / CHARS_PER_SECOND);
+        return Math.max(3, Math.min(6, fourthBaseTime + EXTRA_PROCESSING_TIME));
+      }
+      return 4; // Standard duration for additional frames - increased from 3
       
     case 5: // Fifth Frame (if exists - rare, but possible for future formats)
       return 4; // Standard duration for additional frames - increased from 3

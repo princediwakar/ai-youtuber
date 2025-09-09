@@ -4,13 +4,121 @@
  */
 
 import { 
-  PromptConfig, 
+  PromptConfig,
+  TopicGuideline, 
   generateRandomizationElements, 
   generateContextInjections, 
   getPromptVariation,
-  getTopicGuidelines,
   createBasePromptStructure
-} from '../shared/promptUtils';
+} from '../../shared/utils';
+import { ContentComponents } from '../../shared/components';
+
+/**
+ * Health-specific topic guidelines
+ * Moved from topicGuidelines.ts for better organization and reduced dependencies
+ */
+const HEALTH_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
+  // Brain Health - Quick Action Focus
+  memory_hacks: {
+    focus: 'One simple memory technique that works in 5 seconds',
+    hook: 'This 5-second trick triples your memory power',
+    scenarios: ['remembering names', 'grocery lists', 'study facts'],
+    engagement: 'Try it on something right now'
+  },
+  focus_tricks: {
+    focus: 'One instant technique to regain focus when distracted',
+    hook: 'This 3-second trick kills all distractions instantly',
+    scenarios: ['studying', 'work tasks', 'phone addiction'],
+    engagement: 'Try it the next time you get distracted'
+  },
+  brain_foods: {
+    focus: 'One specific food that immediately boosts brain function',
+    hook: 'This common food secretly makes you smarter',
+    scenarios: ['study snacks', 'breakfast choices', 'brain fog'],
+    engagement: 'Go eat this food right now'
+  },
+  brain_exercises: {
+    focus: 'One 10-second mental exercise that sharpens thinking',
+    hook: 'This 10-second exercise makes your brain faster',
+    scenarios: ['before exams', 'work meetings', 'problem-solving'],
+    engagement: 'Do the exercise during this video'
+  },
+  productivity_hacks: {
+    focus: 'One simple change that doubles productivity instantly',
+    hook: 'This productivity hack doubled my output in 1 day',
+    scenarios: ['work tasks', 'studying', 'daily routines'],
+    engagement: 'Apply this hack to your next task'
+  },
+  stress_killers: {
+    focus: 'One technique to eliminate stress in 15 seconds',
+    hook: 'Kill stress in 15 seconds with this ancient trick',
+    scenarios: ['work pressure', 'exam anxiety', 'daily stress'],
+    engagement: 'Use this technique right now if you feel stressed'
+  },
+  sleep_hacks: {
+    focus: 'One simple change that guarantees better sleep tonight',
+    hook: 'Do this tonight to sleep like a baby',
+    scenarios: ['insomnia', 'restless sleep', 'morning tiredness'],
+    engagement: 'Try this hack tonight and report back'
+  },
+  brain_myths: {
+    focus: 'One shocking truth that destroys a popular brain myth',
+    hook: 'This brain "fact" is completely FALSE',
+    scenarios: ['popular misconceptions', 'social media claims', 'old wives tales'],
+    engagement: 'Share this fact to shock your friends'
+  },
+  
+  // Eye Health - Instant Action Focus
+  screen_damage: {
+    focus: 'One shocking way phones damage eyes that people ignore',
+    hook: 'Your phone is secretly blinding you every day',
+    scenarios: ['phone usage', 'scrolling', 'video watching'],
+    engagement: 'Check your phone settings right now'
+  },
+  eye_exercises: {
+    focus: 'One 10-second eye exercise that instantly relieves strain',
+    hook: 'This 10-second trick prevents 90% of eye problems',
+    scenarios: ['computer work', 'phone fatigue', 'reading'],
+    engagement: 'Do this exercise right now during the video'
+  },
+  vision_foods: {
+    focus: 'One specific food that dramatically improves eyesight',
+    hook: 'This food can actually improve your vision',
+    scenarios: ['poor eyesight', 'night vision', 'eye health'],
+    engagement: 'Add this food to your next meal'
+  },
+  eye_protection: {
+    focus: 'One daily habit that saves your eyes from damage',
+    hook: 'Do this every morning to protect your eyes all day',
+    scenarios: ['daily routine', 'computer work', 'outdoor activities'],
+    engagement: 'Add this to your morning routine tomorrow'
+  },
+  computer_strain: {
+    focus: 'One simple desk adjustment that eliminates eye strain',
+    hook: 'Fix computer eye strain with this 30-second adjustment',
+    scenarios: ['work from home', 'long computer sessions', 'gaming'],
+    engagement: 'Adjust your screen right now'
+  },
+  quick_eye_care: {
+    focus: 'One instant eye care hack for immediate relief',
+    hook: 'This instant hack relieves any eye discomfort',
+    scenarios: ['dry eyes', 'irritation', 'tiredness'],
+    engagement: 'Try this hack if your eyes feel tired'
+  },
+  vision_myths: {
+    focus: 'One shocking truth that destroys a popular eye health myth',
+    hook: 'This eye health "fact" is completely WRONG',
+    scenarios: ['popular beliefs', 'old advice', 'internet claims'],
+    engagement: 'Share this truth to shock people'
+  }
+};
+
+/**
+ * Get health-specific topic guidelines with fallback
+ */
+function getHealthTopicGuidelines(topic: string): TopicGuideline | undefined {
+  return HEALTH_TOPIC_GUIDELINES[topic];
+}
 
 /**
  * Generates brain health content prompt
@@ -18,7 +126,8 @@ import {
 export function generateBrainHealthPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getTopicGuidelines(config.topic);
+  const guidelines = getHealthTopicGuidelines(config.topic);
+  const randomCTA = ContentComponents.getRandomCTA('brain_health_tips');
 
   // Generate randomization elements
   const randomization = generateRandomizationElements();
@@ -104,7 +213,7 @@ Create content so valuable and surprising that ${contextInjection.demographic} i
 export function generateEyeHealthPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getTopicGuidelines(config.topic);
+  const guidelines = getHealthTopicGuidelines(config.topic);
 
   // Generate randomization elements
   const randomization = generateRandomizationElements();
@@ -191,7 +300,8 @@ Create content that makes ${contextInjection.demographic} immediately concerned 
 export function generateQuickTipPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getTopicGuidelines(config.topic);
+  const guidelines = getHealthTopicGuidelines(config.topic);
+  const randomCTA = ContentComponents.getRandomCTA('brain_health_tips');
 
   return `You are a health expert creating viral "Quick Tip" content for YouTube Shorts.
 
@@ -214,46 +324,11 @@ MANDATORY OUTPUT JSON:
 • "hook": Specific promise with timeframe (under 60 chars)
 • "action": 2-3 specific steps combined into one actionable instruction
 • "result": Scientific reason + immediate benefit combined
-• "cta": "Try this now!" or similar (under 40 chars)
+• "cta": Use "${randomCTA}" or similar action CTA (under 40 chars)
 
 Create content that viewers immediately want to try. [${timeMarker}-${tokenMarker}]`;
 }
 
-/**
- * Generates Before/After format prompt (Health)
- */
-export function generateBeforeAfterPrompt(config: PromptConfig): string {
-  const { topicData, markers } = config;
-  const { timeMarker, tokenMarker } = markers;
-  const guidelines = getTopicGuidelines(config.topic);
-
-  return `You are a health expert creating viral "Before/After" content for YouTube Shorts.
-
-TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Health consequences and transformations'}
-
-FORMAT: Before/After (4 frames)
-Frame 1 (Hook): "What happens to your [brain/eyes] when you..."
-Frame 2 (Before): "Most people damage their [health] by..."
-Frame 3 (After): "But if you do THIS instead..."
-Frame 4 (Proof): "Here's the science + immediate action"
-
-CONTENT REQUIREMENTS:
-• HOOK: Create curiosity about health consequences  
-• BEFORE: Common harmful behavior most people do
-• AFTER: Simple alternative behavior/habit
-• PROOF: Scientific backing + actionable next step
-
-TARGET: People unaware of daily health damage they're causing
-
-MANDATORY OUTPUT JSON:
-• "hook": Curiosity-driven opener (under 60 chars)
-• "before": What most people do wrong (harmful behavior)
-• "after": The healthier alternative (better behavior) 
-• "result": Research-backed explanation + immediate benefit
-• "cta": "Protect your health!" or similar (under 40 chars)
-
-Create content that makes viewers realize they need to change immediately. [${timeMarker}-${tokenMarker}]`;
-}
 
 /**
  * Generates Challenge format prompt (Health)
@@ -261,7 +336,8 @@ Create content that makes viewers realize they need to change immediately. [${ti
 export function generateChallengePrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getTopicGuidelines(config.topic);
+  const guidelines = getHealthTopicGuidelines(config.topic);
+  const randomCTA = ContentComponents.getRandomCTA('brain_health_tips');
 
   return `You are a brain training expert creating viral "Challenge" content for YouTube Shorts.
 
@@ -293,7 +369,7 @@ MANDATORY OUTPUT JSON:
 • "reveal": Result reveal text (under 60 chars)
 • "trick": The method/science behind the challenge
 • "answer": The correct solution/explanation
-• "cta": "Follow for brain training!" or similar (under 40 chars)
+• "cta": Use "${randomCTA}" or similar brain training CTA (under 40 chars)
 • "encouragement": Positive reinforcement text
 • "next_challenge": Teaser for next challenge
 • "format_type": "challenge"

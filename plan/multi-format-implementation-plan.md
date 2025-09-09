@@ -148,7 +148,7 @@ Frame 5 (CTA): "Follow for more brain training!"
 #### Interface Structure
 ```typescript
 interface ContentFormat {
-  type: 'mcq' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'quick_tip' | 'before_after' | 'challenge'
+  type: 'mcq' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'quick_tip' | 'challenge'
   accountId: string
   persona: string
   frameCount: number
@@ -188,13 +188,13 @@ const formatRules: AccountFormatRules = {
   },
   'health_shots': {
     'brain_health_tips': {
-      formats: ['mcq', 'quick_tip', 'before_after', 'challenge'],
-      weights: { mcq: 0.4, quick_tip: 0.3, before_after: 0.2, challenge: 0.1 },
+      formats: ['mcq', 'quick_tip',  'challenge'],
+      weights: { mcq: 0.4, quick_tip: 0.3, challenge: 0.3 },
       fallback: 'mcq'
     },
     'eye_health_tips': {
-      formats: ['mcq', 'quick_tip', 'before_after'],
-      weights: { mcq: 0.5, quick_tip: 0.3, before_after: 0.2 },
+      formats: ['mcq', 'quick_tip', ],
+      weights: { mcq: 0.5, quick_tip: 0.4},
       fallback: 'mcq'
     }
   }
@@ -247,7 +247,6 @@ lib/visuals/layouts/
 ├── quickFixLayout.ts (English) ✅ COMPLETED  
 ├── usageDemoLayout.ts (English) ✅ COMPLETED
 ├── quickTipLayout.ts (Health) ✅ COMPLETED
-├── beforeAfterLayout.ts (Health) ✅ COMPLETED
 └── challengeLayout.ts (Health) ✅ COMPLETED
 ```
 
@@ -358,7 +357,6 @@ CREATE TABLE format_rules (
 - [x] ✅ Test with brain and eye health topics
 
 #### Day 3-4: Before/After Format ✅ **COMPLETED**
-- [x] ✅ Create `beforeAfterLayout.ts`
 - [x] ✅ Implement comparison-based prompts
 - [x] ✅ Build transformation visual layout (4 frames: Hook → Before → After → Proof)
 - [x] ✅ Test health consequence scenarios

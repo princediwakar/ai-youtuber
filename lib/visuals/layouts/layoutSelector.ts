@@ -3,14 +3,13 @@ import { Canvas } from 'canvas';
 import { QuizJob } from '@/lib/types';
 import { Theme } from '@/lib/visuals/themes';
 import * as mcqLayout from './mcqLayout';
-import * as beforeAfterLayout from './beforeAfterLayout';  
 import * as quickTipLayout from './quickTipLayout';
 import * as commonMistakeLayout from './commonMistakeLayout';
 import * as quickFixLayout from './quickFixLayout';
 import * as usageDemoLayout from './usageDemoLayout';
 import * as challengeLayout from './challengeLayout';
 
-export type LayoutType = 'mcq' | 'before_after' | 'quick_tip' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'challenge';
+export type LayoutType = 'mcq' | 'quick_tip' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'challenge';
 
 export interface LayoutDefinition {
   type: LayoutType;
@@ -20,11 +19,11 @@ export interface LayoutDefinition {
   };
 }
 
-// Layout definitions for all 6 supported formats
+// Layout definitions for all 6 supported formats (hookframes disabled)
 export const layouts: Record<LayoutType, LayoutDefinition> = {
   mcq: {
     type: 'mcq',
-    frames: ['hook', 'question', 'answer', 'explanation'],
+    frames: ['question', 'answer', 'explanation'],
     renderers: {
       hook: mcqLayout.renderHookFrame,
       question: mcqLayout.renderQuestionFrame, 
@@ -32,19 +31,9 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
       explanation: mcqLayout.renderExplanationFrame,
     },
   },
-  before_after: {
-    type: 'before_after', 
-    frames: ['hook', 'before', 'after', 'proof'],
-    renderers: {
-      hook: beforeAfterLayout.renderHookFrame,
-      before: beforeAfterLayout.renderBeforeFrame,
-      after: beforeAfterLayout.renderAfterFrame,
-      proof: beforeAfterLayout.renderProofFrame,
-    },
-  },
   quick_tip: {
     type: 'quick_tip',
-    frames: ['hook', 'action', 'result'], 
+    frames: ['action', 'result'], 
     renderers: {
       hook: quickTipLayout.renderHookFrame,
       action: quickTipLayout.renderActionFrame,
@@ -53,7 +42,7 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   common_mistake: {
     type: 'common_mistake',
-    frames: ['hook', 'mistake', 'correct', 'practice'],
+    frames: ['mistake', 'correct', 'practice'],
     renderers: {
       hook: commonMistakeLayout.renderHookFrame,
       mistake: commonMistakeLayout.renderMistakeFrame,
@@ -63,7 +52,7 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   quick_fix: {
     type: 'quick_fix',
-    frames: ['hook', 'basic_word', 'advanced_word'],
+    frames: ['basic_word', 'advanced_word'],
     renderers: {
       hook: quickFixLayout.renderHookFrame,
       basic_word: quickFixLayout.renderBasicWordFrame,
@@ -72,7 +61,7 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   usage_demo: {
     type: 'usage_demo',
-    frames: ['hook', 'wrong_example', 'right_example', 'practice'],
+    frames: ['wrong_example', 'right_example', 'practice'],
     renderers: {
       hook: usageDemoLayout.renderHookFrame,
       wrong_example: usageDemoLayout.renderWrongExampleFrame,
@@ -82,7 +71,7 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   challenge: {
     type: 'challenge',
-    frames: ['hook', 'setup', 'challenge', 'reveal', 'cta'],
+    frames: ['setup', 'challenge', 'reveal', 'cta'],
     renderers: {
       hook: challengeLayout.renderHookFrame,
       setup: challengeLayout.renderSetupFrame,
@@ -124,11 +113,6 @@ export function detectLayoutType(contentData: any): LayoutType {
     return 'quick_tip';
   }
   
-  // Before/after format: has hook, before, after, result/proof
-  if (contentData.hook && contentData.before && contentData.after && 
-      (contentData.result || contentData.proof)) {
-    return 'before_after';
-  }
   
   // MCQ format: has question/content, options, answer, explanation
   if ((contentData.question || contentData.content) && 

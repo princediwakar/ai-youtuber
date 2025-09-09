@@ -1,0 +1,35 @@
+{
+  "twitter": {
+    "handles": [
+      "@PIB_India",
+      "@DDNewsLive",
+      "@airnewsalerts",
+      "@IndianExpress",
+      "@timesofindia",
+      "@the_hindu",
+      "@htTweets",
+      "@DeccanHerald",
+      "@livemint",
+      "@business_line",
+      "@EconomicTimes",
+      "@firstpost",
+      "@news18dotcom",
+      "@abpnewstv",
+      "@ZeeNews",
+      "@republic",
+      "@ndtv"
+    ]
+  },
+  "reddit": {
+    "subreddits": [
+      "india",
+      "IndiaSpeaks",
+      "UPSCpreparation",
+      "SSCpreparation",
+      "IndianGovernment",
+      "PoliticalHumourIndia",
+      "IndiaPolicy",
+      "worldnews"
+    ]
+  }
+}

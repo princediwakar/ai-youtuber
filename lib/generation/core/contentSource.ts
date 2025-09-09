@@ -66,6 +66,7 @@ function setCachedContext(key: string, context: string): void {
 async function loadSources(persona: string): Promise<Sources> {
   const personaToFile: Record<string, string> = {
     'current_affairs': 'sources-current-affairs.json',
+    'ssc_current_affairs': 'sources-current-affairs.json',
   };
   const sourceFile = personaToFile[persona];
 
@@ -198,7 +199,7 @@ async function fetchFromReddit(sources: Sources, topic: string): Promise<string[
 // 🚀 Main API
 // ─────────────────────────────────────────────
 export async function getDynamicContext(persona: string, topic: string): Promise<string> {
-  if (persona !== 'current_affairs') {
+  if (persona !== 'current_affairs' && persona !== 'ssc_current_affairs') {
     return "";
   }
 

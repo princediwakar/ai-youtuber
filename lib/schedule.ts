@@ -31,14 +31,13 @@ const englishGenerationPattern: HourlySchedule = {
 };
 
 const englishUploadPattern: HourlySchedule = {
-  7: ['english_vocab_builder'],  // Morning global peak
-  9: ['english_vocab_builder'],  // Morning global peak
-  13: ['english_vocab_builder'], // Lunch break peak
-  17: ['english_vocab_builder'], // After work peak
-  19: ['english_vocab_builder'], // Evening global peak
-  21: ['english_vocab_builder'], // Evening global peak
-  22: ['english_vocab_builder'], // Evening global peak
-  23: ['english_vocab_builder'], // Evening global peak
+7: ['english_vocab_builder'],  // Keep (good morning slot)                                                                                           │ │
+9: ['english_vocab_builder'],  // Keep (good morning slot)                                                                                           │ │
+16: ['english_vocab_builder'], // NEW - Analytics show 0.91% engagement                                                                              │ │
+17: ['english_vocab_builder'], // Keep (after work)                                                                                                  │ │
+19: ['english_vocab_builder'], // Keep - Analytics show 1.9% engagement                                                                              │ │
+20: ['english_vocab_builder', 'english_vocab_builder'], // NEW - Analytics show 6.23% engagement (BEST)                                                                       │ │
+21: ['english_vocab_builder'], // Keep (prime time)
 };
 
 /**
@@ -52,12 +51,12 @@ const healthGenerationPattern: HourlySchedule = {
 };
 
 const healthUploadPattern: HourlySchedule = {
-  8:  ['brain_health_tips'],  // Morning wellness routine
-  10: ['eye_health_tips'],    // Afternoon health break
+  7:  ['brain_health_tips'],  // Morning wellness routine
+  9: ['eye_health_tips'],    // Afternoon health break
   16: ['eye_health_tips'],    // Afternoon health break
   19: ['brain_health_tips'],  // Evening health awareness
-  21: ['eye_health_tips'],  // Evening health awareness
-  22: ['brain_health_tips'],  // Evening health awareness
+  20: ['eye_health_tips', 'brain_health_tips'],  // Evening health awareness
+  21: ['brain_health_tips'],  // Evening health awareness
 };
 
 /**
@@ -74,11 +73,11 @@ const sscGenerationPattern: HourlySchedule = {
 const sscUploadPattern: HourlySchedule = {
   6: ['ssc_shots'],   // Early morning study time
   9: ['ssc_shots'],   // Morning study session
-  12: ['ssc_shots'],  // Lunch break revision
-  15: ['ssc_shots'],  // Afternoon study break
-  18: ['ssc_shots'],  // Evening study start
-  21: ['ssc_shots'],  // Night study session
-  23: ['ssc_shots'],  // Night study session
+  16: ['ssc_shots'],  // Evening study start
+  18: ['ssc_shots'],  // Night study session
+  19: ['ssc_shots'],  // Night study session
+  20: ['ssc_shots'],  // Evening study start
+  21: ['ssc_shots'],  // Evening study start
 };
 
 /**
@@ -93,12 +92,12 @@ const astronomyGenerationPattern: HourlySchedule = {
 };
 
 const astronomyUploadPattern: HourlySchedule = {
-  8: ['space_facts_quiz'],   // Morning curiosity peak
-  11: ['space_facts_quiz'],  // Late morning discovery time
-  15: ['space_facts_quiz'],  // Afternoon wonder break
+  7: ['space_facts_quiz'],   // Morning curiosity peak
+  9: ['space_facts_quiz'],  // Late morning discovery time
+  16: ['space_facts_quiz'],  // Afternoon wonder break
   18: ['space_facts_quiz'],  // Evening learning time
-  21: ['space_facts_quiz'],  // Prime time space facts
-  23: ['space_facts_quiz'],  // Night sky contemplation
+  20: ['space_facts_quiz'],  // Prime time space facts
+  21: ['space_facts_quiz'],  // Night sky contemplation
 };
 
 // Account-specific schedules

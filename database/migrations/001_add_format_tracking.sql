@@ -170,10 +170,8 @@ SELECT
 FROM (VALUES 
   ('brain_health_tips', 'mcq', 0.40),
   ('brain_health_tips', 'quick_tip', 0.40),
-  ('brain_health_tips', 'before_after', 0.20),
   ('eye_health_tips', 'mcq', 0.50),
   ('eye_health_tips', 'quick_tip', 0.30),
-  ('eye_health_tips', 'before_after', 0.20)
 ) AS rules(persona, format_type, weight)
 ON CONFLICT (account_id, persona, format_type) DO NOTHING;
 
