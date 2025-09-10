@@ -287,7 +287,7 @@ MANDATORY OUTPUT JSON:
 • "traditional_approach": The time-consuming method most use
 • "smart_shortcut": The efficient alternative strategy
 • "application_example": Specific SSC exam context example
-• "explanation": Why the shortcut works better (under 100 chars)
+• "explanation": Why the shortcut works better (under 120 chars)
 • "cta": Use "${randomCTA}" or similar study improvement CTA (under 40 chars)
 • "format_type": "quick_tip"
 
@@ -329,6 +329,7 @@ MANDATORY OUTPUT JSON:
 • "right_context": Brief explanation of why it's correct (under 80 chars)
 • "practice": Practice instruction with scenario
 • "practice_scenario": Specific SSC context for aspirant to practice
+• "explanation": Why strategic usage matters for exam success (under 120 chars)
 • "cta": Use "${randomCTA}" or similar strategy mastery CTA (under 40 chars)
 • "format_type": "usage_demo"
 

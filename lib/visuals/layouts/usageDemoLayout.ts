@@ -40,7 +40,7 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const targetWord = job.data.content?.target_word || "Ephemeral";
+    const targetWord = job.data.content?.target_word || job.data.content?.target_concept || "Key Concept";
     const hookText = job.data.content?.hook || `Let's master the word:`;
     
     const textMaxWidth = canvas.width - (CONTENT_PADDING * 2);
@@ -89,7 +89,7 @@ export function renderWrongExampleFrame(canvas: Canvas, job: QuizJob, theme: The
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const wrongExample = job.data.content?.wrong_example || "This usage is incorrect";
+    const wrongExample = job.data.content?.wrong_example || job.data.content?.wrong_scenario || "This usage is incorrect";
     
     const cardY = HEADER_HEIGHT + 20;
     const cardHeight = canvas.height - cardY - FOOTER_HEIGHT - 20;
@@ -134,7 +134,7 @@ export function renderRightExampleFrame(canvas: Canvas, job: QuizJob, theme: The
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const rightExample = job.data.content?.right_example || "This usage is perfect";
+    const rightExample = job.data.content?.right_example || job.data.content?.right_scenario || "This usage is perfect";
     
     const cardY = HEADER_HEIGHT + 20;
     const cardHeight = canvas.height - cardY - FOOTER_HEIGHT - 20;

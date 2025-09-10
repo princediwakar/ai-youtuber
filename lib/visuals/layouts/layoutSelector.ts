@@ -96,7 +96,13 @@ export function detectLayoutType(contentData: any): LayoutType {
     return 'quick_fix';
   }
   
-  // Usage demo format: has hook, target_word, wrong_example, right_example, practice
+  // Usage demo format: has hook, target_concept, wrong_scenario, right_scenario, practice
+  if (contentData.hook && contentData.target_concept && contentData.wrong_scenario && 
+      contentData.right_scenario && contentData.practice) {
+    return 'usage_demo';
+  }
+  
+  // Alternative usage demo format: has hook, target_word, wrong_example, right_example, practice
   if (contentData.hook && contentData.target_word && contentData.wrong_example && 
       contentData.right_example && contentData.practice) {
     return 'usage_demo';
@@ -108,7 +114,12 @@ export function detectLayoutType(contentData: any): LayoutType {
     return 'challenge';
   }
   
-  // Quick tip format: has hook, action, result
+  // Quick tip format: has hook, traditional_approach, smart_shortcut
+  if (contentData.hook && contentData.traditional_approach && contentData.smart_shortcut) {
+    return 'quick_tip';
+  }
+  
+  // Alternative quick tip format: has hook, action, result
   if (contentData.hook && contentData.action && contentData.result) {
     return 'quick_tip';
   }

@@ -81,7 +81,7 @@ export function renderActionFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const actionText = job.data.content?.action || "Do this one simple thing.";
+    const actionText = job.data.content?.action || job.data.content?.traditional_approach || "Do this one simple thing.";
     
     const cardY = HEADER_HEIGHT + 20;
     const cardHeight = canvas.height - cardY - FOOTER_HEIGHT - 20;
@@ -126,7 +126,7 @@ export function renderResultFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
-    const resultText = job.data.content?.result || "You will see amazing results.";
+    const resultText = job.data.content?.result || job.data.content?.smart_shortcut || "You will see amazing results.";
     
     const cardY = HEADER_HEIGHT + 20;
     const cardHeight = canvas.height - cardY - FOOTER_HEIGHT - 20;

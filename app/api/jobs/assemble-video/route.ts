@@ -438,17 +438,23 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
   
   // Improved reading speed calculation: 8-10 chars/second for comfortable video reading
   const CHARS_PER_SECOND = 10; // Conservative speed for video text comprehension
-  const MIN_DURATION = 3; // Minimum time to register visual content
+  const MIN_DURATION = 2; // Minimum time to register visual content
   const EXTRA_PROCESSING_TIME = 1.5; // Extra time for comprehension and visual processing
   
   switch (frameNumber) {
-    case 1: // First Frame (Question/Main content - hookframe removed)
-      // MCQ: question+options, Common Mistake: mistake, Quick Fix: basic_word, Quick Tip: action, 
+    case 1: // First Frame (Hook Frame - should be short and punchy)
+      // Hook frames should be brief and attention-grabbing, typically showing just the hook text
+      const hookText = questionData.hook || '';
+      if (hookText.length > 0) {
+        const hookBaseTime = Math.ceil(hookText.length / CHARS_PER_SECOND);
+        return Math.max(2, Math.min(MIN_DURATION, hookBaseTime + 1)); // Shorter for hooks
+      }
+      // Fallback for legacy content without hook field
       const firstText = questionData.question || questionData.mistake || questionData.basic_word || questionData.action || questionData.wrong_example || questionData.setup || '';
       const firstOptions = questionData.options ? Object.values(questionData.options).join(" ") : '';
       const firstLength = firstText.length + firstOptions.length;
       const firstBaseTime = Math.ceil(firstLength / CHARS_PER_SECOND);
-      return Math.max(4, Math.min(8, firstBaseTime + EXTRA_PROCESSING_TIME));
+      return Math.max(4, Math.min(6, firstBaseTime + EXTRA_PROCESSING_TIME)); // Reduced max from 8 to 6
       
     case 2: // Second Frame (varies by format)
       // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
