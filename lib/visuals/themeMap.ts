@@ -46,8 +46,12 @@ export const PersonaThemeMap: Record<string, string[]> = {
 
   // Astronomy content - cosmic and space-themed visuals for wonder and amazement
   space_facts_quiz: [
-    'CosmicDawn',       // Perfect for space content with cosmic gradients
-    'EmeraldSea',       // Deep space colors
+    'VintageScroll',    // Easy on the eyes
+    'SakuraGrove',      // Gentle natural colors
+    'CanyonSunset',     // Warm, comfortable tones
+    'MintyFresh',       // Clean and soothing
+    'SunsetBeach',      // Bright but not harsh
+    'CosmicDawn'        // Dramatic 
     // Removed shared themes to ensure complete isolation from other content
   ],
   

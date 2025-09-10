@@ -71,6 +71,8 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   
   const { updateJob } = await import('@/lib/database');
   await updateJob(job.id, {
+    step: 3,
+    status: 'assembly_pending',
     data: { 
       ...job.data, 
       frameUrls, 

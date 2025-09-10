@@ -46,11 +46,34 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     drawFrameTitle(ctx, 'Brain Challenge', HEADER_HEIGHT, canvas.width, theme);
     const titleHeight = 80;
 
-    // Large Puzzle Piece Icon
+    // Large Puzzle Icon - Draw a simple geometric shape instead of emoji
     const iconY = HEADER_HEIGHT + titleHeight + 60;
-    ctx.font = '120px sans-serif'; // Use a generic font for emoji
-    ctx.textAlign = 'center';
-    ctx.fillText('🧩', canvas.width / 2, iconY);
+    const iconSize = 120;
+    const iconX = canvas.width / 2;
+    
+    // Draw a simple puzzle piece shape
+    ctx.fillStyle = theme.button.background;
+    ctx.strokeStyle = theme.text.primary;
+    ctx.lineWidth = 4;
+    
+    // Main square body
+    const squareSize = iconSize * 0.7;
+    const squareX = iconX - squareSize / 2;
+    const squareY = iconY - squareSize / 2;
+    
+    ctx.fillRect(squareX, squareY, squareSize, squareSize);
+    ctx.strokeRect(squareX, squareY, squareSize, squareSize);
+    
+    // Add puzzle knobs/indentations
+    const knobSize = squareSize * 0.25;
+    
+    // Top knob (protruding)
+    ctx.fillRect(iconX - knobSize/2, squareY - knobSize/2, knobSize, knobSize/2);
+    ctx.strokeRect(iconX - knobSize/2, squareY - knobSize/2, knobSize, knobSize/2);
+    
+    // Right indent
+    ctx.clearRect(squareX + squareSize - knobSize/4, iconY - knobSize/2, knobSize/2, knobSize);
+    ctx.strokeRect(squareX + squareSize - knobSize/4, iconY - knobSize/2, knobSize/2, knobSize);
 
     const textY = iconY + 80;
     const availableHeightForText = availableHeight - (textY - HEADER_HEIGHT);

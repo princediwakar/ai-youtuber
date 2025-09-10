@@ -63,12 +63,7 @@ export async function POST(request: NextRequest) {
 async function processJob(job: QuizJob): Promise<string | null> {
   try {
     console.log(`[Job ${job.id}] Starting frame creation...`);
-    const frameUrls = await createFramesForJob(job);
-    await updateJob(job.id, {
-      step: 3,
-      status: 'assembly_pending',
-      data: { ...job.data, frameUrls }
-    });
+    await createFramesForJob(job);
     console.log(`[Job ${job.id}] ✅ Frame creation successful.`);
     return job.id;
   } catch (error) {

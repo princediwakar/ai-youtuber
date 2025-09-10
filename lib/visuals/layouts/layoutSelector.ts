@@ -19,11 +19,11 @@ export interface LayoutDefinition {
   };
 }
 
-// Layout definitions for all 6 supported formats (hookframes disabled)
+// Layout definitions for all 6 supported formats (hook frames now enabled)
 export const layouts: Record<LayoutType, LayoutDefinition> = {
   mcq: {
     type: 'mcq',
-    frames: ['question', 'answer', 'explanation'],
+    frames: ['hook', 'question', 'answer', 'explanation'],
     renderers: {
       hook: mcqLayout.renderHookFrame,
       question: mcqLayout.renderQuestionFrame, 
@@ -33,7 +33,7 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   quick_tip: {
     type: 'quick_tip',
-    frames: ['action', 'result'], 
+    frames: ['hook', 'action', 'result'], 
     renderers: {
       hook: quickTipLayout.renderHookFrame,
       action: quickTipLayout.renderActionFrame,
@@ -42,7 +42,7 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   common_mistake: {
     type: 'common_mistake',
-    frames: ['mistake', 'correct', 'practice'],
+    frames: ['hook', 'mistake', 'correct', 'practice'],
     renderers: {
       hook: commonMistakeLayout.renderHookFrame,
       mistake: commonMistakeLayout.renderMistakeFrame,
@@ -52,7 +52,7 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   quick_fix: {
     type: 'quick_fix',
-    frames: ['basic_word', 'advanced_word'],
+    frames: ['hook', 'basic_word', 'advanced_word'],
     renderers: {
       hook: quickFixLayout.renderHookFrame,
       basic_word: quickFixLayout.renderBasicWordFrame,
@@ -61,7 +61,7 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   usage_demo: {
     type: 'usage_demo',
-    frames: ['wrong_example', 'right_example', 'practice'],
+    frames: ['hook', 'wrong_example', 'right_example', 'practice'],
     renderers: {
       hook: usageDemoLayout.renderHookFrame,
       wrong_example: usageDemoLayout.renderWrongExampleFrame,
@@ -71,7 +71,7 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   challenge: {
     type: 'challenge',
-    frames: ['setup', 'challenge', 'reveal', 'cta'],
+    frames: ['hook', 'challenge', 'reveal', 'cta'],
     renderers: {
       hook: challengeLayout.renderHookFrame,
       setup: challengeLayout.renderSetupFrame,
