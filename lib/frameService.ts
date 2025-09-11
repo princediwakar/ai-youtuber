@@ -60,14 +60,14 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
     
     if (config.DEBUG_MODE) {
       const frameType = layout.frames[index] || `frame-${index}`;
-      await saveDebugFrame(canvas, `${theme.name}-job-${job.id}-${layoutType}-${frameType}.png`);
+      await saveDebugFrame(canvas, `${index + 1}-${frameType}-${job.persona}-${layoutType}-${theme.name}-${job.id}.png`);
     }
     renderedCanvases.push(canvas);
   }
 
   // Get account for this job to determine upload destination
   const account = await getAccountConfig(job.account_id);
-  const frameUrls = await uploadFrames(job.id, theme.name, renderedCanvases, account.id);
+  const frameUrls = await uploadFrames(job.id, theme.name, renderedCanvases, account.id, job.persona, layoutType);
   
   const { updateJob } = await import('@/lib/database');
   await updateJob(job.id, {
@@ -114,8 +114,8 @@ function selectThemeForPersona(persona: string): Theme {
   return themes[randomThemeName];
 }
 
-async function uploadFrames(jobId: string, themeName: string, canvases: Canvas[], accountId: string): Promise<string[]> {
-  const publicIds = generateFramePublicIds(jobId, themeName, accountId, canvases.length);
+async function uploadFrames(jobId: string, themeName: string, canvases: Canvas[], accountId: string, persona: string, layoutType: string): Promise<string[]> {
+  const publicIds = generateFramePublicIds(jobId, themeName, accountId, canvases.length, persona, layoutType);
   try {
     const uploadPromises = canvases.map((canvas, index) => {
       const buffer = canvas.toBuffer('image/png');

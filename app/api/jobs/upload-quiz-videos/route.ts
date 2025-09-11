@@ -38,7 +38,36 @@ export async function POST(request: NextRequest) {
       // No body or invalid JSON - process all accounts (backward compatibility)
     }
 
-    // Validate account exists if accountId is provided
+    console.log(`🚀 Queuing upload processing for account: ${accountId || 'multiple'}`);
+
+    // Fire and forget: Move ALL heavy operations to background
+    setTimeout(() => {
+      processCompleteUploadFlow(accountId).catch(error => {
+        console.error('Background upload processing failed:', error);
+      });
+    }, 0);
+
+    return NextResponse.json({ 
+      success: true, 
+      accountId: accountId || 'multiple',
+      message: 'Upload processing queued in background'
+    });
+
+  } catch (error) {
+    console.error('YouTube upload batch failed:', error);
+    return NextResponse.json({ success: false, error: 'YouTube upload failed' }, { status: 500 });
+  }
+}
+
+/**
+ * Complete upload flow including all validations moved to background.
+ * Runs asynchronously without blocking the API response.
+ */
+async function processCompleteUploadFlow(accountId: string | undefined) {
+  try {
+    console.log(`🔄 Background upload flow started for account: ${accountId || 'multiple'}`);
+
+    // Validate account exists if accountId is provided (moved to background)
     let account;
     if (accountId) {
       try {
@@ -50,10 +79,8 @@ export async function POST(request: NextRequest) {
           personasLength: account.personas?.length
         });
       } catch (error) {
-        return NextResponse.json({ 
-          success: false, 
-          error: `Invalid accountId: ${accountId}` 
-        }, { status: 400 });
+        console.error(`❌ Invalid accountId in background: ${accountId}`, error);
+        return;
       }
     }
 
@@ -77,7 +104,7 @@ export async function POST(request: NextRequest) {
         personasToUpload = Array.isArray(account!.personas) ? account!.personas : []; // Ensure it's an array
         if (personasToUpload.length === 0) {
           console.log(`⚠️  DEBUG MODE: Account ${accountId} has no personas defined`);
-          return NextResponse.json({ success: true, message: 'No personas defined for account in debug mode', accountId });
+          return;
         }
       } else {
         personasToUpload = getScheduledPersonasForUpload(accountId, dayOfWeek, hourOfDay) || [];
@@ -86,7 +113,7 @@ export async function POST(request: NextRequest) {
         if (personasToUpload.length === 0) {
           const message = `No ${account!.name} uploads scheduled for this hour (${hourOfDay}:00).`;
           console.log(message);
-          return NextResponse.json({ success: true, message, accountId });
+          return;
         }
         
         console.log(`🚀 Found scheduled ${account!.name} uploads for this hour: ${personasToUpload.join(', ')}`);
@@ -99,11 +126,27 @@ export async function POST(request: NextRequest) {
       // Ensure personasToUpload is always an array when accountId is provided
       if (!Array.isArray(personasToUpload)) {
         console.error(`❌ personasToUpload is not an array:`, personasToUpload);
-        return NextResponse.json({ success: false, error: 'Invalid personas configuration' }, { status: 500 });
+        return;
       }
     }
 
-    // 3. Auto-retry failed jobs with valid data
+    // Process uploads
+    await processUploadWithValidation(accountId, personasToUpload);
+
+  } catch (error) {
+    console.error(`❌ Background complete upload flow failed for ${accountId}:`, error);
+  }
+}
+
+/**
+ * Background processing function that includes validation and upload processing.
+ * Runs asynchronously without blocking the API response.
+ */
+async function processUploadWithValidation(accountId: string | undefined, personasToUpload: string[]) {
+  try {
+    console.log(`🔄 Background upload processing started for account: ${accountId || 'multiple'}`);
+
+    // 3. Auto-retry failed jobs with valid data (moved to background)
     await autoRetryFailedJobs();
     
     // 4. Fetch pending jobs - filter by account and personas if specified
@@ -115,17 +158,36 @@ export async function POST(request: NextRequest) {
     }
     
     if (jobs.length === 0) {
-      let message: string;
-      if (!accountId) {
-        message = 'No videos ready for upload.';
-      } else if (config.DEBUG_MODE) {
-        message = `No videos ready for ${account!.name} upload (debug mode - account personas allowed).`;
-      } else {
-        message = `No videos ready for ${account!.name} upload for scheduled personas.`;
-      }
-      return NextResponse.json({ success: true, message, accountId });
+      const message = accountId ? 
+        `No videos ready for upload for account ${accountId}` :
+        'No videos ready for upload';
+      console.log(message);
+      return;
     }
-    
+
+    console.log(`Found ${jobs.length} jobs for upload. Processing...`);
+
+    // Process uploads
+    await processUploadInBackground(jobs, accountId, null, personasToUpload);
+
+  } catch (error) {
+    console.error(`❌ Background upload validation/processing failed for ${accountId}:`, error);
+  }
+}
+
+/**
+ * Background processing function for YouTube uploads.
+ * Runs asynchronously without blocking the API response.
+ */
+async function processUploadInBackground(
+  jobs: QuizJob[], 
+  accountId: string | undefined, 
+  account: any, 
+  personasToUpload: string[]
+) {
+  try {
+    console.log(`🔄 Background upload processing started for ${jobs.length} jobs`);
+
     const cache = await getCache();
     
     // Process jobs by account - group by account_id to handle OAuth clients properly
@@ -170,19 +232,10 @@ export async function POST(request: NextRequest) {
           : personasToUpload.join(', '))
       : `All accounts: ${processedAccounts.join(', ')}`;
       
-    console.log(`YouTube upload batch completed. Processed ${totalSuccessfulJobs} jobs for: ${message}.`);
-    
-    return NextResponse.json({ 
-      success: true, 
-      processed: totalSuccessfulJobs, 
-      accountId: accountId || 'multiple',
-      accountName: accountId ? account!.name : 'Multiple Accounts',
-      processedAccounts
-    });
+    console.log(`✅ Background YouTube upload completed. Processed ${totalSuccessfulJobs} jobs for: ${message}.`);
 
   } catch (error) {
-    console.error('YouTube upload batch failed:', error);
-    return NextResponse.json({ success: false, error: 'YouTube upload failed' }, { status: 500 });
+    console.error('❌ Background YouTube upload failed:', error);
   }
 }
 

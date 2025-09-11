@@ -71,7 +71,7 @@ const sscGenerationPattern: HourlySchedule = {
 };
 
 const sscUploadPattern: HourlySchedule = {
-  6: ['ssc_shots'],   // Early morning study time
+  8: ['ssc_shots'],   // Early morning study time
   9: ['ssc_shots'],   // Morning study session
   16: ['ssc_shots'],  // Evening study start
   18: ['ssc_shots'],  // Night study session

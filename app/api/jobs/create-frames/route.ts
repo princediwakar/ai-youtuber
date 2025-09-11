@@ -24,7 +24,35 @@ export async function POST(request: NextRequest) {
       // No body or invalid JSON - process all accounts
     }
 
-    // Auto-retry failed jobs with valid data
+    console.log(`🚀 Queuing frame creation for account: ${accountId || 'all'}`);
+
+    // Fire and forget: Move heavy operations to background
+    setTimeout(() => {
+      processFrameCreationWithRetry(accountId).catch(error => {
+        console.error('Background frame creation failed:', error);
+      });
+    }, 0);
+
+    return NextResponse.json({ 
+      success: true, 
+      accountId: accountId || 'all',
+      message: 'Frame creation queued in background'
+    });
+  } catch (error) {
+    console.error('Frame creation batch failed:', error);
+    return NextResponse.json({ success: false, error: 'Frame creation batch failed' }, { status: 500 });
+  }
+}
+
+/**
+ * Background processing function that includes retry logic and frame creation.
+ * Runs asynchronously without blocking the API response.
+ */
+async function processFrameCreationWithRetry(accountId: string | undefined) {
+  try {
+    console.log(`🔄 Background frame creation started for account: ${accountId || 'all'}`);
+
+    // Auto-retry failed jobs with valid data (moved to background)
     await autoRetryFailedJobs();
     
     // Get jobs; prefer SQL-side filtering by account to avoid LIMIT mismatches
@@ -34,13 +62,29 @@ export async function POST(request: NextRequest) {
       const message = accountId ? 
         `No jobs pending frame creation for account ${accountId}.` :
         'No jobs pending frame creation.';
-      return NextResponse.json({ success: true, message });
+      console.log(message);
+      return;
     }
 
     console.log(`Found ${jobs.length} jobs for frame creation. Processing...`);
 
-    const processPromises = jobs.map((job: QuizJob) => processJob(job));
+    // Process frame creation
+    await processFrameCreationInBackground(jobs);
 
+  } catch (error) {
+    console.error(`❌ Background frame creation failed for ${accountId}:`, error);
+  }
+}
+
+/**
+ * Background processing function for frame creation.
+ * Runs asynchronously without blocking the API response.
+ */
+async function processFrameCreationInBackground(jobs: QuizJob[]) {
+  try {
+    console.log(`🔄 Background frame creation started for ${jobs.length} jobs`);
+
+    const processPromises = jobs.map((job: QuizJob) => processJob(job));
     const results = await Promise.allSettled(processPromises);
     
     const summary = results.map((result, index) => {
@@ -52,10 +96,11 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({ success: true, summary });
+    const successCount = summary.filter(s => s.status === 'success').length;
+    console.log(`✅ Background frame creation completed: ${successCount}/${jobs.length} successful`);
+
   } catch (error) {
-    console.error('Frame creation batch failed:', error);
-    return NextResponse.json({ success: false, error: 'Frame creation batch failed' }, { status: 500 });
+    console.error('❌ Background frame creation failed:', error);
   }
 }
 

@@ -200,13 +200,14 @@ function getRandomAudioFile(): string {
   return audioPath;
 }
 
-async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: string) {
+async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: string, persona?: string) {
   if (!config.DEBUG_MODE) return;
   try {
     const debugDir = path.join(process.cwd(), 'generated-videos');
     await fs.mkdir(debugDir, { recursive: true });
-    const themePrefix = themeName ? `${themeName}-` : '';
-    const destinationPath = path.join(debugDir, `${themePrefix}quiz-${jobId}.mp4`);
+    const personaName = persona || 'unknown';
+    const theme = themeName || 'unknown';
+    const destinationPath = path.join(debugDir, `1-video-${personaName}-quiz-${theme}-${jobId}.mp4`);
     await fs.writeFile(destinationPath, videoBuffer);
     console.log(`[DEBUG] Video for job ${jobId} saved to: ${destinationPath}`);
   } catch (error) {
@@ -230,9 +231,36 @@ export async function POST(request: NextRequest) {
       // No body or invalid JSON - process all accounts
     }
 
-    console.log('Starting video assembly batch...');
+    console.log(`🚀 Queuing video assembly for account: ${accountId || 'all'}`);
+
+    // Fire and forget: Move heavy operations to background
+    setTimeout(() => {
+      processVideoAssemblyWithRetry(accountId).catch(error => {
+        console.error('Background video assembly failed:', error);
+      });
+    }, 0);
+
+    return NextResponse.json({ 
+      success: true, 
+      accountId: accountId || 'all',
+      message: 'Video assembly queued in background'
+    });
+
+  } catch (error) {
+    console.error('Video assembly batch failed:', error);
+    return NextResponse.json({ success: false, error: 'Video assembly failed' }, { status: 500 });
+  }
+}
+
+/**
+ * Background processing function that includes retry logic and video assembly.
+ * Runs asynchronously without blocking the API response.
+ */
+async function processVideoAssemblyWithRetry(accountId: string | undefined) {
+  try {
+    console.log(`🔄 Background video assembly started for account: ${accountId || 'all'}`);
     
-    // Auto-retry failed jobs with valid data
+    // Auto-retry failed jobs with valid data (moved to background)
     await autoRetryFailedJobs();
     
     // Get jobs; prefer SQL-side filtering by account to avoid LIMIT mismatches
@@ -242,8 +270,29 @@ export async function POST(request: NextRequest) {
       const message = accountId ? 
         `No jobs pending video assembly for account ${accountId}` :
         'No jobs pending video assembly';
-      return NextResponse.json({ success: true, message });
+      console.log(message);
+      return;
     }
+
+    console.log(`Found ${jobs.length} jobs for video assembly. Processing...`);
+
+    // Process video assembly
+    await processVideoAssemblyInBackground(jobs);
+    
+    console.log(`✅ Background video assembly completed for account: ${accountId || 'all'}`);
+
+  } catch (error) {
+    console.error(`❌ Background video assembly failed for ${accountId}:`, error);
+  }
+}
+
+/**
+ * Background processing function for video assembly.
+ * Runs asynchronously without blocking the API response.
+ */
+async function processVideoAssemblyInBackground(jobs: QuizJob[]) {
+  try {
+    console.log(`🔄 Background video assembly started for ${jobs.length} jobs`);
 
     const processPromises = jobs.map(job => processJob(job));
     const results = await Promise.allSettled(processPromises);
@@ -257,11 +306,11 @@ export async function POST(request: NextRequest) {
         }
     });
 
-    return NextResponse.json({ success: true, summary });
+    const successCount = summary.filter(s => s.status === 'success').length;
+    console.log(`✅ Background video assembly completed: ${successCount}/${jobs.length} successful`);
 
   } catch (error) {
-    console.error('Video assembly batch failed:', error);
-    return NextResponse.json({ success: false, error: 'Video assembly failed' }, { status: 500 });
+    console.error('❌ Background video assembly failed:', error);
   }
 }
 
@@ -412,7 +461,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   const videoBuffer = await fs.readFile(outputVideoPath);
   
   // Save debug video locally if DEBUG_MODE is enabled
-  await saveDebugVideo(videoBuffer, job.id, job.data.themeName);
+  await saveDebugVideo(videoBuffer, job.id, job.data.themeName, job.persona);
   
   // Get account ID from job data
   const accountId = job.account_id;
@@ -420,7 +469,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     throw new Error(`Job ${job.id} is missing account_id - database migration may be incomplete`);
   }
   
-  const publicId = generateVideoPublicId(job.id, accountId);
+  const publicId = generateVideoPublicId(job.id, accountId, job.persona, job.data.themeName);
   const result = await uploadVideoToCloudinary(videoBuffer, accountId, {
     folder: config.CLOUDINARY_VIDEOS_FOLDER,
     public_id: publicId,
@@ -448,35 +497,24 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
       if (hookText.length > 0) {
         return MIN_DURATION; // Shorter for hooks
       }
-      // Fallback for legacy content without hook field
-      const firstText = questionData.question || questionData.mistake || questionData.basic_word || questionData.action || questionData.wrong_example || questionData.setup || '';
-      const firstOptions = questionData.options ? Object.values(questionData.options).join(" ") : '';
-      const firstLength = firstText.length + firstOptions.length;
-      const firstBaseTime = Math.ceil(firstLength / CHARS_PER_SECOND);
-      return Math.max(4, Math.min(6, firstBaseTime + EXTRA_PROCESSING_TIME)); // Reduced max from 8 to 4
+      
       
     case 2: // Second Frame (varies by format)
       // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
-      const secondText = questionData.answer || questionData.correct || questionData.advanced_word || questionData.result || questionData.right_example || questionData.challenge || '';
-      const secondBaseTime = Math.ceil(secondText.length / CHARS_PER_SECOND);
-      return Math.max(4, Math.min(8, secondBaseTime + EXTRA_PROCESSING_TIME));
+      
+      return 8;
       
     case 3: // Third Frame (if exists)
       // MCQ: explanation, Common Mistake: practice, Usage Demo: practice, Challenge: reveal
       const thirdText = questionData.explanation || questionData.practice || questionData.reveal || '';
       if (thirdText.length > 0) {
         const thirdBaseTime = Math.ceil(thirdText.length / CHARS_PER_SECOND);
-        return Math.max(3, Math.min(4, thirdBaseTime + EXTRA_PROCESSING_TIME));
+        return 3;
       }
       return 4; // Standard duration for CTA or final frame - increased from 3
       
     case 4: // Fourth Frame (if exists - Challenge: cta)
-      const fourthText = questionData.cta || '';
-      if (fourthText.length > 0) {
-        const fourthBaseTime = Math.ceil(fourthText.length / CHARS_PER_SECOND);
-        return Math.max(3, Math.min(4, fourthBaseTime + EXTRA_PROCESSING_TIME));
-      }
-      return 4; // Standard duration for additional frames - increased from 3
+        return 4;
       
     case 5: // Fifth Frame (if exists - rare, but possible for future formats)
       return 4; // Standard duration for additional frames - increased from 3

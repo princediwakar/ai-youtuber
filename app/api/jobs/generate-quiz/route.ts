@@ -11,6 +11,7 @@ const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.
 
 /**
  * Multi-account content generation endpoint for cron jobs.
+ * Fire-and-forget implementation to avoid timeout issues.
  * Now supports accountId parameter to generate content for specific accounts.
  * Defaults to 'english_shots' for backward compatibility.
  */
@@ -30,15 +31,43 @@ export async function POST(request: NextRequest) {
       // No body or invalid JSON - use default
     }
 
-    // Validate account exists
+    console.log(`🚀 Queuing generation for account: ${accountId}`);
+
+    // Fire and forget: Use setTimeout for true fire-and-forget
+    // Move ALL heavy operations to background
+    setTimeout(() => {
+      processGenerationWithValidation(accountId).catch(error => {
+        console.error('Background generation failed:', error);
+      });
+    }, 0);
+
+    return NextResponse.json({ 
+      success: true, 
+      accountId,
+      message: 'Generation queued in background'
+    });
+
+  } catch (error) {
+    console.error('❌ Scheduled quiz generation failed:', error);
+    return NextResponse.json({ success: false, error: 'Scheduled generation failed' }, { status: 500 });
+  }
+}
+
+/**
+ * Background processing function that includes validation and generation.
+ * Runs asynchronously without blocking the API response.
+ */
+async function processGenerationWithValidation(accountId: string) {
+  try {
+    console.log(`🔄 Background processing started for account: ${accountId}`);
+
+    // Validate account exists (moved to background)
     let account;
     try {
       account = await getAccountConfig(accountId);
     } catch (error) {
-      return NextResponse.json({ 
-        success: false, 
-        error: `Invalid accountId: ${accountId}` 
-      }, { status: 400 });
+      console.error(`❌ Invalid accountId in background: ${accountId}`, error);
+      return;
     }
 
     let personasToGenerate: string[] = [];
@@ -64,12 +93,33 @@ export async function POST(request: NextRequest) {
       if (personasToGenerate.length === 0) {
         const message = `No personas scheduled for ${account.name} generation at ${hourOfDay}:00 on day ${dayOfWeek}.`;
         console.log(message);
-        return NextResponse.json({ success: true, message, accountId });
+        return;
       }
     }
 
     console.log(`🚀 Found scheduled personas for ${account.name}: ${personasToGenerate.join(', ')}`);
-    let totalCreatedJobs = 0;
+
+    // Process generation
+    await processGenerationInBackground(accountId, account, personasToGenerate);
+
+  } catch (error) {
+    console.error(`❌ Background validation/generation failed for ${accountId}:`, error);
+  }
+}
+
+/**
+ * Background processing function for content generation.
+ * Runs asynchronously without blocking the API response.
+ */
+async function processGenerationInBackground(
+  accountId: string, 
+  account: any, 
+  personasToGenerate: string[]
+) {
+  let totalCreatedJobs = 0;
+
+  try {
+    console.log(`🔄 Background processing started for ${account.name} with ${personasToGenerate.length} personas`);
 
     // 3. Loop through and generate content for each scheduled persona.
     for (const personaKey of personasToGenerate) {
@@ -104,17 +154,10 @@ export async function POST(request: NextRequest) {
       console.log(`-- ${account.name} batch completed for ${personaConfig.displayName}. Created ${createdCount} jobs.`);
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      created: totalCreatedJobs, 
-      personas: personasToGenerate,
-      accountId,
-      accountName: account.name
-    });
+    console.log(`✅ Background processing completed for ${account.name}. Total created: ${totalCreatedJobs} jobs.`);
 
   } catch (error) {
-    console.error('❌ Scheduled quiz generation failed:', error);
-    return NextResponse.json({ success: false, error: 'Scheduled generation failed' }, { status: 500 });
+    console.error(`❌ Background generation failed for ${account.name}:`, error);
   }
 }
 

@@ -7,74 +7,74 @@ import { ContentData } from '@/lib/types';
 
 // Length limits for different content elements
 const LENGTH_LIMITS = {
-  HOOK: 25,
+  HOOK: 30,
   QUESTION: 180,
   OPTION: 70,
-  EXPLANATION: 120,
+  EXPLANATION: 150,
   CTA: 80  // Increased from 35 to allow for more powerful, engaging CTAs
 } as const;
 
 /**
  * Truncates text to specified length with ellipsis if needed
  */
-function truncateText(text: string, maxLength: number): string {
-  if (!text || text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + '...';
-}
+// function truncateText(text: string, maxLength: number): string {
+//   if (!text || text.length <= maxLength) return text;
+//   return text.substring(0, maxLength - 3) + '...';
+// }
 
 /**
  * Enforces length limits on content with smart truncation
  */
-function enforceLengthLimits(data: any): void {
-  // Truncate hook
-  if (data.hook) {
-    const originalLength = data.hook.length;
-    data.hook = truncateText(data.hook, LENGTH_LIMITS.HOOK);
-    if (data.hook.length < originalLength) {
-      console.warn(`Hook truncated from ${originalLength} to ${data.hook.length} chars`);
-    }
-  }
+// function enforceLengthLimits(data: any): void {
+//   // Truncate hook
+//   if (data.hook) {
+//     const originalLength = data.hook.length;
+//     data.hook = truncateText(data.hook, LENGTH_LIMITS.HOOK);
+//     if (data.hook.length < originalLength) {
+//       console.warn(`Hook truncated from ${originalLength} to ${data.hook.length} chars`);
+//     }
+//   }
   
-  // Truncate question/content
-  if (data.question) {
-    const originalLength = data.question.length;
-    data.question = truncateText(data.question, LENGTH_LIMITS.QUESTION);
-    if (data.question.length < originalLength) {
-      console.warn(`Question truncated from ${originalLength} to ${data.question.length} chars`);
-    }
-  }
+//   // Truncate question/content
+//   if (data.question) {
+//     const originalLength = data.question.length;
+//     data.question = truncateText(data.question, LENGTH_LIMITS.QUESTION);
+//     if (data.question.length < originalLength) {
+//       console.warn(`Question truncated from ${originalLength} to ${data.question.length} chars`);
+//     }
+//   }
   
-  // Truncate options
-  if (data.options && typeof data.options === 'object') {
-    Object.keys(data.options).forEach(key => {
-      if (typeof data.options[key] === 'string') {
-        const originalLength = data.options[key].length;
-        data.options[key] = truncateText(data.options[key], LENGTH_LIMITS.OPTION);
-        if (data.options[key].length < originalLength) {
-          console.warn(`Option ${key} truncated from ${originalLength} to ${data.options[key].length} chars`);
-        }
-      }
-    });
-  }
+//   // Truncate options
+//   if (data.options && typeof data.options === 'object') {
+//     Object.keys(data.options).forEach(key => {
+//       if (typeof data.options[key] === 'string') {
+//         const originalLength = data.options[key].length;
+//         data.options[key] = truncateText(data.options[key], LENGTH_LIMITS.OPTION);
+//         if (data.options[key].length < originalLength) {
+//           console.warn(`Option ${key} truncated from ${originalLength} to ${data.options[key].length} chars`);
+//         }
+//       }
+//     });
+//   }
   
-  // Truncate explanation
-  if (data.explanation) {
-    const originalLength = data.explanation.length;
-    data.explanation = truncateText(data.explanation, LENGTH_LIMITS.EXPLANATION);
-    if (data.explanation.length < originalLength) {
-      console.warn(`Explanation truncated from ${originalLength} to ${data.explanation.length} chars`);
-    }
-  }
+//   // Truncate explanation
+//   if (data.explanation) {
+//     const originalLength = data.explanation.length;
+//     data.explanation = truncateText(data.explanation, LENGTH_LIMITS.EXPLANATION);
+//     if (data.explanation.length < originalLength) {
+//       console.warn(`Explanation truncated from ${originalLength} to ${data.explanation.length} chars`);
+//     }
+//   }
   
-  // Truncate CTA
-  if (data.cta) {
-    const originalLength = data.cta.length;
-    data.cta = truncateText(data.cta, LENGTH_LIMITS.CTA);
-    if (data.cta.length < originalLength) {
-      console.warn(`CTA truncated from ${originalLength} to ${data.cta.length} chars`);
-    }
-  }
-}
+//   // Truncate CTA
+//   if (data.cta) {
+//     const originalLength = data.cta.length;
+//     data.cta = truncateText(data.cta, LENGTH_LIMITS.CTA);
+//     if (data.cta.length < originalLength) {
+//       console.warn(`CTA truncated from ${originalLength} to ${data.cta.length} chars`);
+//     }
+//   }
+// }
 
 export interface ValidationResult {
   success: boolean;
@@ -185,7 +185,7 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
   }
   
   // Apply length limits to all content
-  enforceLengthLimits(data);
+  // enforceLengthLimits(data);
   
   return { success: true, data };
 }
@@ -254,7 +254,7 @@ function validateSSCContent(data: any, format?: string): ValidationResult {
   }
   
   // Apply length limits to all content
-  enforceLengthLimits(data);
+  // enforceLengthLimits(data);
   
   return { success: true, data };
 }
@@ -296,7 +296,7 @@ function validateAstronomyContent(data: any, format?: string): ValidationResult 
   }
   
   // Apply length limits to all content
-  enforceLengthLimits(data);
+  // enforceLengthLimits(data);
   
   return { success: true, data };
 }
@@ -336,7 +336,7 @@ function validateEnglishContent(data: any, format?: string): ValidationResult {
   }
   
   // Apply length limits to all content
-  enforceLengthLimits(data);
+  // enforceLengthLimits(data);
 
   return { success: true, data };
 }

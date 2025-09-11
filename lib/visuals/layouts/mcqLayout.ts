@@ -71,6 +71,8 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
       ctx.fillText(line, canvas.width / 2, startY + index * lineHeight);
   });
 
+  // Add dashed outline
+  drawDashedOutline(ctx, canvas.width, canvas.height, theme);
   drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
@@ -120,6 +122,9 @@ export function renderOptionsFrame(canvas: Canvas, job: QuizJob, theme: Theme): 
   // Render options with dynamic positioning, NOT showing correct answer
   const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
   renderOptions(ctx, canvas.width, actualOptionsStartY, job, theme, false, measurements.optionsFontSize);
+  
+  // Add dashed outline
+  drawDashedOutline(ctx, canvas.width, canvas.height, theme);
   drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
@@ -239,6 +244,9 @@ export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme):
   // Render options with dynamic positioning, ensuring proper spacing from actual question end
   const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
   renderOptions(ctx, canvas.width, actualOptionsStartY, job, theme, false, measurements.optionsFontSize);
+  
+  // Add dashed outline
+  drawDashedOutline(ctx, canvas.width, canvas.height, theme);
   drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
@@ -288,6 +296,9 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
   // Render options with dynamic positioning and correct answer highlighted
   const actualOptionsStartY = Math.max(actualQuestionEndY + 80, positions.optionsStartY);
   renderOptions(ctx, canvas.width, actualOptionsStartY, job, theme, true, measurements.optionsFontSize);
+  
+  // Add dashed outline
+  drawDashedOutline(ctx, canvas.width, canvas.height, theme);
   drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
@@ -304,7 +315,7 @@ export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Them
   ctx.font = `bold 48px ${theme.fontFamily}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillText('Explanation', canvas.width / 2, 90);
+  // ctx.fillText('Explanation', canvas.width / 2, 90);
 
   // Calculate dynamic layout for explanation
   const textMaxWidth = canvas.width - 160;
@@ -340,6 +351,8 @@ export function renderExplanationFrame(canvas: Canvas, job: QuizJob, theme: Them
       ctx.fillText(line, textStartX, startY + index * lineHeight);
   });
 
+  // Add dashed outline
+  drawDashedOutline(ctx, canvas.width, canvas.height, theme);
   drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
@@ -496,10 +509,23 @@ export function renderCtaFrame(canvas: Canvas, job: QuizJob, theme: Theme): void
   
   // No button needed - the CTA text is the main focus
   
-  // Add engaging visual elements
+  // Add engaging visual elements and dashed outline
   drawEngagementElements(ctx, canvas.width, canvas.height, theme);
+  drawDashedOutline(ctx, canvas.width, canvas.height, theme);
   
   drawFooter(ctx, canvas.width, canvas.height, theme, job);
+}
+
+// Helper function to draw dashed border outline
+function drawDashedOutline(ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme): void {
+  const borderWidth = 4;
+  const margin = 40;
+  const buttonColor = Array.isArray(theme.button.background) ? theme.button.background[0] : theme.button.background;
+  ctx.strokeStyle = buttonColor;
+  ctx.lineWidth = borderWidth;
+  ctx.setLineDash([20, 10]);
+  ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
+  ctx.setLineDash([]); // Reset line dash
 }
 
 // Helper function to draw engaging visual elements for CTA
@@ -523,14 +549,5 @@ function drawEngagementElements(ctx: CanvasRenderingContext2D, width: number, he
     ctx.fillText('✨', sparkle.x, sparkle.y);
   });
   
-  // Subtle border accent using button background color
-  const borderWidth = 4;
-  const margin = 40;
-  const buttonColor = Array.isArray(theme.button.background) ? theme.button.background[0] : theme.button.background;
-  ctx.strokeStyle = buttonColor;
-  ctx.lineWidth = borderWidth;
-  ctx.setLineDash([20, 10]);
-  ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
-  ctx.setLineDash([]); // Reset line dash
 }
 

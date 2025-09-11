@@ -110,11 +110,17 @@ export function generateFramePublicIds(
   jobId: string, 
   themeName: string, 
   accountId: string,
-  frameCount: number = 3
+  frameCount: number = 3,
+  persona?: string,
+  layoutType?: string
 ): string[] {
-  return Array.from({ length: frameCount }, (_, index) => 
-    `${accountId}/quiz-frames/${themeName}-job-${jobId}-frame-${index + 1}`
-  );
+  return Array.from({ length: frameCount }, (_, index) => {
+    const frameNumber = index + 1;
+    const frameName = `frame-${frameNumber}`;
+    const personaName = persona || 'unknown';
+    const layout = layoutType || 'unknown';
+    return `${accountId}/quiz-frames/${frameNumber}-${frameName}-${personaName}-${layout}-${themeName}-${jobId}`;
+  });
 }
 
 /**
@@ -180,8 +186,10 @@ export async function downloadVideoFromCloudinary(url: string): Promise<Buffer> 
 /**
  * Generate video public ID for a job with account-specific folder
  */
-export function generateVideoPublicId(jobId: string, accountId: string): string {
-  return `${accountId}/quiz-videos/quiz-${jobId}`;
+export function generateVideoPublicId(jobId: string, accountId: string, persona?: string, themeName?: string): string {
+  const personaName = persona || 'unknown';
+  const theme = themeName || 'unknown';
+  return `${accountId}/quiz-videos/1-video-${personaName}-quiz-${theme}-${jobId}`;
 }
 
 /**
