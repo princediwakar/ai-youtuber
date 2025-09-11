@@ -88,15 +88,15 @@ async function runPipeline(accountId = 'english_shots') {
       throw new Error(`Step 3 failed with status ${step3.status}`);
     }
 
-    // Step 4: Upload to YouTube with account ID
-    console.log(`📺 Step 4: Uploading to YouTube for ${accountId}...`);
-    const step4 = await makeRequest('/api/jobs/upload-quiz-videos', 'POST', { accountId });
-    console.log(`Status: ${step4.status}`);
-    console.log(`Response: ${JSON.stringify(step4.data, null, 2)}\n`);
+    // // Step 4: Upload to YouTube with account ID
+    // console.log(`📺 Step 4: Uploading to YouTube for ${accountId}...`);
+    // const step4 = await makeRequest('/api/jobs/upload-quiz-videos', 'POST', { accountId });
+    // console.log(`Status: ${step4.status}`);
+    // console.log(`Response: ${JSON.stringify(step4.data, null, 2)}\n`);
 
-    if (step4.status !== 200) {
-      throw new Error(`Step 4 failed with status ${step4.status}`);
-    }
+    // if (step4.status !== 200) {
+    //   throw new Error(`Step 4 failed with status ${step4.status}`);
+    // }
 
     console.log(`✅ Pipeline completed successfully for ${accountId}!`);
 

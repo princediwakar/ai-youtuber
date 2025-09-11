@@ -52,7 +52,7 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
     const iconX = canvas.width / 2;
     
     // Draw a simple puzzle piece shape
-    ctx.fillStyle = theme.button.background;
+    ctx.fillStyle = Array.isArray(theme.button.background) ? theme.button.background[0] : theme.button.background;
     ctx.strokeStyle = theme.text.primary;
     ctx.lineWidth = 4;
     

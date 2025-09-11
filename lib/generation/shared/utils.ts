@@ -94,13 +94,14 @@ export function getTopicGuidelines(topic: string) {
  */
 export function addJsonFormatInstructions(prompt: string, questionFormat: string): string {
   if (questionFormat === 'multiple_choice') {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "content", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", "cta", and "content_type" (set to "multiple_choice"). Explanation must be under 120 characters.';
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "hook", "content", "options" (an object with keys "A", "B", "C", "D"), "answer" (a single letter "A", "B", "C", or "D"), "explanation", "cta", and "content_type" (set to "multiple_choice"). Explanation must be under 120 characters.';
   } else if (questionFormat === 'true_false') {
-    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "content", "options" (an object with keys "A": "True", "B": "False"), "answer" (either "A" or "B"), "explanation", "cta", and "content_type" (set to "true_false"). Explanation must be under 120 characters.';
+    return prompt + '\n\nCRITICAL: Format your entire response as a single, valid JSON object with these exact keys: "hook", "content", "options" (an object with keys "A": "True", "B": "False"), "answer" (either "A" or "B"), "explanation", "cta", and "content_type" (set to "true_false"). Explanation must be under 120 characters.';
   } else if (questionFormat === 'assertion_reason') {
-    return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "assertion", "reason", "options", "answer", "explanation", "cta", and "question_type" (set to "assertion_reason"). 
+    return prompt + `\n\nCRITICAL: Generate an Assertion/Reason question. Format your response as a single, valid JSON object with these exact keys: "hook", "assertion", "reason", "options", "answer", "explanation", "cta", and "content_type" (set to "assertion_reason"). 
 
 MANDATORY JSON STRUCTURE:
+• "hook": A compelling hook to grab attention (under 25 characters).
 • "assertion": A statement of fact.
 • "reason": A statement explaining the assertion.
 • "options": Must be the standard A/B/C/D object.

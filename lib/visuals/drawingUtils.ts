@@ -91,7 +91,7 @@ export const drawFooter = (ctx: CanvasRenderingContext2D, width: number, height:
     ctx.textBaseline = 'bottom';
     // No need for globalAlpha, as the color itself has transparency
     ctx.font = `48px ${theme.fontFamily}`; // ✨ Changed
-    ctx.fillText('Follow for daily shots', width / 2, height - 90);
+    // ctx.fillText('Follow for daily shots', width / 2, height - 90);
     // const personaDisplayName = MasterPersonas[job.persona]?.displayName || job.persona;
     
     // Draw the text in the middle of the header plate

@@ -18,6 +18,7 @@ import {
     clearShadow
 
 } from '../drawingUtils';
+import { ContentComponents } from '../../generation/shared/components';
 
 // Hook frame for MCQ format - displays the hook/teaser
 export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
@@ -30,9 +31,10 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
   const question = content.question || content.content || "";
   let hookText = content.hook;
   
-  // Simple fallback if no hook is provided (should rarely happen with optimized system)
+  // Enhanced fallback with punchy, persona-specific hooks
   if (!hookText) {
-    hookText = "Ready to learn something new? Let's test your knowledge! 💡";
+    const persona = job.persona || 'english_vocab_builder';
+    hookText = ContentComponents.getPunchyHook(persona);
   }
   
   // Calculate dynamic layout for hook text
@@ -444,5 +446,91 @@ Object.entries(options).forEach(([optionKey, optionText]) => {
 
     optionY += dynamicButtonHeight + OPTION_SPACING;
 });
+}
+
+// CTA frame for MCQ format - dedicated call-to-action with engaging visuals
+export function renderCtaFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
+  const ctx = canvas.getContext('2d');
+  drawBackground(ctx, canvas.width, canvas.height, theme);
+  
+  // Get CTA content - prioritize quiz-specific CTAs for MCQ format
+  const content = job.data.content as any || {};
+  const cta = content.cta || "Ready for more challenges?";
+  
+  // Simple, focused CTA - use only the generated CTA text
+  ctx.fillStyle = theme.text.primary;
+  ctx.font = `bold 64px ${theme.fontFamily}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  
+  // Calculate layout for CTA content - center the text with more space
+  const textMaxWidth = canvas.width - 120;
+  const FOOTER_HEIGHT = 160;
+  const availableHeight = canvas.height - FOOTER_HEIGHT - 200; // Top and bottom padding
+  
+  // Measure and position CTA text
+  const ctaMeasurement = measureQuestionContent(
+    ctx, 
+    cta, 
+    textMaxWidth, 
+    theme.fontFamily, 
+    80,  // Large font for CTA
+    48,  // Minimum readable size
+    availableHeight
+  );
+  
+  // Center the CTA text vertically
+  const ctaStartY = 100 + (availableHeight - ctaMeasurement.height) / 2;
+  
+  // Draw CTA text with emphasis
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = `bold ${ctaMeasurement.fontSize}px ${theme.fontFamily}`;
+  ctx.fillStyle = theme.text.primary;
+  
+  ctaMeasurement.lines.forEach((line, index) => {
+    const lineHeight = ctaMeasurement.fontSize * 1.3;
+    const y = ctaStartY + index * lineHeight;
+    ctx.fillText(line, canvas.width / 2, y);
+  });
+  
+  // No button needed - the CTA text is the main focus
+  
+  // Add engaging visual elements
+  drawEngagementElements(ctx, canvas.width, canvas.height, theme);
+  
+  drawFooter(ctx, canvas.width, canvas.height, theme, job);
+}
+
+// Helper function to draw engaging visual elements for CTA
+function drawEngagementElements(ctx: CanvasRenderingContext2D, width: number, height: number, theme: Theme): void {
+  // Draw subtle animated-style elements around the CTA
+  const centerX = width / 2;
+  const centerY = height / 2;
+  
+  // Sparkle/star elements
+  const sparkles = [
+    { x: centerX - 200, y: centerY - 100, size: 20 },
+    { x: centerX + 180, y: centerY - 80, size: 16 },
+    { x: centerX - 150, y: centerY + 120, size: 18 },
+    { x: centerX + 160, y: centerY + 100, size: 14 }
+  ];
+  
+  sparkles.forEach(sparkle => {
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.8)'; // Gold color
+    ctx.font = `${sparkle.size}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.fillText('✨', sparkle.x, sparkle.y);
+  });
+  
+  // Subtle border accent using button background color
+  const borderWidth = 4;
+  const margin = 40;
+  const buttonColor = Array.isArray(theme.button.background) ? theme.button.background[0] : theme.button.background;
+  ctx.strokeStyle = buttonColor;
+  ctx.lineWidth = borderWidth;
+  ctx.setLineDash([20, 10]);
+  ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
+  ctx.setLineDash([]); // Reset line dash
 }
 

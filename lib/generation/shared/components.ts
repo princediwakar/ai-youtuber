@@ -10,12 +10,12 @@ export interface PersonaDemographics {
 }
 
 export interface HookPattern {
-  type: 'urgency' | 'curiosity' | 'challenge' | 'knowledge' | 'improvement';
+  type: 'urgency' | 'curiosity' | 'challenge' | 'knowledge' | 'improvement' | 'vocabulary' | 'health' | 'instant' | 'competitive' | 'cosmic_personal';
   templates: string[];
 }
 
 export interface CTAPattern {
-  type: 'follow' | 'engagement' | 'action' | 'sharing';
+  type: 'follow' | 'engagement' | 'action' | 'sharing' | 'quiz';
   examples: string[];
 }
 
@@ -120,6 +120,81 @@ export const HOOK_PATTERNS: HookPattern[] = [
       'Double your {capability} with {method}',
       'Boost your {aspect} instantly'
     ]
+  },
+  {
+    type: 'vocabulary',
+    templates: [
+      'Master this word and sound brilliant!',
+      'Vocabulary power-up incoming! 💪',
+      'Level up your English game! 🚀',
+      'Think you know this word? Let\'s see! 🧠',
+      'Word wizard test! Can you ace it? ⚡',
+      'Unlock your vocabulary potential! ✨',
+      'Ready to sound more sophisticated? 🎯',
+      'Boost your word power instantly! 💎',
+      'English mastery starts here! 🌟',
+      'Elevate your vocabulary today! 🏆'
+    ]
+  },
+  {
+    type: 'health',
+    templates: [
+      'Transform your health with this tip! 💚',
+      'Your body will thank you for this! 🌟',
+      'Feel amazing with this simple hack! ⚡',
+      'Boost your wellness instantly! 💪',
+      'Unlock your health potential! 🔓',
+      'Quick health win coming up! 🎯',
+      'Supercharge your vitality! 🚀',
+      'Your best self starts here! ✨',
+      'Health upgrade in 30 seconds! ⏰',
+      'Feel the difference immediately! 💎'
+    ]
+  },
+  {
+    type: 'competitive',
+    templates: [
+      'Ace your exam with this knowledge! 🎯',
+      'Topper-level wisdom incoming! 🏆',
+      'Unlock your competitive edge! 🔥',
+      'Score high with this strategy! 📈',
+      'Master this for exam success! 💪',
+      'Your path to victory starts here! 🚀',
+      'Excel beyond your competition! ⚡',
+      'Smart preparation pays off! 🧠',
+      'Boost your exam confidence! 💎',
+      'Turn knowledge into success! ✨'
+    ]
+  },
+  {
+    type: 'cosmic_personal',
+    templates: [
+      'Mind-blowing space fact incoming! 🌌',
+      'Prepare to be amazed by the universe! 🚀',
+      'Cosmic knowledge unlocked! ⭐',
+      'Your universe just got bigger! 🌟',
+      'Space secrets revealed! 🛸',
+      'Stellar wisdom awaits! ✨',
+      'Galaxy-level learning time! 🌠',
+      'Discover the cosmos within! 🔭',
+      'Universal truths unveiled! 💫',
+      'Expand your cosmic perspective! 🌍'
+    ]
+  },
+  {
+    type: 'instant',
+    templates: [
+      'Quick knowledge boost! Ready? ⚡',
+      'Instant brain upgrade coming! 🧠',
+      'Level up in 10 seconds! 🚀',
+      'Power-up your skills now! 💪',
+      'Quick win incoming! 🎯',
+      'Supercharge your knowledge! ✨',
+      'Rapid learning mode ON! 🔥',
+      'Instant mastery unlocked! 🔓',
+      'Fast track to brilliance! 💎',
+      'Quick wisdom download! 📲'
+    ]
   }
 ];
 
@@ -132,35 +207,40 @@ export const CTA_PATTERNS: Record<string, CTAPattern[]> = {
     { type: 'follow', examples: ['Follow for fluency!', 'Follow for native tips!', 'Follow for vocabulary!'] },
     { type: 'engagement', examples: ['Like if you got it!', 'Like if helpful!', 'Share if you learned!'] },
     { type: 'action', examples: ['Level up your English!', 'Master word usage!', 'Speak like a native!'] },
-    { type: 'sharing', examples: ['Share this tip!', 'Tag an English learner!', 'Spread the knowledge!'] }
+    { type: 'sharing', examples: ['Share this tip!', 'Tag an English learner!', 'Spread the knowledge!'] },
+    { type: 'quiz', examples: ['Test yourself daily! 🧠', 'Quiz your way to fluency! 💪', 'Challenge accepted? 🚀', 'Ready for round 2? 🔥', 'More quizzes = Better English! ⚡'] }
   ],
 
   brain_health_tips: [
     { type: 'follow', examples: ['Follow for brain tips!', 'Follow for memory hacks!', 'Follow for focus tips!'] },
     { type: 'engagement', examples: ['Like if it worked!', 'Try this now!', 'Save for later!'] },
     { type: 'action', examples: ['Boost your brain!', 'Train your memory!', 'Enhance your focus!'] },
-    { type: 'sharing', examples: ['Share with friends!', 'Tag someone who needs this!', 'Spread brain health!'] }
+    { type: 'sharing', examples: ['Share with friends!', 'Tag someone who needs this!', 'Spread brain health!'] },
+    { type: 'quiz', examples: ['Test your brain power! 🧠', 'How smart are you? 🤔', 'Challenge your mind! 💪', 'Brain quiz master? 🏆', 'Next level thinking! ⬆️'] }
   ],
 
   eye_health_tips: [
     { type: 'follow', examples: ['Follow for eye health!', 'Follow for vision tips!', 'Follow for eye care!'] },
     { type: 'engagement', examples: ['Save your vision!', 'Try this hack!', 'Protect your eyes!'] },
     { type: 'action', examples: ['Save your vision!', 'Protect your sight!', 'Fix eye strain!'] },
-    { type: 'sharing', examples: ['Share to help others!', 'Tag screen users!', 'Spread eye awareness!'] }
+    { type: 'sharing', examples: ['Share to help others!', 'Tag screen users!', 'Spread eye awareness!'] },
+    { type: 'quiz', examples: ['Test your eye knowledge! 👁️', 'Vision quiz champion? 🏅', 'How much do you know? 🤓', 'Eye health expert? 👨‍⚕️', 'Perfect vision = Perfect score? 💯'] }
   ],
 
   ssc_shots: [
     { type: 'follow', examples: ['Follow for exam tips!', 'Follow for SSC hacks!', 'Follow for exam prep!'] },
     { type: 'engagement', examples: ['Like if helpful!', 'Save for revision!', 'Crack SSC!'] },
     { type: 'action', examples: ['Study smarter!', 'Master SSC strategy!', 'Ace your exam!'] },
-    { type: 'sharing', examples: ['Share with aspirants!', 'Tag exam buddies!', 'Help fellow students!'] }
+    { type: 'sharing', examples: ['Share with aspirants!', 'Tag exam buddies!', 'Help fellow students!'] },
+    { type: 'quiz', examples: ['SSC warrior mode ON! ⚔️', 'Government job ready? 🎯', 'Exam beast activated! 🦁', 'Topper vibes incoming! 📈', 'Selection guaranteed! ✅'] }
   ],
 
   space_facts_quiz: [
     { type: 'follow', examples: ['Follow for space facts!', 'Follow for cosmic truth!', 'Follow for universe secrets!'] },
     { type: 'engagement', examples: ['Like if amazed!', 'Mind = blown! 🤯', 'Share if shocked!'] },
     { type: 'action', examples: ['Explore the cosmos!', 'Question everything!', 'Think bigger!'] },
-    { type: 'sharing', examples: ['Blow minds! Share!', 'Tag space lovers!', 'Spread cosmic wonder!'] }
+    { type: 'sharing', examples: ['Blow minds! Share!', 'Tag space lovers!', 'Spread cosmic wonder!'] },
+    { type: 'quiz', examples: ['Space genius level? 🚀', 'Universe master quiz! 🌌', 'Cosmic brain activated! 🧠', 'Stellar knowledge test! ⭐', 'Galaxy-level thinking! 🌟'] }
   ]
 };
 
@@ -227,6 +307,21 @@ export class ContentComponents {
   }
 
   /**
+   * Get a quiz-specific CTA for MCQ format (prioritizes quiz type)
+   */
+  static getQuizCTA(persona: string): string {
+    const patterns = CTA_PATTERNS[persona] || CTA_PATTERNS.english_vocab_builder;
+    const quizPattern = patterns.find(p => p.type === 'quiz');
+    
+    if (quizPattern && quizPattern.examples.length > 0) {
+      return quizPattern.examples[Math.floor(Math.random() * quizPattern.examples.length)];
+    }
+    
+    // Fallback to regular CTA if no quiz-specific patterns
+    return this.getRandomCTA(persona);
+  }
+
+  /**
    * Get primary target audience description for a persona
    */
   static getPrimaryAudience(persona: string): string {
@@ -260,5 +355,42 @@ export class ContentComponents {
   static getRandomUrgency(persona: string): string {
     const levels = this.getUrgencyLevels(persona);
     return levels[Math.floor(Math.random() * levels.length)];
+  }
+
+  /**
+   * Get punchy, persona-specific hook for MCQ format
+   */
+  static getPunchyHook(persona: string): string {
+    if (persona.includes('english') || persona.includes('vocab')) {
+      const vocabHooks = this.getHookPatterns('vocabulary');
+      return vocabHooks[Math.floor(Math.random() * vocabHooks.length)];
+    }
+    
+    if (persona.includes('health') || persona.includes('brain') || persona.includes('eye')) {
+      const healthHooks = this.getHookPatterns('health');
+      return healthHooks[Math.floor(Math.random() * healthHooks.length)];
+    }
+    
+    if (persona.includes('ssc')) {
+      const competitiveHooks = this.getHookPatterns('competitive');
+      return competitiveHooks[Math.floor(Math.random() * competitiveHooks.length)];
+    }
+    
+    if (persona.includes('space') || persona.includes('astronomy')) {
+      const cosmicHooks = this.getHookPatterns('cosmic_personal');
+      return cosmicHooks[Math.floor(Math.random() * cosmicHooks.length)];
+    }
+    
+    // Fallback to instant hooks for other personas
+    const instantHooks = this.getHookPatterns('instant');
+    return instantHooks[Math.floor(Math.random() * instantHooks.length)];
+  }
+
+  /**
+   * Get specific hook type patterns
+   */
+  static getSpecificHookType(type: 'vocabulary' | 'health' | 'instant' | 'competitive' | 'cosmic_personal'): string {
+    const patterns = this.getHookPatterns(type);
+    return patterns[Math.floor(Math.random() * patterns.length)];
   }
 }

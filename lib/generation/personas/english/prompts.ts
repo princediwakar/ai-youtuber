@@ -107,9 +107,11 @@ export function generateEnglishPrompt(config: PromptConfig): string {
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential English vocabulary mastery'}
 
 ${timingPrefix} STRATEGY:
-• HOOK: ${guidelines?.hook || 'Challenge viewers with vocabulary that separates fluent from intermediate speakers'}
+• HOOK: Generate contextual hooks based on the specific vocabulary being tested (15-25 chars, reference actual word/concept)
+• PSYCHOLOGY: Use social proof (90% statistics) + embarrassment avoidance + high self-efficacy (you can quickly fix this)
 • SCENARIOS: Apply to ${guidelines?.scenarios?.join(', ') || 'professional and academic communication'}
 • ENGAGEMENT: ${guidelines?.engagement || 'Create immediate vocabulary upgrade opportunities'}
+• PATTERN: Social proof statistic + "Are you making this mistake?" + quick confidence fix
 • TIMING: Perfect for ${timingContext?.timeOfDay || 'daily'} learning sessions
 
 Generate a question that targets ${audienceContext} who want to sound more fluent and professional:
@@ -128,12 +130,13 @@ QUESTION CRAFTING:
 • IMPACT: Provide vocabulary that immediately improves communication
 
 MANDATORY OUTPUT:
-• "question": Clear, practical vocabulary question that tests real-world usage
+• "hook": Generate a contextual hook based on the specific vocabulary being tested (15-25 chars, curious/empowering, reference the actual word/concept). Examples: "Historic vs Historical? 🤔", "Affect or Effect? 💭", "Literally shocking! ⚡"
+• "question": Clear, practical vocabulary question that tests real-world usage (NO hook text in question)
 • "options": Object with "A", "B", "C", "D" - one perfect answer, three smart distractors based on common errors
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this answer elevates communication + usage tip (under 120 characters)
-• "cta": Use one of these motivational CTAs: "${randomCTA}" or similar English learning CTA (under 40 chars)
-• "question_type": Will be set automatically
+• "cta": Use one of these motivational CTAs: "${randomCTA}" or similar English learning CTA (under 80 chars - make it compelling and action-oriented)
+• "content_type": Will be set automatically
 
 Create vocabulary content that makes learners feel smarter and more confident immediately. [${timeMarker}-${tokenMarker}]`;
   } else {
@@ -142,12 +145,17 @@ Create vocabulary content that makes learners feel smarter and more confident im
 Generate a question for ${primaryAudience} on "${topic}" that challenges while building confidence.
 
 REQUIREMENTS:
-• HOOK: Present vocabulary that separates intermediate from advanced speakers
+• HOOK: Generate contextual hook based on the specific vocabulary (15-25 chars, reference actual word/concept)
+• QUESTION: Present vocabulary that separates intermediate from advanced speakers (NO hook text in question)
 • PRACTICAL: Focus on words used in professional and academic contexts
 • DISTRACTORS: Include common learner mistakes and plausible alternatives
 • ENGAGEMENT: Create immediate "vocabulary upgrade" value
 • EXPLANATION: Provide usage insight that elevates communication (under 120 characters)
-• CTA: Use "${randomCTA}" or similar (under 40 chars)
+• CTA: Use "${randomCTA}" or similar (under 80 chars - make it compelling and action-oriented)
+
+OUTPUT FORMAT:
+• "hook": Contextual hook referencing the specific word/concept being tested
+• "question": Clean vocabulary question without hook elements
 
 Make learners feel accomplished and eager to share their new knowledge. [${timeMarker}-${tokenMarker}]`;
   }
@@ -180,12 +188,12 @@ CONTENT REQUIREMENTS:
 TARGET: Intermediate English learners who want to sound more native
 
 MANDATORY OUTPUT JSON:
-• "hook": Attention-grabbing opener about the mistake (under 60 chars)
+• "hook": Generate contextual hook based on the specific mistake being corrected (under 25 chars)
 • "mistake": The incorrect version most learners use  
 • "correct": The native speaker version
 • "practice": Practice instruction with the correct form
 • "explanation": Why natives use this version (under 100 chars)
-• "cta": Use "${randomCTA}" or similar native tip CTA (under 40 chars)
+• "cta": Use "${randomCTA}" or similar native tip CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "common_mistake"
 
 Create content that makes learners feel embarrassed about their mistake but excited to fix it. [${timeMarker}-${tokenMarker}]`;
@@ -217,12 +225,12 @@ CONTENT REQUIREMENTS:
 TARGET: Intermediate learners who want to sound more professional
 
 MANDATORY OUTPUT JSON:
-• "hook": Promise of quick vocabulary upgrade (under 60 chars)
+• "hook": Generate contextual hook based on the vocabulary upgrade being shown (under 25 chars)
 • "basic_word": The simple word to replace
 • "advanced_word": The sophisticated alternative
 • "usage_example": Professional context example
 • "explanation": Why the advanced word is better (under 100 chars)
-• "cta": Use "${randomCTA}" or similar upgrade CTA (under 40 chars)  
+• "cta": Use "${randomCTA}" or similar upgrade CTA (under 80 chars - make it compelling and action-oriented)  
 • "format_type": "quick_fix"
 
 Create content that makes learners immediately feel more sophisticated. [${timeMarker}-${tokenMarker}]`;
@@ -255,7 +263,7 @@ CONTENT REQUIREMENTS:
 TARGET: Advanced learners who want contextual precision
 
 MANDATORY OUTPUT JSON:
-• "hook": Promise about contextual word mastery (under 60 chars)
+• "hook": Generate contextual hook based on the word usage being demonstrated (under 25 chars)
 • "target_word": The advanced vocabulary word to demonstrate
 • "wrong_example": Sentence showing incorrect contextual usage
 • "wrong_context": Brief explanation of why it's wrong (under 80 chars)
@@ -263,7 +271,7 @@ MANDATORY OUTPUT JSON:
 • "right_context": Brief explanation of why it's correct (under 80 chars) 
 • "practice": Practice instruction with scenario
 • "practice_scenario": Specific context for learner to practice
-• "cta": Use "${randomCTA}" or similar mastery CTA (under 40 chars)
+• "cta": Use "${randomCTA}" or similar mastery CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "usage_demo"
 
 Create content that makes learners confident about contextual word usage. [${timeMarker}-${tokenMarker}]`;

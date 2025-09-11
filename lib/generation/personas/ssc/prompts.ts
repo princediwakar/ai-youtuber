@@ -102,6 +102,7 @@ export async function generateSSCCurrentAffairsPrompt(config: PromptConfig): Pro
   // Use shared demographics from contentComponents
   const primaryAudience = ContentComponents.getPrimaryAudience('ssc_shots');
   const randomCTA = ContentComponents.getRandomCTA('ssc_shots');
+  const punchyHook = ContentComponents.getPunchyHook('ssc_shots');
   
   // Get dynamic RSS content for current affairs
   const dynamicContext = await getDynamicContext('ssc_current_affairs', topic);
@@ -113,9 +114,11 @@ export async function generateSSCCurrentAffairsPrompt(config: PromptConfig): Pro
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Latest 2025 current affairs for SSC exam preparation'}${contextSection}
 
 EXAM STRATEGY:
-• HOOK: ${guidelines?.hook || 'Present 2025 updates that will definitely be in SSC exams'}
+• HOOK: Create competitive achievement hooks like "${punchyHook}" - under 25 chars, topper-focused + success differentiation  
+• PSYCHOLOGY: Use achievement motivation + social proof (what successful candidates know vs what failed candidates miss)
 • SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'recent government appointments, new schemes, major policy updates'}
 • ENGAGEMENT: ${guidelines?.engagement || 'Create immediate current affairs advantage for exam success'}
+• PATTERN: "Successful aspirants know this" + exam relevance + strategic update
 
 Generate a current affairs question that targets ${primaryAudience} preparing for SSC exams:
 
@@ -132,12 +135,13 @@ QUESTION CRAFTING:
 • IMPACT: Provide knowledge that gives immediate exam advantage
 
 MANDATORY OUTPUT:
-• "question": Current affairs question based on recent 2025 developments
+• "hook": Generate contextual hook based on the specific current affairs topic (15-25 chars, reference actual event/update/policy). Examples: "Budget 2025 update! 📊", "New policy alert! 🚨", "Current affairs! 📰"
+• "question": Current affairs question based on recent 2025 developments (NO hook text in question)
 • "options": Object with "A", "B", "C", "D" - one correct answer based on facts, three plausible distractors
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this answer is correct + current affairs relevance (under 120 characters)
-• "cta": Use "${randomCTA}" or similar current affairs update CTA (under 40 chars)
-• "question_type": Will be set automatically
+• "cta": Use "${randomCTA}" or similar current affairs update CTA (under 80 chars - make it compelling and action-oriented)
+• "content_type": Will be set automatically
 
 Create current affairs content that makes aspirants confident about 2025 updates. [${timeMarker}-${tokenMarker}]`;
   } else {
@@ -151,7 +155,7 @@ REQUIREMENTS:
 • FACTUAL: Use accurate information from reliable government and news sources
 • ENGAGING: Create immediate "current affairs upgrade" value for aspirants
 • EXPLANATION: Provide current affairs insight that improves exam readiness (under 120 characters)
-• CTA: Use "${randomCTA}" or similar current affairs CTA (under 40 chars)
+• CTA: Use "${randomCTA}" or similar current affairs CTA (under 80 chars - make it compelling and action-oriented)
 
 Make aspirants feel updated and ready for their SSC current affairs section. [${timeMarker}-${tokenMarker}]`;
   }
@@ -168,6 +172,7 @@ export function generateSSCExamPrompt(config: PromptConfig): string {
   // Use shared demographics from contentComponents
   const primaryAudience = ContentComponents.getPrimaryAudience('ssc_shots');
   const randomCTA = ContentComponents.getRandomCTA('ssc_shots');
+  const punchyHook = ContentComponents.getPunchyHook('ssc_shots');
 
   if (topicData) {
     return `You are an expert SSC coaching instructor creating viral exam preparation content for YouTube Shorts.
@@ -175,9 +180,11 @@ export function generateSSCExamPrompt(config: PromptConfig): string {
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential SSC exam concepts for government job preparation'}
 
 EXAM STRATEGY:
-• HOOK: ${guidelines?.hook || 'Present questions that separate successful candidates from others'}
+• HOOK: Create competitive achievement hooks like "${punchyHook}" - under 25 chars, topper-focused + success differentiation
+• PSYCHOLOGY: Use achievement motivation + social proof (what successful candidates do vs failed candidates)
 • SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'real SSC exam patterns and previous year questions'}
 • ENGAGEMENT: ${guidelines?.engagement || 'Create immediate exam advantage for serious aspirants'}
+• PATTERN: "Toppers know this" + success differentiation + strategic advantage
 
 Generate a question that targets ${primaryAudience} preparing for government jobs:
 
@@ -194,12 +201,13 @@ QUESTION CRAFTING:
 • IMPACT: Provide knowledge that immediately improves exam performance
 
 MANDATORY OUTPUT:
-• "question": Clear, exam-style question that tests real SSC concepts
+• "hook": Generate contextual hook based on the specific SSC topic being tested (15-25 chars, reference actual subject/strategy/fact). Examples: "SSC History trick! 📚", "Geography hack! 🌍", "Math shortcut! ⚡"
+• "question": Clear, exam-style question that tests real SSC concepts (NO hook text in question)
 • "options": Object with "A", "B", "C", "D" - one correct answer, three smart distractors based on common exam errors
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this answer is correct + exam relevance tip (under 120 characters)
-• "cta": Use "${randomCTA}" or similar exam preparation CTA (under 40 chars)
-• "question_type": Will be set automatically
+• "cta": Use "${randomCTA}" or similar exam preparation CTA (under 80 chars - make it compelling and action-oriented)
+• "content_type": Will be set automatically
 
 Create exam content that makes aspirants feel more confident and prepared for success. [${timeMarker}-${tokenMarker}]`;
   } else {
@@ -213,7 +221,7 @@ REQUIREMENTS:
 • DISTRACTORS: Include common exam mistakes and plausible alternatives
 • ENGAGEMENT: Create immediate "exam preparation upgrade" value
 • EXPLANATION: Provide insight that improves exam performance (under 120 characters)
-• CTA: Use "${randomCTA}" or similar (under 40 chars)
+• CTA: Use "${randomCTA}" or similar (under 80 chars - make it compelling and action-oriented)
 
 Make aspirants feel accomplished and ready to tackle their government job exam. [${timeMarker}-${tokenMarker}]`;
   }
@@ -251,7 +259,7 @@ MANDATORY OUTPUT JSON:
 • "correct": The expert strategy that ensures success
 • "practice": Practice instruction with the correct approach
 • "explanation": Why experts use this strategy (under 100 chars)
-• "cta": Use "${randomCTA}" or similar exam hack CTA (under 40 chars)
+• "cta": Use "${randomCTA}" or similar exam hack CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "common_mistake"
 
 Create content that makes aspirants feel embarrassed about their mistake but excited to fix it. [${timeMarker}-${tokenMarker}]`;
@@ -288,7 +296,7 @@ MANDATORY OUTPUT JSON:
 • "smart_shortcut": The efficient alternative strategy
 • "application_example": Specific SSC exam context example
 • "explanation": Why the shortcut works better (under 120 chars)
-• "cta": Use "${randomCTA}" or similar study improvement CTA (under 40 chars)
+• "cta": Use "${randomCTA}" or similar study improvement CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "quick_tip"
 
 Create content that makes aspirants immediately feel more strategic about their preparation. [${timeMarker}-${tokenMarker}]`;
@@ -330,7 +338,7 @@ MANDATORY OUTPUT JSON:
 • "practice": Practice instruction with scenario
 • "practice_scenario": Specific SSC context for aspirant to practice
 • "explanation": Why strategic usage matters for exam success (under 120 chars)
-• "cta": Use "${randomCTA}" or similar strategy mastery CTA (under 40 chars)
+• "cta": Use "${randomCTA}" or similar strategy mastery CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "usage_demo"
 
 Create content that makes aspirants confident about strategic concept application. [${timeMarker}-${tokenMarker}]`;
@@ -368,7 +376,7 @@ MANDATORY OUTPUT JSON:
 • "correct_answer": The right answer with brief explanation
 • "confidence_message": Success message for those who got it right (under 80 chars)
 • "learning_tip": Quick tip for those who got it wrong (under 100 chars)
-• "cta": Use "${randomCTA}" or similar daily testing CTA (under 40 chars)
+• "cta": Use "${randomCTA}" or similar daily testing CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "challenge"
 
 Create content that makes aspirants excited to test and improve their preparation. [${timeMarker}-${tokenMarker}]`;

@@ -23,12 +23,13 @@ export interface LayoutDefinition {
 export const layouts: Record<LayoutType, LayoutDefinition> = {
   mcq: {
     type: 'mcq',
-    frames: ['hook', 'question', 'answer', 'explanation'],
+    frames: ['hook', 'question', 'answer', 'explanation', 'cta'],
     renderers: {
       hook: mcqLayout.renderHookFrame,
       question: mcqLayout.renderQuestionFrame, 
       answer: mcqLayout.renderAnswerFrame,
       explanation: mcqLayout.renderExplanationFrame,
+      cta: mcqLayout.renderCtaFrame,
     },
   },
   quick_tip: {
@@ -82,58 +83,16 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
 };
 
-// Detect layout type from content structure
+// ANALYTICS-DRIVEN: Force MCQ layout only
+// Complex layouts showed 0% engagement, MCQ shows 1.26% engagement
 export function detectLayoutType(contentData: any): LayoutType {
-  if (!contentData) return 'mcq';
-  
-  // Common mistake format: has hook, mistake, correct, practice
-  if (contentData.hook && contentData.mistake && contentData.correct && contentData.practice) {
-    return 'common_mistake';
+  // ALWAYS return MCQ - analytics prove it's the only working format
+  if (contentData) {
+    const detectedKeys = Object.keys(contentData);
+    console.log(`🎯 Analytics override: forcing MCQ layout (content has keys: ${detectedKeys.join(', ')})`);
   }
   
-  // Quick fix format: has hook, basic_word, advanced_word
-  if (contentData.hook && contentData.basic_word && contentData.advanced_word) {
-    return 'quick_fix';
-  }
-  
-  // Usage demo format: has hook, target_concept, wrong_scenario, right_scenario, practice
-  if (contentData.hook && contentData.target_concept && contentData.wrong_scenario && 
-      contentData.right_scenario && contentData.practice) {
-    return 'usage_demo';
-  }
-  
-  // Alternative usage demo format: has hook, target_word, wrong_example, right_example, practice
-  if (contentData.hook && contentData.target_word && contentData.wrong_example && 
-      contentData.right_example && contentData.practice) {
-    return 'usage_demo';
-  }
-  
-  // Challenge format: has hook, setup, challenge_type, reveal, answer
-  if (contentData.hook && contentData.setup && contentData.challenge_type && 
-      contentData.reveal && contentData.answer) {
-    return 'challenge';
-  }
-  
-  // Quick tip format: has hook, traditional_approach, smart_shortcut
-  if (contentData.hook && contentData.traditional_approach && contentData.smart_shortcut) {
-    return 'quick_tip';
-  }
-  
-  // Alternative quick tip format: has hook, action, result
-  if (contentData.hook && contentData.action && contentData.result) {
-    return 'quick_tip';
-  }
-  
-  
-  // MCQ format: has question/content, options, answer, explanation
-  if ((contentData.question || contentData.content) && 
-      contentData.options && contentData.answer && contentData.explanation) {
-    return 'mcq';
-  }
-  
-  // Default to MCQ
-  console.warn('Could not detect layout type, using MCQ. Content keys:', Object.keys(contentData));
-  return 'mcq';
+  return 'mcq'; // HARD-CODED: Only format that drives engagement
 }
 
 // Get layout definition
@@ -141,22 +100,28 @@ export function getLayout(layoutType: LayoutType): LayoutDefinition {
   return layouts[layoutType];
 }
 
-// Create render functions for a layout
+// Create render functions for a layout - ANALYTICS-DRIVEN MCQ ONLY
 export function createRenderFunctions(
   layoutType: LayoutType, 
   job: QuizJob, 
   theme: Theme
 ): Array<(canvas: Canvas) => void> {
-  const layout = getLayout(layoutType);
+  // FORCE MCQ - analytics show it's the only engaging format
+  const forcedLayoutType = 'mcq';
+  
+  if (layoutType !== 'mcq') {
+    console.log(`🎯 Analytics override: forcing MCQ render functions (requested: ${layoutType})`);
+  }
+  
+  const layout = getLayout(forcedLayoutType);
   if (!layout) {
-    console.warn(`Unknown layout type: ${layoutType}, falling back to MCQ`);
-    return createRenderFunctions('mcq', job, theme);
+    throw new Error('MCQ layout must be available - this is our only working format');
   }
   
   return layout.frames.map(frameType => {
     const renderer = layout.renderers[frameType];
     if (!renderer) {
-      console.warn(`No renderer found for frame type: ${frameType}`);
+      console.warn(`No renderer found for frame type: ${frameType}, using hook frame`);
       // Fallback to hook frame
       return (canvas: Canvas) => layout.renderers.hook(canvas, job, theme);
     }

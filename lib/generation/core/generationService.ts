@@ -7,6 +7,38 @@ import { parseAndValidateResponse, generateContentHash } from './contentValidato
 import { LayoutType } from '@/lib/visuals/layouts/layoutSelector';
 import { analyticsService, type AIAnalyticsInsights } from '../../analyticsService';
 
+// ANALYTICS: Track hook patterns from highest-performing videos
+const HIGH_ENGAGEMENT_HOOK_PATTERNS = [
+  'this 30-second habit will boost',
+  'you\'ve been using this word wrong',
+  '90% of people say this word wrong',
+  'stop embarrassing yourself',
+  'upgrade your vocabulary in 15 seconds',
+  'never misspell this tricky word again'
+];
+
+/**
+ * ANALYTICS-DRIVEN: Extract hook effectiveness patterns
+ */
+function analyzeHookEffectiveness(content: any): { hookPattern: string; estimatedEffectiveness: 'high' | 'medium' | 'low' } {
+  const hookText = content.hook || content.question || '';
+  const lowerHook = hookText.toLowerCase();
+  
+  // Check against high-performing patterns
+  for (const pattern of HIGH_ENGAGEMENT_HOOK_PATTERNS) {
+    if (lowerHook.includes(pattern)) {
+      return { hookPattern: pattern, estimatedEffectiveness: 'high' };
+    }
+  }
+  
+  // Simple heuristics for medium/low effectiveness
+  if (lowerHook.includes('did you know') || lowerHook.includes('which word')) {
+    return { hookPattern: 'standard_question', estimatedEffectiveness: 'medium' };
+  }
+  
+  return { hookPattern: 'generic', estimatedEffectiveness: 'low' };
+}
+
 const deepseekClient = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: 'https://api.deepseek.com',
@@ -20,30 +52,26 @@ export interface GenerationJobConfig extends JobConfig {
 }
 
 /**
- * Maps personas to their appropriate layout types
+ * ANALYTICS-DRIVEN: Force MCQ layout only
+ * Analytics show MCQ = 1.26% engagement, all other formats = 0% engagement
  */
 const PERSONA_LAYOUT_MAP: Record<string, LayoutType[]> = {
-  'english_vocab_builder': ['mcq', 'common_mistake', 'quick_fix', 'usage_demo'],
-  'brain_health_tips': ['mcq', 'quick_tip', 'challenge'],
-  'eye_health_tips': ['mcq', 'quick_tip', 'challenge'],
-  'ssc_shots': ['mcq', 'challenge', 'common_mistake', 'usage_demo', 'quick_tip'],
-  'space_facts_quiz': ['mcq'], // MCQ only for astronomy content as requested
+  'english_vocab_builder': ['mcq'], // ANALYTICS: Best performing format (1.26% engagement)
+  'brain_health_tips': ['mcq'],     // ANALYTICS: Only format showing any engagement
+  'eye_health_tips': ['mcq'],       // ANALYTICS: All other formats failed
+  'ssc_shots': ['mcq'],             // ANALYTICS: Force proven format
+  'space_facts_quiz': ['mcq'],      // ANALYTICS: MCQ only approach
 };
 
 /**
- * Selects an appropriate layout for the given persona
+ * ANALYTICS-DRIVEN: Always return MCQ layout
+ * Data shows it's the only format that drives engagement
  */
 function selectLayoutForPersona(persona: string, preferredLayout?: LayoutType): LayoutType {
-  const availableLayouts = PERSONA_LAYOUT_MAP[persona] || ['mcq'];
+  console.log(`🎯 Analytics override: forcing MCQ layout for ${persona} (requested: ${preferredLayout || 'none'})`);
   
-  // If a preferred layout is specified and it's valid for this persona, use it
-  if (preferredLayout && availableLayouts.includes(preferredLayout)) {
-    return preferredLayout;
-  }
-  
-  // Otherwise, randomly select from available layouts for this persona
-  const randomIndex = Math.floor(Math.random() * availableLayouts.length);
-  return availableLayouts[randomIndex];
+  // HARD-CODED: Analytics prove MCQ is the only working format
+  return 'mcq';
 }
 
 export interface GenerationResult {
@@ -127,6 +155,17 @@ export async function generateAndStoreContent(
 
     const contentData = validationResult.data;
 
+    // ANALYTICS: Track hook effectiveness for optimization
+    const hookAnalysis = analyzeHookEffectiveness(contentData);
+    console.log(`🎯 Hook analysis for ${jobConfig.persona}: ${hookAnalysis.hookPattern} (${hookAnalysis.estimatedEffectiveness} effectiveness)`);
+    
+    // Add hook analysis to content data for future reference
+    const enhancedContentData = {
+      ...contentData,
+      hookAnalysis: hookAnalysis,
+      layoutType: selectedLayout, // Ensure layout type is tracked
+    };
+
     // Construct the payload for database insertion
     const topicKey = jobConfig.topic;
     const personaData = MasterPersonas[jobConfig.persona];
@@ -157,7 +196,7 @@ export async function generateAndStoreContent(
       },
       
       data: {
-        content: contentData,
+        content: enhancedContentData,
         layoutType: selectedLayout, // Store layout type for compatibility
         variation_markers: {
           time_marker: timeMarker,

@@ -61,15 +61,6 @@ export const themes: Record<string, Theme> = {
     feedback: { correct: ['#F7B801', '#F18701'] },
   },
 
-  EmeraldSea: {
-    name: 'EmeraldSea',
-    fontFamily: 'Poppins',
-    page: { background: ['#0A3B4E', '#26667F', '#124170'] },
-    header: { background: 'rgba(221, 244, 231, 0.15)', text: '#DDF4E7' },
-    text: { primary: '#DDF4E7', secondary: 'rgba(221, 244, 231, 0.7)', onAccent: '#FFFFFF' },
-    button: { background: ['#26667F', '#1F566A'], text: '#DDF4E7', shadow: 'rgba(0, 0, 0, 0.3)' },
-    feedback: { correct: ['#4CAF50', '#81C784'] },
-  },
 
   // --- 🎨 REFINED THEME ---
   CanyonSunset: {

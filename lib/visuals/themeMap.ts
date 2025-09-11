@@ -23,16 +23,15 @@ export const PersonaThemeMap: Record<string, string[]> = {
     'CanyonSunset',     // Warm earth tones
     'MintyFresh',       // Clean health aesthetic
     'SunsetBeach',      // Positive energy
-    'EmeraldSea'        // Deep, thoughtful colors for brain health
   ],
   
   // Eye health - themes with good contrast and eye-friendly colors
   eye_health_tips: [
-    'VintageScroll',    // Easy on the eyes
-    'SakuraGrove',      // Gentle natural colors
-    'CanyonSunset',     // Warm, comfortable tones
-    'MintyFresh',       // Clean and soothing
-    'SunsetBeach',      // Bright but not harsh
+    'VintageScroll',    // Classic scholarly feel
+    'SakuraGrove',      // Clean and focused
+    'CanyonSunset',     // Warm and welcoming
+    'MintyFresh',       // Clean and modern
+    'SunsetBeach',       // Vibrant and engaging
     'CosmicDawn'        // Dramatic but eye-conscious gradients
   ],
   

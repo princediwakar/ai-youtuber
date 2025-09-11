@@ -7,10 +7,11 @@ import { ContentData } from '@/lib/types';
 
 // Length limits for different content elements
 const LENGTH_LIMITS = {
+  HOOK: 25,
   QUESTION: 180,
   OPTION: 70,
   EXPLANATION: 120,
-  CTA: 35
+  CTA: 80  // Increased from 35 to allow for more powerful, engaging CTAs
 } as const;
 
 /**
@@ -25,6 +26,15 @@ function truncateText(text: string, maxLength: number): string {
  * Enforces length limits on content with smart truncation
  */
 function enforceLengthLimits(data: any): void {
+  // Truncate hook
+  if (data.hook) {
+    const originalLength = data.hook.length;
+    data.hook = truncateText(data.hook, LENGTH_LIMITS.HOOK);
+    if (data.hook.length < originalLength) {
+      console.warn(`Hook truncated from ${originalLength} to ${data.hook.length} chars`);
+    }
+  }
+  
   // Truncate question/content
   if (data.question) {
     const originalLength = data.question.length;
@@ -127,10 +137,12 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
 
   // Default MCQ validation for health content
   // Check required fields - for MCQ format, we expect either 'question' or 'content' field
+  const hasHook = data.hook && typeof data.hook === 'string';
   const hasQuestion = data.question && typeof data.question === 'string';
   const hasContent = data.content && typeof data.content === 'string';
   
-  if ((!hasQuestion && !hasContent) ||
+  if (!hasHook ||
+      (!hasQuestion && !hasContent) ||
       !data.options || typeof data.options !== 'object' ||
       !data.answer || typeof data.answer !== 'string' ||
       !data.explanation || typeof data.explanation !== 'string' ||
@@ -139,7 +151,7 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
       (data.content_type !== 'true_false' && data.content_type !== 'multiple_choice')) {
     return {
       success: false,
-      error: 'Health question response missing required fields'
+      error: 'Health question response missing required fields (including hook)'
     };
   }
   
@@ -195,17 +207,19 @@ function validateSSCContent(data: any, format?: string): ValidationResult {
 
   // Default MCQ validation for SSC content
   // Check required fields - for MCQ format, we expect either 'question' or 'content' field
+  const hasHook = data.hook && typeof data.hook === 'string';
   const hasQuestion = data.question && typeof data.question === 'string';
   const hasContent = data.content && typeof data.content === 'string';
   
-  if ((!hasQuestion && !hasContent) ||
+  if (!hasHook ||
+      (!hasQuestion && !hasContent) ||
       !data.options || typeof data.options !== 'object' ||
       !data.answer || typeof data.answer !== 'string' ||
       !data.explanation || typeof data.explanation !== 'string' ||
       !data.cta || typeof data.cta !== 'string') {
     return {
       success: false,
-      error: 'SSC exam question response missing required fields'
+      error: 'SSC exam question response missing required fields (including hook)'
     };
   }
   
@@ -251,17 +265,19 @@ function validateSSCContent(data: any, format?: string): ValidationResult {
 function validateAstronomyContent(data: any, format?: string): ValidationResult {
   // Currently only MCQ format is supported for astronomy content
   // Check required fields - for MCQ format, we expect either 'question' or 'content' field
+  const hasHook = data.hook && typeof data.hook === 'string';
   const hasQuestion = data.question && typeof data.question === 'string';
   const hasContent = data.content && typeof data.content === 'string';
   
-  if ((!hasQuestion && !hasContent) ||
+  if (!hasHook ||
+      (!hasQuestion && !hasContent) ||
       !data.options || typeof data.options !== 'object' ||
       !data.answer || typeof data.answer !== 'string' ||
       !data.explanation || typeof data.explanation !== 'string' ||
       !data.cta || typeof data.cta !== 'string') {
     return {
       success: false,
-      error: 'Astronomy question response missing required fields'
+      error: 'Astronomy question response missing required fields (including hook)'
     };
   }
   
@@ -301,19 +317,21 @@ function validateEnglishContent(data: any, format?: string): ValidationResult {
   }
 
   // Default MCQ validation for English content
+  const hasHook = data.hook && typeof data.hook === 'string';
   const hasQuestion = data.content && typeof data.content === 'string';
   const hasAssertionReason = data.assertion && typeof data.assertion === 'string' && 
                             data.reason && typeof data.reason === 'string';
   const hasCta = data.cta && typeof data.cta === 'string';
 
-  if ((!hasQuestion && !hasAssertionReason) ||
+  if (!hasHook ||
+      (!hasQuestion && !hasAssertionReason) ||
       !hasCta ||
       !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
       !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
       !data.explanation || typeof data.explanation !== 'string') {
     return {
       success: false,
-      error: 'English quiz response missing required JSON fields'
+      error: 'English quiz response missing required JSON fields (including hook)'
     };
   }
   

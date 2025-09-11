@@ -91,10 +91,25 @@ app/
 
 ## Active Accounts
 
-**English Shots:** `english_vocab_builder` persona  
-**Health Shots:** `brain_health_tips`, `eye_health_tips` personas  
-**SSC Shots:** `ssc_shots` persona (in development)  
-**Astronomy:** `space_facts_quiz` persona (in development)
+**ANALYTICS UPDATE (2025-09-10):** Based on engagement analysis, all content now uses MCQ format only.
+
+**English Shots:** `english_vocab_builder` persona (1.26% engagement rate - best performing)
+**Health Shots:** `brain_health_tips`, `eye_health_tips` personas (0.18% engagement - needs optimization)
+**SSC Shots:** `ssc_shots` persona (paused - 0% engagement)
+**Astronomy:** `space_facts_quiz` persona (paused - 0% engagement)
+
+### Format Performance Analysis
+- **MCQ Format:** 1.26% engagement rate (ONLY format that works)
+- **Complex Formats:** 0% engagement rate (quick_fix, common_mistake, usage_demo, challenge, quick_tip)
+- **73% of videos** have zero engagement - complex formats are the primary cause
+
+### Content Optimization (2025-09-10)
+**Analytics-Driven Changes:**
+- Forced MCQ format across all personas (prompt router updated)
+- Disabled complex layout detection (layout selector simplified)
+- Added hook effectiveness tracking based on high-performing patterns
+- Priority focus on English vocabulary content (proven 1.26% engagement)
+- Paused low-performing personas (SSC, Astronomy) until format is proven
 
 ## Development
 

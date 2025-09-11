@@ -164,9 +164,11 @@ RANDOMIZED APPROACH:
 • URGENCY: Position as ${contextInjection.urgency} simple brain tip
 
 VIRAL CONTENT STRATEGY:
-• HOOK: ${guidelines?.hook || 'Present surprising brain health insights that challenge common assumptions'}
-• SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'relatable daily brain health challenges'}
+• HOOK: Generate contextual hooks based on the specific brain health tip being tested (15-25 chars, reference actual technique/food/habit)
+• PSYCHOLOGY: Use moderate concern + high self-efficacy (people believe they can easily do this)
+• SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'relatable daily brain health challenges'}  
 • ENGAGEMENT: ${guidelines?.engagement || 'Create immediate practical value for viewers'}
+• PATTERN: Body signal/symptom + "Here's the 10-second fix" + achievable action
 
 ANTI-REPETITION CONSTRAINTS:
 • AVOID these overused phrases: "30-second habit", "this simple trick", "boost your brain"
@@ -192,15 +194,16 @@ CRITICAL LENGTH REQUIREMENTS:
 • "question": MAXIMUM 120 characters - be concise and punchy
 • "options": Each option MAXIMUM 45 characters - short, clear answers only
 • "explanation": MAXIMUM 120 characters - brief but valuable insight
-• "cta": MAXIMUM 35 characters - short action phrase (avoid repetitive CTAs)
+• "cta": MAXIMUM 80 characters - short action phrase (avoid repetitive CTAs)
 
 MANDATORY OUTPUT:
-• "question": ${questionFormat === 'multiple_choice' ? 'Engaging scenario-based or fact-testing multiple choice question (MAX 120 chars)' : 'Surprising or myth-busting true/false statement (MAX 120 chars)'} 
+• "hook": Generate contextual hook based on the specific brain health tip being tested (15-25 chars, reference actual technique/food/habit). Examples: "Memory hack alert! 🧠", "Focus in 3 seconds? ⚡", "Brain food reveal! 🥜"
+• "question": ${questionFormat === 'multiple_choice' ? 'Engaging scenario-based or fact-testing multiple choice question (MAX 120 chars, NO hook text)' : 'Surprising or myth-busting true/false statement (MAX 120 chars, NO hook text)'} 
 • "options": ${questionFormat === 'multiple_choice' ? 'Object with "A", "B", "C", "D" - one correct answer, three clever distractors (each MAX 45 chars)' : 'Object with "A": "True", "B": "False"'}
 • "answer": ${questionFormat === 'multiple_choice' ? 'Single letter "A", "B", "C", or "D"' : 'Either "A" or "B"'}
 • "explanation": Why this matters + practical application (MAX 120 characters)
-• "cta": Action-oriented CTA (MAX 35 chars) - use creative seed to avoid repetitive phrases
-• "question_type": "${questionFormat}"
+• "cta": Action-oriented CTA (MAX 80 chars) - use creative seed to avoid repetitive phrases
+• "content_type": "${questionFormat}"
 
 Create content so valuable and surprising that ${contextInjection.demographic} immediately share it. [${timeMarker}-${tokenMarker}-${randomization.creativeSeed}]`;
 
@@ -250,9 +253,11 @@ RANDOMIZED APPROACH:
 • URGENCY: Position as ${contextInjection.urgency} eye care tip
 
 VIRAL CONTENT STRATEGY:
-• HOOK: ${guidelines?.hook || 'Reveal shocking truths about daily habits that damage vision'}
+• HOOK: Generate contextual hooks based on the specific eye care tip being tested (15-25 chars, reference actual screen habit/exercise/protection method)
+• PSYCHOLOGY: Use moderate concern + high self-efficacy (people believe they can easily protect their vision)
 • SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'modern vision challenges and digital eye strain'}
 • ENGAGEMENT: ${guidelines?.engagement || 'Provide immediate eye health improvements viewers can implement'}
+• PATTERN: Eye symptom/habit + "This simple adjustment" + achievable protection
 
 ANTI-REPETITION CONSTRAINTS:
 • AVOID overused phrases: "20-20-20 rule", "30-second habit", "boost your eyes", "save your vision"
@@ -278,16 +283,17 @@ CRITICAL LENGTH REQUIREMENTS:
 • "question": MAXIMUM 120 characters - be concise and punchy
 • "options": Each option MAXIMUM 45 characters - short, clear answers only
 • "explanation": MAXIMUM 120 characters - brief but valuable insight
-• "cta": MAXIMUM 35 characters - short action phrase (avoid repetitive CTAs)
+• "cta": MAXIMUM 80 characters - short action phrase (avoid repetitive CTAs)
 
 MANDATORY OUTPUT:
-• "question": ${questionFormat === 'multiple_choice' ? 'Scenario-based multiple choice addressing modern vision challenges (MAX 120 chars)'
-    : 'Eye-opening true/false statement about vision health (MAX 120 chars)'}
+• "hook": Generate contextual hook based on the specific eye care tip being tested (15-25 chars, reference actual screen habit/exercise/protection method). Examples: "20-20-20 rule works! 👁️", "Screen damage test! 📱", "Eye strain fix! ✨"
+• "question": ${questionFormat === 'multiple_choice' ? 'Scenario-based multiple choice addressing modern vision challenges (MAX 120 chars, NO hook text)'
+    : 'Eye-opening true/false statement about vision health (MAX 120 chars, NO hook text)'}
 • "options": ${questionFormat === 'multiple_choice' ? 'Object with "A", "B", "C", "D" - practical solution + three plausible alternatives (each MAX 45 chars)' : 'Object with "A": "True", "B": "False"'}
 • "answer": ${questionFormat === 'multiple_choice' ? 'Single letter "A", "B", "C", or "D"' : 'Either "A" or "B"'}
 • "explanation": Why this protects vision + immediate action step (MAX 120 characters)
-• "cta": Urgent action CTA (MAX 35 chars) - use creative seed to create unique phrases
-• "question_type": "${questionFormat}"
+• "cta": Urgent action CTA (MAX 80 chars) - use creative seed to create unique phrases
+• "content_type": "${questionFormat}"
 
 Create content that makes ${contextInjection.demographic} immediately concerned about their eye health during ${contextInjection.timeContext} and motivated to take action. [${timeMarker}-${tokenMarker}-${randomization.creativeSeed}]`;
 
@@ -324,7 +330,7 @@ MANDATORY OUTPUT JSON:
 • "hook": Specific promise with timeframe (under 60 chars)
 • "action": 2-3 specific steps combined into one actionable instruction
 • "result": Scientific reason + immediate benefit combined
-• "cta": Use "${randomCTA}" or similar action CTA (under 40 chars)
+• "cta": Use "${randomCTA}" or similar action CTA (under 80 chars - make it compelling and action-oriented)
 
 Create content that viewers immediately want to try. [${timeMarker}-${tokenMarker}]`;
 }
@@ -369,7 +375,7 @@ MANDATORY OUTPUT JSON:
 • "reveal": Result reveal text (under 60 chars)
 • "trick": The method/science behind the challenge
 • "answer": The correct solution/explanation
-• "cta": Use "${randomCTA}" or similar brain training CTA (under 40 chars)
+• "cta": Use "${randomCTA}" or similar brain training CTA (under 80 chars - make it compelling and action-oriented)
 • "encouragement": Positive reinforcement text
 • "next_challenge": Teaser for next challenge
 • "format_type": "challenge"
