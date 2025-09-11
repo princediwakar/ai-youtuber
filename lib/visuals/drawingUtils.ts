@@ -58,10 +58,10 @@ export const drawHeader = (ctx: CanvasRenderingContext2D, width: number, theme: 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle'; // Center text vertically inside the plate
     
-    const personaDisplayName = MasterPersonas[job.persona]?.displayName || job.persona;
+    // const personaDisplayName = MasterPersonas[job.persona]?.displayName || job.persona;
     
     // Draw the text in the middle of the header plate
-    ctx.fillText(personaDisplayName, width / 2, headerPlateY + headerPlateHeight / 2);
+    // ctx.fillText(personaDisplayName, width / 2, headerPlateY + headerPlateHeight / 2);
 };
 
 // 🎨 MODIFIED: drawBackground now supports gradients.
