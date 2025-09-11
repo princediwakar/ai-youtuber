@@ -13,7 +13,7 @@ import { PersonaConfig } from './types';
 export const MasterPersonas: PersonaConfig = {
   // English Learning Content - Optimized for 15-20s Videos
   english_vocab_builder: {
-    displayName: '@EnglishShotsDaily',
+    displayName: '@VocabularyShotsDaily',
     subCategories: [
       // --- High-Engagement Quick Wins ---
       { key: 'eng_pronunciation_fails', displayName: '90% Say This WRONG 🗣️' },

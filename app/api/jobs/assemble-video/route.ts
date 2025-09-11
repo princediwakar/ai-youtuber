@@ -453,13 +453,13 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
       const firstOptions = questionData.options ? Object.values(questionData.options).join(" ") : '';
       const firstLength = firstText.length + firstOptions.length;
       const firstBaseTime = Math.ceil(firstLength / CHARS_PER_SECOND);
-      return Math.max(4, Math.min(4, firstBaseTime + EXTRA_PROCESSING_TIME)); // Reduced max from 8 to 4
+      return Math.max(4, Math.min(6, firstBaseTime + EXTRA_PROCESSING_TIME)); // Reduced max from 8 to 4
       
     case 2: // Second Frame (varies by format)
       // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
       const secondText = questionData.answer || questionData.correct || questionData.advanced_word || questionData.result || questionData.right_example || questionData.challenge || '';
       const secondBaseTime = Math.ceil(secondText.length / CHARS_PER_SECOND);
-      return Math.max(4, Math.min(5, secondBaseTime + EXTRA_PROCESSING_TIME));
+      return Math.max(4, Math.min(8, secondBaseTime + EXTRA_PROCESSING_TIME));
       
     case 3: // Third Frame (if exists)
       // MCQ: explanation, Common Mistake: practice, Usage Demo: practice, Challenge: reveal
@@ -474,7 +474,7 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
       const fourthText = questionData.cta || '';
       if (fourthText.length > 0) {
         const fourthBaseTime = Math.ceil(fourthText.length / CHARS_PER_SECOND);
-        return Math.max(3, Math.min(3, fourthBaseTime + EXTRA_PROCESSING_TIME));
+        return Math.max(3, Math.min(4, fourthBaseTime + EXTRA_PROCESSING_TIME));
       }
       return 4; // Standard duration for additional frames - increased from 3
       
