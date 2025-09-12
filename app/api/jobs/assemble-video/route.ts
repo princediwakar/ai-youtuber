@@ -158,7 +158,6 @@ const AUDIO_FILES = [
   '1.mp3',
   '2.mp3', 
   '3.mp3',
-  '4.mp3'
 ];
 
 /**
@@ -325,12 +324,12 @@ async function processJob(job: QuizJob) {
     }
     await fs.mkdir(tempDir, { recursive: true });
 
-    const { videoUrl, videoSize } = await assembleVideoWithConcat(frameUrls, job, tempDir);
+    const { videoUrl, videoSize, audioFile } = await assembleVideoWithConcat(frameUrls, job, tempDir);
     
     await updateJob(job.id, {
       step: 4,
       status: 'upload_pending',
-      data: { ...job.data, videoUrl, videoSize }
+      data: { ...job.data, videoUrl, videoSize, audioFile }
     });
     
     console.log(`[Job ${job.id}] ✅ Video assembly successful: ${videoUrl}`);
@@ -349,7 +348,7 @@ async function processJob(job: QuizJob) {
   }
 }
 
-async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number}> {
+async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number, audioFile: string | null}> {
   const ffmpegPath = getFFmpegPath();
 
   console.log(`[Job ${job.id}] Assembling video with simple concatenation...`);
@@ -412,6 +411,9 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   const outputVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
   const totalDuration = durations.reduce((acc, d) => acc + (d || 4), 0);
   const audioPath = getRandomAudioFile();
+  
+  // Extract audio file name for analytics tracking
+  const audioFileName = audioPath ? path.basename(audioPath) : null;
 
   let ffmpegArgs: string[];
   
@@ -476,7 +478,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     resource_type: 'video',
   });
 
-  return { videoUrl: result.secure_url, videoSize: videoBuffer.length };
+  return { videoUrl: result.secure_url, videoSize: videoBuffer.length, audioFile: audioFileName };
 }
 
 
@@ -502,16 +504,11 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
     case 2: // Second Frame (varies by format)
       // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
       
-      return 8;
+      return 10;
       
     case 3: // Third Frame (if exists)
       // MCQ: explanation, Common Mistake: practice, Usage Demo: practice, Challenge: reveal
-      const thirdText = questionData.explanation || questionData.practice || questionData.reveal || '';
-      if (thirdText.length > 0) {
-        const thirdBaseTime = Math.ceil(thirdText.length / CHARS_PER_SECOND);
         return 3;
-      }
-      return 4; // Standard duration for CTA or final frame - increased from 3
       
     case 4: // Fourth Frame (if exists - Challenge: cta)
         return 4;

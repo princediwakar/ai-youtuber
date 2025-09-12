@@ -7,7 +7,6 @@ import {
   PromptConfig,
   TopicGuideline
 } from '../../shared/utils';
-import { ContentComponents } from '../../shared/components';
 import { getDynamicContext } from '../../core/contentSource';
 
 /**
@@ -100,9 +99,7 @@ export async function generateSSCCurrentAffairsPrompt(config: PromptConfig): Pro
   const guidelines = getSSCTopicGuidelines(topic);
   
   // Use shared demographics from contentComponents
-  const primaryAudience = ContentComponents.getPrimaryAudience('ssc_shots');
-  const randomCTA = ContentComponents.getRandomCTA('ssc_shots');
-  const punchyHook = ContentComponents.getPunchyHook('ssc_shots');
+  const primaryAudience = 'SSC exam aspirants';
   
   // Get dynamic RSS content for current affairs
   const dynamicContext = await getDynamicContext('ssc_current_affairs', topic);
@@ -114,7 +111,7 @@ export async function generateSSCCurrentAffairsPrompt(config: PromptConfig): Pro
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Latest 2025 current affairs for SSC exam preparation'}${contextSection}
 
 EXAM STRATEGY:
-• HOOK: Create competitive achievement hooks like "${punchyHook}" - under 25 chars, topper-focused + success differentiation  
+• HOOK: Create competitive achievement hooks like motivating exam hooks - under 25 chars, topper-focused + success differentiation  
 • PSYCHOLOGY: Use achievement motivation + social proof (what successful candidates know vs what failed candidates miss)
 • SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'recent government appointments, new schemes, major policy updates'}
 • ENGAGEMENT: ${guidelines?.engagement || 'Create immediate current affairs advantage for exam success'}
@@ -140,7 +137,7 @@ MANDATORY OUTPUT:
 • "options": Object with "A", "B", "C", "D" - one correct answer based on facts, three plausible distractors
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this answer is correct + current affairs relevance (under 120 characters)
-• "cta": Use "${randomCTA}" or similar current affairs update CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging current affairs CTA (under 80 chars - make it compelling and action-oriented)
 • "content_type": Will be set automatically
 
 Create current affairs content that makes aspirants confident about 2025 updates. [${timeMarker}-${tokenMarker}]`;
@@ -155,7 +152,7 @@ REQUIREMENTS:
 • FACTUAL: Use accurate information from reliable government and news sources
 • ENGAGING: Create immediate "current affairs upgrade" value for aspirants
 • EXPLANATION: Provide current affairs insight that improves exam readiness (under 120 characters)
-• CTA: Use "${randomCTA}" or similar current affairs CTA (under 80 chars - make it compelling and action-oriented)
+• CTA: Use engaging current affairs CTA (under 80 chars - make it compelling and action-oriented)
 
 Make aspirants feel updated and ready for their SSC current affairs section. [${timeMarker}-${tokenMarker}]`;
   }
@@ -164,15 +161,13 @@ Make aspirants feel updated and ready for their SSC current affairs section. [${
 /**
  * Generates main SSC exam preparation prompt for MCQ format
  */
-export function generateSSCExamPrompt(config: PromptConfig): string {
+export function generateSSCMCQPrompt(config: PromptConfig): string {
   const { topicData, topic, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getSSCTopicGuidelines(topic);
   
   // Use shared demographics from contentComponents
-  const primaryAudience = ContentComponents.getPrimaryAudience('ssc_shots');
-  const randomCTA = ContentComponents.getRandomCTA('ssc_shots');
-  const punchyHook = ContentComponents.getPunchyHook('ssc_shots');
+  const primaryAudience = 'SSC exam aspirants';
 
   if (topicData) {
     return `You are an expert SSC coaching instructor creating viral exam preparation content for YouTube Shorts.
@@ -180,7 +175,7 @@ export function generateSSCExamPrompt(config: PromptConfig): string {
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential SSC exam concepts for government job preparation'}
 
 EXAM STRATEGY:
-• HOOK: Create competitive achievement hooks like "${punchyHook}" - under 25 chars, topper-focused + success differentiation
+• HOOK: Create competitive achievement hooks like motivating exam hooks - under 25 chars, topper-focused + success differentiation
 • PSYCHOLOGY: Use achievement motivation + social proof (what successful candidates do vs failed candidates)
 • SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'real SSC exam patterns and previous year questions'}
 • ENGAGEMENT: ${guidelines?.engagement || 'Create immediate exam advantage for serious aspirants'}
@@ -206,7 +201,7 @@ MANDATORY OUTPUT:
 • "options": Object with "A", "B", "C", "D" - one correct answer, three smart distractors based on common exam errors
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this answer is correct + exam relevance tip (under 120 characters)
-• "cta": Use "${randomCTA}" or similar exam preparation CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging exam preparation CTA (under 80 chars - make it compelling and action-oriented)
 • "content_type": Will be set automatically
 
 Create exam content that makes aspirants feel more confident and prepared for success. [${timeMarker}-${tokenMarker}]`;
@@ -221,7 +216,7 @@ REQUIREMENTS:
 • DISTRACTORS: Include common exam mistakes and plausible alternatives
 • ENGAGEMENT: Create immediate "exam preparation upgrade" value
 • EXPLANATION: Provide insight that improves exam performance (under 120 characters)
-• CTA: Use "${randomCTA}" or similar (under 80 chars - make it compelling and action-oriented)
+• CTA: Use engaging SSC exam CTA (under 80 chars - make it compelling and action-oriented)
 
 Make aspirants feel accomplished and ready to tackle their government job exam. [${timeMarker}-${tokenMarker}]`;
   }
@@ -233,7 +228,6 @@ Make aspirants feel accomplished and ready to tackle their government job exam. 
 export function generateSSCCommonMistakePrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  const randomCTA = ContentComponents.getRandomCTA('ssc_shots');
 
   return `You are an expert SSC coaching instructor creating viral "Common Mistake" content for YouTube Shorts.
 
@@ -259,7 +253,7 @@ MANDATORY OUTPUT JSON:
 • "correct": The expert strategy that ensures success
 • "practice": Practice instruction with the correct approach
 • "explanation": Why experts use this strategy (under 100 chars)
-• "cta": Use "${randomCTA}" or similar exam hack CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging SSC exam CTA exam hack CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "common_mistake"
 
 Create content that makes aspirants feel embarrassed about their mistake but excited to fix it. [${timeMarker}-${tokenMarker}]`;
@@ -271,7 +265,6 @@ Create content that makes aspirants feel embarrassed about their mistake but exc
 export function generateSSCQuickTipPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  const randomCTA = ContentComponents.getRandomCTA('ssc_shots');
 
   return `You are an SSC exam expert creating viral "Quick Tip" content for YouTube Shorts.
 
@@ -296,7 +289,7 @@ MANDATORY OUTPUT JSON:
 • "smart_shortcut": The efficient alternative strategy
 • "application_example": Specific SSC exam context example
 • "explanation": Why the shortcut works better (under 120 chars)
-• "cta": Use "${randomCTA}" or similar study improvement CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging SSC exam CTA study improvement CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "quick_tip"
 
 Create content that makes aspirants immediately feel more strategic about their preparation. [${timeMarker}-${tokenMarker}]`;
@@ -308,7 +301,6 @@ Create content that makes aspirants immediately feel more strategic about their 
 export function generateSSCUsageDemoPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  const randomCTA = ContentComponents.getRandomCTA('ssc_shots');
 
   return `You are an SSC exam strategy expert creating viral "Usage Demo" content for YouTube Shorts.
 
@@ -338,7 +330,7 @@ MANDATORY OUTPUT JSON:
 • "practice": Practice instruction with scenario
 • "practice_scenario": Specific SSC context for aspirant to practice
 • "explanation": Why strategic usage matters for exam success (under 120 chars)
-• "cta": Use "${randomCTA}" or similar strategy mastery CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging SSC exam CTA strategy mastery CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "usage_demo"
 
 Create content that makes aspirants confident about strategic concept application. [${timeMarker}-${tokenMarker}]`;
@@ -350,7 +342,6 @@ Create content that makes aspirants confident about strategic concept applicatio
 export function generateSSCChallengePrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  const randomCTA = ContentComponents.getRandomCTA('ssc_shots');
 
   return `You are an SSC exam challenge creator making viral "Challenge" content for YouTube Shorts.
 
@@ -376,7 +367,7 @@ MANDATORY OUTPUT JSON:
 • "correct_answer": The right answer with brief explanation
 • "confidence_message": Success message for those who got it right (under 80 chars)
 • "learning_tip": Quick tip for those who got it wrong (under 100 chars)
-• "cta": Use "${randomCTA}" or similar daily testing CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging SSC exam CTA daily testing CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "challenge"
 
 Create content that makes aspirants excited to test and improve their preparation. [${timeMarker}-${tokenMarker}]`;

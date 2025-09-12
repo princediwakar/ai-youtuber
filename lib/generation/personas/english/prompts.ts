@@ -7,8 +7,6 @@ import {
   PromptConfig,
   TopicGuideline
 } from '../../shared/utils';
-import { ContentComponents } from '../../shared/components';
-import { enhanceCTA } from '../../shared/analyticsOptimizer';
 
 /**
  * English-specific topic guidelines
@@ -89,15 +87,7 @@ export function generateEnglishPrompt(config: PromptConfig): string {
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getEnglishTopicGuidelines(topic);
   
-  // Use shared demographics from contentComponents
-  const primaryAudience = ContentComponents.getPrimaryAudience('english_vocab_builder');
-  let randomCTA = ContentComponents.getRandomCTA('english_vocab_builder');
-  
-  // Enhance CTA with analytics insights
-  if (analyticsInsights) {
-    randomCTA = enhanceCTA(randomCTA, analyticsInsights);
-  }
-
+  const primaryAudience = 'English learners';
   const timingPrefix = timingContext ? `${timingContext.timeOfDay.toUpperCase()} LEARNING` : 'VIRAL LEARNING';
   const audienceContext = timingContext?.audience || primaryAudience;
   
@@ -135,7 +125,7 @@ MANDATORY OUTPUT:
 • "options": Object with "A", "B", "C", "D" - one perfect answer, three smart distractors based on common errors
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this answer elevates communication + usage tip (under 120 characters)
-• "cta": Use one of these motivational CTAs: "${randomCTA}" or similar English learning CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Generate an engaging English learning CTA (under 80 chars - make it compelling and action-oriented)
 • "content_type": Will be set automatically
 
 Create vocabulary content that makes learners feel smarter and more confident immediately. [${timeMarker}-${tokenMarker}]`;
@@ -151,7 +141,7 @@ REQUIREMENTS:
 • DISTRACTORS: Include common learner mistakes and plausible alternatives
 • ENGAGEMENT: Create immediate "vocabulary upgrade" value
 • EXPLANATION: Provide usage insight that elevates communication (under 120 characters)
-• CTA: Use "${randomCTA}" or similar (under 80 chars - make it compelling and action-oriented)
+• CTA: Generate an engaging vocabulary CTA (under 80 chars - make it compelling and action-oriented)
 
 OUTPUT FORMAT:
 • "hook": Contextual hook referencing the specific word/concept being tested
@@ -167,7 +157,6 @@ Make learners feel accomplished and eager to share their new knowledge. [${timeM
 export function generateCommonMistakePrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  const randomCTA = ContentComponents.getRandomCTA('english_vocab_builder');
 
   return `You are a native English speaker creating viral "Common Mistake" content for YouTube Shorts.
 
@@ -193,7 +182,7 @@ MANDATORY OUTPUT JSON:
 • "correct": The native speaker version
 • "practice": Practice instruction with the correct form
 • "explanation": Why natives use this version (under 100 chars)
-• "cta": Use "${randomCTA}" or similar native tip CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging English learning CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "common_mistake"
 
 Create content that makes learners feel embarrassed about their mistake but excited to fix it. [${timeMarker}-${tokenMarker}]`;
@@ -205,7 +194,6 @@ Create content that makes learners feel embarrassed about their mistake but exci
 export function generateQuickFixPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  const randomCTA = ContentComponents.getRandomCTA('english_vocab_builder');
 
   return `You are an English fluency coach creating viral "Quick Fix" content for YouTube Shorts.
 
@@ -230,7 +218,7 @@ MANDATORY OUTPUT JSON:
 • "advanced_word": The sophisticated alternative
 • "usage_example": Professional context example
 • "explanation": Why the advanced word is better (under 100 chars)
-• "cta": Use "${randomCTA}" or similar upgrade CTA (under 80 chars - make it compelling and action-oriented)  
+• "cta": Use engaging English upgrade CTA (under 80 chars - make it compelling and action-oriented)  
 • "format_type": "quick_fix"
 
 Create content that makes learners immediately feel more sophisticated. [${timeMarker}-${tokenMarker}]`;
@@ -242,7 +230,6 @@ Create content that makes learners immediately feel more sophisticated. [${timeM
 export function generateUsageDemoPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
-  const randomCTA = ContentComponents.getRandomCTA('english_vocab_builder');
 
   return `You are an English fluency expert creating viral "Usage Demo" content for YouTube Shorts.
 
@@ -271,7 +258,7 @@ MANDATORY OUTPUT JSON:
 • "right_context": Brief explanation of why it's correct (under 80 chars) 
 • "practice": Practice instruction with scenario
 • "practice_scenario": Specific context for learner to practice
-• "cta": Use "${randomCTA}" or similar mastery CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging vocabulary mastery CTA (under 80 chars - make it compelling and action-oriented)
 • "format_type": "usage_demo"
 
 Create content that makes learners confident about contextual word usage. [${timeMarker}-${tokenMarker}]`;

@@ -4,7 +4,7 @@
  */
 
 import { MasterPersonas } from '../../personas';
-import { generateSSCExamPrompt, generateSSCCurrentAffairsPrompt } from '../personas/ssc/prompts';
+import { generateSSCMCQPrompt, generateSSCCurrentAffairsPrompt } from '../personas/ssc/prompts';
 import { generateAstronomyPrompt } from '../personas/astronomy/prompts';
 import {
   generateVariationMarkers,
@@ -137,7 +137,7 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
     if (selectedTopic === 'ssc_current_affairs') {
       prompt = await generateSSCCurrentAffairsPrompt(promptConfig);
     } else {
-      prompt = generateSSCExamPrompt(promptConfig);
+      prompt = generateSSCMCQPrompt(promptConfig);
     }
     
     // Use analytics-driven format selection

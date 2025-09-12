@@ -12,7 +12,6 @@ import {
   getPromptVariation,
   createBasePromptStructure
 } from '../../shared/utils';
-import { ContentComponents } from '../../shared/components';
 
 /**
  * Astronomy-specific topic guidelines
@@ -102,8 +101,6 @@ export function generateAstronomyPrompt(config: PromptConfig): string {
   const { topicData, topic, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getAstronomyTopicGuidelines(topic);
-  const randomCTA = ContentComponents.getRandomCTA('space_facts_quiz');
-  const punchyHook = ContentComponents.getPunchyHook('space_facts_quiz');
   
   // Generate randomization elements for variety
   const randomization = generateRandomizationElements();
@@ -119,7 +116,7 @@ export function generateAstronomyPrompt(config: PromptConfig): string {
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Mind-bending facts about the cosmos'}
 
 VIRAL LEARNING STRATEGY:
-• HOOK: Create personal space hooks like "${punchyHook}" - under 25 chars, personal connection + familiar comparison
+• HOOK: Create personal space hooks like mind-blowing space hooks - under 25 chars, personal connection + familiar comparison
 • PSYCHOLOGY: Bridge abstract space facts to personal experience and familiar scale references
 • SCENARIOS: Apply to ${guidelines?.scenarios?.join(', ') || 'space exploration, cosmic phenomena, and universal mysteries'}
 • ENGAGEMENT: ${guidelines?.engagement || 'Create "this will blow your mind" moments'}
@@ -148,7 +145,7 @@ MANDATORY OUTPUT:
 • "options": Object with "A", "B", "C", "D" - KEEP OPTIONS VERY SHORT (max 6 words each) for YouTube Shorts video frame - one perfect answer, three smart distractors based on misconceptions
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this fact is mind-blowing + cosmic context (under 120 characters)
-• "cta": Use "${randomCTA}" or similar wonder-inspiring CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging cosmic wonder CTA (under 80 chars - make it compelling and action-oriented)
 
 Create astronomy content that makes viewers feel amazed about the universe and eager to share. [${timeMarker}-${tokenMarker}]`;
   } else {
@@ -178,7 +175,6 @@ Make viewers feel amazed about the universe and eager to share incredible knowle
 export function generateMindBlowingFactPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
-  const punchyHook = ContentComponents.getPunchyHook('space_facts_quiz');
   
   // Generate randomization elements for variety
   const randomization = generateRandomizationElements();
@@ -226,7 +222,6 @@ Create content that makes viewers say "WOW!" and immediately want to share. [${t
 export function generateScaleComparisonPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
-  const punchyHook = ContentComponents.getPunchyHook('space_facts_quiz');
   
   // Generate randomization elements for variety
   const randomization = generateRandomizationElements();
@@ -274,7 +269,6 @@ Create content that makes people realize how impossibly vast or tiny space objec
 export function generateSpaceMythBustedPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
-  const punchyHook = ContentComponents.getPunchyHook('space_facts_quiz');
   
   // Generate randomization elements for variety
   const randomization = generateRandomizationElements();

@@ -18,7 +18,6 @@ import {
     clearShadow
 
 } from '../drawingUtils';
-import { ContentComponents } from '../../generation/shared/components';
 
 // Hook frame for MCQ format - displays the hook/teaser
 export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
@@ -31,10 +30,9 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
   const question = content.question || content.content || "";
   let hookText = content.hook;
   
-  // Enhanced fallback with punchy, persona-specific hooks
+  // Enhanced fallback hook
   if (!hookText) {
-    const persona = job.persona || 'english_vocab_builder';
-    hookText = ContentComponents.getPunchyHook(persona);
+    hookText = 'Quick knowledge boost! Ready?';
   }
   
   // Calculate dynamic layout for hook text

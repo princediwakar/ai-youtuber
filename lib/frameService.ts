@@ -29,7 +29,7 @@ try {
 }
 
 export async function createFramesForJob(job: QuizJob): Promise<string[]> {
-  const theme = selectThemeForPersona(job.persona);
+  const { theme, themeName } = selectThemeForPersona(job.persona);
   
   // Use new content structure
   const contentData = job.data?.content;
@@ -41,7 +41,7 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   const layoutType = detectLayoutType(contentData);
   const layout = getLayout(layoutType);
   
-  console.log(`[Job ${job.id}] Using ${layoutType} layout with ${layout.frames.length} frames`);
+  console.log(`[Job ${job.id}] Using ${layoutType} layout with theme ${themeName} and ${layout.frames.length} frames`);
   
   // Create render functions
   const renderFunctions = createRenderFunctions(layoutType, job, theme);
@@ -67,7 +67,12 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
 
   // Get account for this job to determine upload destination
   const account = await getAccountConfig(job.account_id);
-  const frameUrls = await uploadFrames(job.id, theme.name, renderedCanvases, account.id, job.persona, layoutType);
+  const frameUrls = await uploadFrames(job.id, themeName, renderedCanvases, account.id, job.persona, layoutType);
+  
+  // Calculate frame durations for analytics tracking
+  const frameDurations = Array.from({ length: layout.frames.length }, (_, index) => {
+    return calculateFrameDuration(contentData, index + 1) || 4;
+  });
   
   const { updateJob } = await import('@/lib/database');
   await updateJob(job.id, {
@@ -76,7 +81,8 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
     data: { 
       ...job.data, 
       frameUrls, 
-      themeName: theme.name,
+      themeName: themeName,
+      frameDurations: frameDurations,
       layoutType: layoutType,
       layoutMetadata: {
         frameCount: layout.frames.length,
@@ -108,10 +114,41 @@ function renderFallbackFrame(canvas: Canvas, job: QuizJob, theme: Theme, errorMe
   drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
 
-function selectThemeForPersona(persona: string): Theme {
+function selectThemeForPersona(persona: string): { theme: Theme; themeName: string } {
   const themeNames = PersonaThemeMap[persona] || PersonaThemeMap.default;
   const randomThemeName = themeNames[Math.floor(Math.random() * themeNames.length)];
-  return themes[randomThemeName];
+  return {
+    theme: themes[randomThemeName],
+    themeName: randomThemeName
+  };
+}
+
+function calculateFrameDuration(questionData: any, frameNumber: number): number {
+  if (!questionData || typeof questionData !== 'object') {
+    return 5; // Safe fallback for invalid data
+  }
+  
+  const MIN_DURATION = 1.5; // Minimum time to register visual content
+  
+  switch (frameNumber) {
+    case 1: // First Frame (Hook Frame - should be short and punchy)
+      return MIN_DURATION;
+      
+    case 2: // Second Frame (varies by format)
+      return 10;
+      
+    case 3: // Third Frame (if exists)
+      return 3;
+      
+    case 4: // Fourth Frame (if exists)
+      return 4;
+      
+    case 5: // Fifth Frame (if exists - rare, but possible for future formats)
+      return 4;
+      
+    default:
+      return 5; // Fallback
+  }
 }
 
 async function uploadFrames(jobId: string, themeName: string, canvases: Canvas[], accountId: string, persona: string, layoutType: string): Promise<string[]> {

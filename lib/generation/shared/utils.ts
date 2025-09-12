@@ -4,13 +4,12 @@
  */
 
 import { TOPIC_GUIDELINES } from './guidelines';
-import { ContentComponents } from './components';
-import type { 
-  VariationMarkers, 
-  PromptConfig, 
-  RandomizationElements, 
+import type {
+  VariationMarkers,
+  PromptConfig,
+  RandomizationElements,
   ContextInjection,
-  TopicGuideline 
+  TopicGuideline
 } from './types';
 
 // Re-export types for convenience
@@ -54,7 +53,7 @@ export function generateRandomizationElements(): RandomizationElements {
 export function generateContextInjections(persona?: string): ContextInjection {
   // Map persona patterns to standardized persona names for ContentComponents
   let standardizedPersona = 'default';
-  
+
   if (persona?.includes('astronomy') || persona?.includes('space')) {
     standardizedPersona = 'space_facts_quiz';
   } else if (persona?.includes('health') || persona?.includes('brain')) {
@@ -68,9 +67,9 @@ export function generateContextInjections(persona?: string): ContextInjection {
   }
 
   return {
-    timeContext: ContentComponents.getRandomContext(standardizedPersona),
-    demographic: ContentComponents.getRandomDemographic(standardizedPersona),
-    urgency: ContentComponents.getRandomUrgency(standardizedPersona)
+    timeContext: 'learning session',
+    demographic: 'learners',
+    urgency: 'immediately'
   };
 }
 
@@ -117,8 +116,8 @@ MANDATORY JSON STRUCTURE:
  * Creates base prompt structure with role and strategy
  */
 export function createBasePromptStructure(
-  randomization: RandomizationElements, 
-  contextInjection: ContextInjection, 
+  randomization: RandomizationElements,
+  contextInjection: ContextInjection,
   promptVariation: number
 ): { expertRole: string; contentStrategy: string } {
   let expertRole = '';

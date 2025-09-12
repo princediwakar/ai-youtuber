@@ -188,9 +188,11 @@ class AnalyticsService {
 
     for (const data of analytics) {
       try {
-        // Get additional job data for timing and format analysis
+        // Get comprehensive job data for enhanced analytics
         const jobData = await query(`
-          SELECT qj.question_format, qj.topic_display_name, uv.uploaded_at
+          SELECT 
+            qj.persona, qj.question_format, qj.topic_display_name, qj.data,
+            uv.uploaded_at, uv.title
           FROM quiz_jobs qj
           JOIN uploaded_videos uv ON qj.id = uv.job_id
           WHERE qj.id = $1
@@ -211,12 +213,37 @@ class AnalyticsService {
         const uploadHour = istDate.getHours();
         const uploadDayOfWeek = istDate.getDay(); // 0=Sunday, 6=Saturday
 
+        // Parse job data to extract additional analytics fields
+        const jobDataParsed = typeof job.data === 'string' ? JSON.parse(job.data) : job.data;
+        
+        // Extract theme name from job data
+        const themeName = jobDataParsed?.themeName || null;
+        
+        // Extract audio file from job data (will be populated after video assembly update)
+        const audioFile = jobDataParsed?.audioFile || null;
+        
+        // Calculate total duration from frame durations if available
+        const frameDurations = jobDataParsed?.frameDurations || null;
+        const totalDuration = frameDurations && Array.isArray(frameDurations) ? 
+          frameDurations.reduce((sum: number, duration: number) => sum + duration, 0) : null;
+        
+        // Extract question type and topic category
+        const questionType = this.extractQuestionType(job.persona, job.topic_display_name);
+        const topicCategory = this.extractTopicCategory(job.persona, job.topic_display_name);
+        
+        // Extract hook and CTA types from content if available
+        const content = jobDataParsed?.content || {};
+        const hookType = this.extractHookType(content.hook);
+        const ctaType = this.extractCtaType(content.cta);
+
         await query(`
           INSERT INTO video_analytics (
             video_id, job_id, account_id, views, likes, comments, dislikes,
             engagement_rate, like_ratio, video_uploaded_at, collected_at,
-            upload_hour, upload_day_of_week, question_format, topic_display_name
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11, $12, $13, $14)
+            upload_hour, upload_day_of_week, question_format, topic_display_name,
+            persona, theme_name, audio_file, total_duration, frame_durations,
+            question_type, topic_category, hook_type, cta_type
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
         `, [
           data.videoId,
           data.jobId,
@@ -231,7 +258,16 @@ class AnalyticsService {
           uploadHour,
           uploadDayOfWeek,
           job.question_format,
-          job.topic_display_name
+          job.topic_display_name,
+          job.persona,
+          themeName,
+          audioFile,
+          totalDuration,
+          frameDurations ? JSON.stringify(frameDurations) : null,
+          questionType,
+          topicCategory,
+          hookType,
+          ctaType
         ]);
       } catch (error) {
         console.error(`[AnalyticsService] Error storing analytics for video ${data.videoId}:`, error);
@@ -930,6 +966,421 @@ Keep recommendations specific, actionable, and based on the provided data.`;
     return {
       analyticsData,
       aiInsights
+    };
+  }
+
+  /**
+   * Helper methods for extracting analytics data
+   */
+  private extractQuestionType(persona: string, topicDisplayName: string): string | null {
+    if (!persona || !topicDisplayName) return null;
+    
+    // Extract question type based on persona and topic patterns
+    if (persona.includes('english')) {
+      if (topicDisplayName.toLowerCase().includes('synonym')) return 'synonym';
+      if (topicDisplayName.toLowerCase().includes('antonym')) return 'antonym';
+      if (topicDisplayName.toLowerCase().includes('definition')) return 'definition';
+      if (topicDisplayName.toLowerCase().includes('usage')) return 'usage';
+      return 'vocabulary';
+    }
+    
+    if (persona.includes('health')) {
+      if (topicDisplayName.toLowerCase().includes('exercise')) return 'exercise_tip';
+      if (topicDisplayName.toLowerCase().includes('nutrition')) return 'nutrition_tip';
+      if (topicDisplayName.toLowerCase().includes('mental')) return 'mental_health';
+      if (topicDisplayName.toLowerCase().includes('brain')) return 'brain_health';
+      if (topicDisplayName.toLowerCase().includes('eye')) return 'eye_health';
+      return 'health_tip';
+    }
+    
+    if (persona.includes('ssc')) {
+      if (topicDisplayName.toLowerCase().includes('history')) return 'history_question';
+      if (topicDisplayName.toLowerCase().includes('geography')) return 'geography_question';
+      if (topicDisplayName.toLowerCase().includes('polity')) return 'polity_question';
+      return 'general_knowledge';
+    }
+    
+    return 'general';
+  }
+
+  private extractTopicCategory(persona: string, topicDisplayName: string): string | null {
+    if (!persona) return null;
+    
+    // Extract broader topic categories
+    if (persona.includes('english')) return 'Language Learning';
+    if (persona.includes('health')) return 'Health & Wellness';
+    if (persona.includes('ssc')) return 'Competitive Exams';
+    if (persona.includes('astronomy') || persona.includes('space')) return 'Science & Space';
+    
+    return 'Educational';
+  }
+
+  private extractHookType(hook: string): string | null {
+    if (!hook || typeof hook !== 'string') return null;
+    
+    const hookLower = hook.toLowerCase();
+    
+    // Identify hook patterns
+    if (hookLower.includes('did you know')) return 'did_you_know';
+    if (hookLower.includes('test yourself') || hookLower.includes('quiz')) return 'challenge';
+    if (hookLower.includes('can you')) return 'question';
+    if (hookLower.includes('discover') || hookLower.includes('learn')) return 'educational';
+    if (hookLower.includes('mistake') || hookLower.includes('error')) return 'mistake_warning';
+    if (hookLower.includes('secret') || hookLower.includes('tip')) return 'secret_tip';
+    
+    return 'general';
+  }
+
+  private extractCtaType(cta: string): string | null {
+    if (!cta || typeof cta !== 'string') return null;
+    
+    const ctaLower = cta.toLowerCase();
+    
+    // Identify CTA patterns
+    if (ctaLower.includes('subscribe')) return 'subscribe';
+    if (ctaLower.includes('like')) return 'like';
+    if (ctaLower.includes('comment')) return 'comment';
+    if (ctaLower.includes('follow')) return 'follow';
+    if (ctaLower.includes('share')) return 'share';
+    if (ctaLower.includes('learn more')) return 'learn_more';
+    if (ctaLower.includes('practice')) return 'practice';
+    
+    return 'general';
+  }
+
+  /**
+   * Get theme performance analytics
+   */
+  async getThemeAnalytics(accountId?: string, persona?: string): Promise<{
+    themePerformance: Array<{
+      themeName: string;
+      avgEngagementRate: number;
+      avgViews: number;
+      videoCount: number;
+      totalViews: number;
+      avgLikes: number;
+    }>;
+    bestTheme: string;
+    worstTheme: string;
+    themeRecommendations: string[];
+  }> {
+    const personaFilter = persona ? 'AND qj.persona = $2' : '';
+    const accountFilter = accountId ? `AND va.account_id = $${persona ? 3 : 2}` : '';
+    const params = [accountId, persona].filter(Boolean);
+
+    const themeData = await query(`
+      SELECT 
+        va.theme_name,
+        ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
+        ROUND(AVG(va.views), 0) as avg_views,
+        COUNT(*) as video_count,
+        SUM(va.views) as total_views,
+        ROUND(AVG(va.likes), 0) as avg_likes
+      FROM video_analytics va
+      JOIN quiz_jobs qj ON va.job_id = qj.id
+      WHERE va.theme_name IS NOT NULL
+        ${accountId ? 'AND va.account_id = $1' : ''}
+        ${personaFilter}
+        ${accountFilter}
+        AND va.collected_at > NOW() - INTERVAL '60 days'
+      GROUP BY va.theme_name
+      HAVING COUNT(*) >= 2
+      ORDER BY avg_engagement_rate DESC
+    `, params);
+
+    const themePerformance = themeData.rows.map(row => ({
+      themeName: row.theme_name,
+      avgEngagementRate: parseFloat(row.avg_engagement_rate),
+      avgViews: parseInt(row.avg_views),
+      videoCount: parseInt(row.video_count),
+      totalViews: parseInt(row.total_views),
+      avgLikes: parseInt(row.avg_likes)
+    }));
+
+    const bestTheme = themePerformance[0]?.themeName || 'VintageScroll';
+    const worstTheme = themePerformance[themePerformance.length - 1]?.themeName || 'MintyFresh';
+
+    const themeRecommendations = [
+      `${bestTheme} shows the highest engagement rate (${themePerformance[0]?.avgEngagementRate}%)`,
+      themePerformance.length > 1 ? `Consider reducing use of ${worstTheme} which has lower engagement` : 'Test more themes for comparison',
+      'Visual themes can impact engagement by 20-40% - choose based on content type'
+    ];
+
+    return {
+      themePerformance,
+      bestTheme,
+      worstTheme,
+      themeRecommendations
+    };
+  }
+
+  /**
+   * Get audio performance analytics
+   */
+  async getAudioAnalytics(accountId?: string, persona?: string): Promise<{
+    audioPerformance: Array<{
+      audioFile: string | null;
+      avgEngagementRate: number;
+      avgViews: number;
+      videoCount: number;
+      avgLikes: number;
+    }>;
+    bestAudio: string | null;
+    worstAudio: string | null;
+    audioRecommendations: string[];
+  }> {
+    const personaFilter = persona ? 'AND qj.persona = $2' : '';
+    const accountFilter = accountId ? `AND va.account_id = $${persona ? 3 : 2}` : '';
+    const params = [accountId, persona].filter(Boolean);
+
+    const audioData = await query(`
+      SELECT 
+        va.audio_file,
+        ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
+        ROUND(AVG(va.views), 0) as avg_views,
+        COUNT(*) as video_count,
+        ROUND(AVG(va.likes), 0) as avg_likes
+      FROM video_analytics va
+      JOIN quiz_jobs qj ON va.job_id = qj.id
+      WHERE 1=1
+        ${accountId ? 'AND va.account_id = $1' : ''}
+        ${personaFilter}
+        ${accountFilter}
+        AND va.collected_at > NOW() - INTERVAL '60 days'
+      GROUP BY va.audio_file
+      HAVING COUNT(*) >= 2
+      ORDER BY avg_engagement_rate DESC
+    `, params);
+
+    const audioPerformance = audioData.rows.map(row => ({
+      audioFile: row.audio_file || 'No Audio',
+      avgEngagementRate: parseFloat(row.avg_engagement_rate),
+      avgViews: parseInt(row.avg_views),
+      videoCount: parseInt(row.video_count),
+      avgLikes: parseInt(row.avg_likes)
+    }));
+
+    const bestAudio = audioPerformance[0]?.audioFile || null;
+    const worstAudio = audioPerformance[audioPerformance.length - 1]?.audioFile || null;
+
+    const audioRecommendations = [
+      bestAudio ? `${bestAudio} performs best with ${audioPerformance[0]?.avgEngagementRate}% engagement` : 'No clear audio winner identified',
+      audioPerformance.length > 1 ? 'Background music can impact engagement - test different audio styles' : 'Add more audio variations for testing',
+      'Consider audience preferences when selecting background audio'
+    ];
+
+    return {
+      audioPerformance,
+      bestAudio,
+      worstAudio,
+      audioRecommendations
+    };
+  }
+
+  /**
+   * Get comprehensive parameter performance analytics
+   */
+  async getParameterAnalytics(accountId?: string, persona?: string): Promise<{
+    themeAudioCombinations: Array<{
+      theme: string;
+      audio: string | null;
+      avgEngagementRate: number;
+      videoCount: number;
+    }>;
+    durationAnalytics: Array<{
+      durationRange: string;
+      avgEngagementRate: number;
+      videoCount: number;
+    }>;
+    questionTypePerformance: Array<{
+      questionType: string;
+      avgEngagementRate: number;
+      videoCount: number;
+    }>;
+    hookTypePerformance: Array<{
+      hookType: string;
+      avgEngagementRate: number;
+      videoCount: number;
+    }>;
+  }> {
+    const personaFilter = persona ? 'AND qj.persona = $2' : '';
+    const accountFilter = accountId ? `AND va.account_id = $${persona ? 3 : 2}` : '';
+    const params = [accountId, persona].filter(Boolean);
+
+    // Theme + Audio combinations
+    const themeAudioData = await query(`
+      SELECT 
+        va.theme_name as theme,
+        va.audio_file as audio,
+        ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
+        COUNT(*) as video_count
+      FROM video_analytics va
+      JOIN quiz_jobs qj ON va.job_id = qj.id
+      WHERE va.theme_name IS NOT NULL
+        ${accountId ? 'AND va.account_id = $1' : ''}
+        ${personaFilter}
+        ${accountFilter}
+        AND va.collected_at > NOW() - INTERVAL '60 days'
+      GROUP BY va.theme_name, va.audio_file
+      HAVING COUNT(*) >= 1
+      ORDER BY avg_engagement_rate DESC
+      LIMIT 10
+    `, params);
+
+    // Duration analytics
+    const durationData = await query(`
+      SELECT 
+        CASE 
+          WHEN va.total_duration IS NULL THEN 'Unknown'
+          WHEN va.total_duration < 15 THEN 'Short (< 15s)'
+          WHEN va.total_duration < 30 THEN 'Medium (15-30s)'
+          ELSE 'Long (30s+)'
+        END as duration_range,
+        ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
+        COUNT(*) as video_count
+      FROM video_analytics va
+      JOIN quiz_jobs qj ON va.job_id = qj.id
+      WHERE 1=1
+        ${accountId ? 'AND va.account_id = $1' : ''}
+        ${personaFilter}
+        ${accountFilter}
+        AND va.collected_at > NOW() - INTERVAL '60 days'
+      GROUP BY duration_range
+      ORDER BY avg_engagement_rate DESC
+    `, params);
+
+    // Question type performance
+    const questionTypeData = await query(`
+      SELECT 
+        COALESCE(va.question_type, 'Unknown') as question_type,
+        ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
+        COUNT(*) as video_count
+      FROM video_analytics va
+      JOIN quiz_jobs qj ON va.job_id = qj.id
+      WHERE 1=1
+        ${accountId ? 'AND va.account_id = $1' : ''}
+        ${personaFilter}
+        ${accountFilter}
+        AND va.collected_at > NOW() - INTERVAL '60 days'
+      GROUP BY va.question_type
+      HAVING COUNT(*) >= 2
+      ORDER BY avg_engagement_rate DESC
+    `, params);
+
+    // Hook type performance
+    const hookTypeData = await query(`
+      SELECT 
+        COALESCE(va.hook_type, 'Unknown') as hook_type,
+        ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
+        COUNT(*) as video_count
+      FROM video_analytics va
+      JOIN quiz_jobs qj ON va.job_id = qj.id
+      WHERE va.hook_type IS NOT NULL
+        ${accountId ? 'AND va.account_id = $1' : ''}
+        ${personaFilter}
+        ${accountFilter}
+        AND va.collected_at > NOW() - INTERVAL '60 days'
+      GROUP BY va.hook_type
+      HAVING COUNT(*) >= 2
+      ORDER BY avg_engagement_rate DESC
+    `, params);
+
+    return {
+      themeAudioCombinations: themeAudioData.rows.map(row => ({
+        theme: row.theme,
+        audio: row.audio || 'No Audio',
+        avgEngagementRate: parseFloat(row.avg_engagement_rate),
+        videoCount: parseInt(row.video_count)
+      })),
+      durationAnalytics: durationData.rows.map(row => ({
+        durationRange: row.duration_range,
+        avgEngagementRate: parseFloat(row.avg_engagement_rate),
+        videoCount: parseInt(row.video_count)
+      })),
+      questionTypePerformance: questionTypeData.rows.map(row => ({
+        questionType: row.question_type,
+        avgEngagementRate: parseFloat(row.avg_engagement_rate),
+        videoCount: parseInt(row.video_count)
+      })),
+      hookTypePerformance: hookTypeData.rows.map(row => ({
+        hookType: row.hook_type,
+        avgEngagementRate: parseFloat(row.avg_engagement_rate),
+        videoCount: parseInt(row.video_count)
+      }))
+    };
+  }
+
+  /**
+   * Get A/B testing insights and recommendations
+   */
+  async getABTestingInsights(accountId?: string, persona?: string): Promise<{
+    summary: string;
+    winningCombinations: Array<{
+      parameter: string;
+      winner: string;
+      engagementLift: number;
+      confidence: string;
+    }>;
+    testRecommendations: string[];
+    nextTestSuggestions: string[];
+  }> {
+    const [themeAnalytics, audioAnalytics, parameterAnalytics] = await Promise.all([
+      this.getThemeAnalytics(accountId, persona),
+      this.getAudioAnalytics(accountId, persona),
+      this.getParameterAnalytics(accountId, persona)
+    ]);
+
+    const winningCombinations = [];
+
+    // Theme winners
+    if (themeAnalytics.themePerformance.length > 1) {
+      const bestTheme = themeAnalytics.themePerformance[0];
+      const avgEngagement = themeAnalytics.themePerformance.reduce((sum, t) => sum + t.avgEngagementRate, 0) / themeAnalytics.themePerformance.length;
+      const lift = ((bestTheme.avgEngagementRate - avgEngagement) / avgEngagement) * 100;
+      
+      winningCombinations.push({
+        parameter: 'Theme',
+        winner: bestTheme.themeName,
+        engagementLift: Math.round(lift * 100) / 100,
+        confidence: bestTheme.videoCount > 10 ? 'High' : bestTheme.videoCount > 5 ? 'Medium' : 'Low'
+      });
+    }
+
+    // Audio winners
+    if (audioAnalytics.audioPerformance.length > 1) {
+      const bestAudio = audioAnalytics.audioPerformance[0];
+      const avgEngagement = audioAnalytics.audioPerformance.reduce((sum, a) => sum + a.avgEngagementRate, 0) / audioAnalytics.audioPerformance.length;
+      const lift = ((bestAudio.avgEngagementRate - avgEngagement) / avgEngagement) * 100;
+      
+      winningCombinations.push({
+        parameter: 'Audio',
+        winner: bestAudio.audioFile || 'No Audio',
+        engagementLift: Math.round(lift * 100) / 100,
+        confidence: bestAudio.videoCount > 10 ? 'High' : bestAudio.videoCount > 5 ? 'Medium' : 'Low'
+      });
+    }
+
+    const testRecommendations = [
+      'Continue using winning combinations for consistent performance',
+      'Gradually shift traffic to best-performing variants',
+      'Monitor performance changes over time for sustained results',
+      'Test new variations against current winners'
+    ];
+
+    const nextTestSuggestions = [
+      'Test new theme variations against current winner',
+      'Experiment with different audio genres and styles',
+      'Test hook effectiveness across different content types',
+      'Optimize video duration based on engagement patterns'
+    ];
+
+    const summary = `Based on ${themeAnalytics.themePerformance.reduce((sum, t) => sum + t.videoCount, 0)} videos analyzed, we've identified ${winningCombinations.length} clear parameter winners with measurable performance differences.`;
+
+    return {
+      summary,
+      winningCombinations,
+      testRecommendations,
+      nextTestSuggestions
     };
   }
 }

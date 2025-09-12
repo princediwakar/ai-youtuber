@@ -22,21 +22,23 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // Parse request body to get accountId (optional)
+    // Parse request body to get accountId and format (optional)
     let accountId = 'english_shots'; // Default for backward compatibility
+    let preferredFormat: string | undefined;
     try {
       const body = await request.json();
       accountId = body.accountId || accountId;
+      preferredFormat = body.format; // Extract format parameter
     } catch {
       // No body or invalid JSON - use default
     }
 
-    console.log(`🚀 Queuing generation for account: ${accountId}`);
+    console.log(`🚀 Queuing generation for account: ${accountId}${preferredFormat ? ` with format: ${preferredFormat}` : ''}`);
 
     // Fire and forget: Use setTimeout for true fire-and-forget
     // Move ALL heavy operations to background
     setTimeout(() => {
-      processGenerationWithValidation(accountId).catch(error => {
+      processGenerationWithValidation(accountId, preferredFormat).catch(error => {
         console.error('Background generation failed:', error);
       });
     }, 0);
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
  * Background processing function that includes validation and generation.
  * Runs asynchronously without blocking the API response.
  */
-async function processGenerationWithValidation(accountId: string) {
+async function processGenerationWithValidation(accountId: string, preferredFormat?: string) {
   try {
     console.log(`🔄 Background processing started for account: ${accountId}`);
 
@@ -100,7 +102,7 @@ async function processGenerationWithValidation(accountId: string) {
     console.log(`🚀 Found scheduled personas for ${account.name}: ${personasToGenerate.join(', ')}`);
 
     // Process generation
-    await processGenerationInBackground(accountId, account, personasToGenerate);
+    await processGenerationInBackground(accountId, account, personasToGenerate, preferredFormat);
 
   } catch (error) {
     console.error(`❌ Background validation/generation failed for ${accountId}:`, error);
@@ -114,7 +116,8 @@ async function processGenerationWithValidation(accountId: string) {
 async function processGenerationInBackground(
   accountId: string, 
   account: any, 
-  personasToGenerate: string[]
+  personasToGenerate: string[],
+  preferredFormat?: string
 ) {
   let totalCreatedJobs = 0;
 
@@ -143,12 +146,23 @@ async function processGenerationInBackground(
               generationDate,
               topic: subCategory.key,
               accountId, // Include account information
+              preferredFormat, // Pass through the format parameter
           };
 
           return generateAndStoreContent(jobConfig);
       });
 
       const results = await Promise.allSettled(generationPromises);
+      
+      // DEBUG: Log promise results
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          console.log(`🔄 [DEBUG] Promise ${index} fulfilled with result:`, result.value);
+        } else {
+          console.log(`❌ [DEBUG] Promise ${index} rejected:`, result.reason);
+        }
+      });
+      
       const createdCount = results.filter(r => r.status === 'fulfilled' && r.value).length;
       totalCreatedJobs += createdCount;
       console.log(`-- ${account.name} batch completed for ${personaConfig.displayName}. Created ${createdCount} jobs.`);

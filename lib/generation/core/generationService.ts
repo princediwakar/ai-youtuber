@@ -98,6 +98,13 @@ export async function generateAndStoreContent(
   jobConfig: GenerationJobConfig
 ): Promise<GenerationResult | null> {
   try {
+    console.log(`🔄 [DEBUG] generateAndStoreContent called with:`, {
+      persona: jobConfig.persona,
+      accountId: jobConfig.accountId,
+      topic: jobConfig.topic,
+      preferredFormat: jobConfig.preferredFormat
+    });
+    
     // Get account configuration using the provided accountId
     const account = await getAccountConfig(jobConfig.accountId);
     

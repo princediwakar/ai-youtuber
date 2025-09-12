@@ -27,7 +27,7 @@ import {
 } from '../personas/health/prompts';
 
 import { 
-  generateSSCExamPrompt,
+  generateSSCMCQPrompt,
   generateSSCCommonMistakePrompt,
   generateSSCQuickTipPrompt,
   generateSSCUsageDemoPrompt,
@@ -59,12 +59,11 @@ export {
 
 /**
  * Format and persona routing lookup table
- * SIMPLIFIED: Focus on proven MCQ format only based on analytics
- * Complex formats (quick_fix, common_mistake, etc.) showed 0% engagement
- * MCQ format shows 1.26% engagement rate - our only working format
+ * ANALYTICS-DRIVEN: MCQ primary format (1.26% engagement) + Quick Tips for health (384 avg views)
+ * Health Quick Tips showed breakthrough performance (1.2K views) - enabling for health personas only
  */
 const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, PromptGenerator>> & { default: PromptGenerator }> = {
-  // DISABLED: All complex formats showing 0% engagement in analytics
+  // DISABLED: Complex formats showing 0% engagement in analytics
   common_mistake: {
     default: generateEnglishPrompt // Force MCQ fallback
   },
@@ -77,15 +76,18 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
   challenge: {
     default: generateEnglishPrompt // Force MCQ fallback
   },
+  // ENABLED: Quick Tips for health personas only (384 avg views, 1.2K max views)
   quick_tip: {
-    default: generateEnglishPrompt // Force MCQ fallback
+    brain_health_tips: generateQuickTipPrompt,  // Health persona - use actual quick tip
+    eye_health_tips: generateQuickTipPrompt,    // Health persona - use actual quick tip
+    default: generateEnglishPrompt              // All other personas force MCQ
   },
-  // ENABLED: Only proven MCQ format (1.26% engagement)
+  // ENABLED: Primary MCQ format (1.26% engagement)
   mcq: {
     brain_health_tips: generateBrainHealthPrompt,
     eye_health_tips: generateEyeHealthPrompt,
     english_vocab_builder: generateEnglishPrompt,
-    ssc_shots: generateSSCExamPrompt,
+    ssc_shots: generateSSCMCQPrompt,
     space_facts_quiz: generateAstronomyPrompt,
     default: generateEnglishPrompt
   }
@@ -93,19 +95,35 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
 
 /**
  * Main format-aware prompt generator - routes to appropriate persona functions
- * ANALYTICS-DRIVEN: Forces MCQ format based on engagement data
- * MCQ = 1.26% engagement, all other formats = 0% engagement
+ * ANALYTICS-DRIVEN: MCQ primary (1.26% engagement) + Health Quick Tips (1.2K views breakthrough)
+ * Allows quick_tip format for health personas, forces MCQ for all others
  */
 export function generateFormatPrompt(config: PromptConfig): string {
-  // FORCE MCQ FORMAT - analytics show it's the only format that works
-  const format = 'mcq' as FormatType; // Override any requested format
+  const requestedFormat = config.format as FormatType || 'mcq';
   const persona = config.persona as PersonaType;
-
-  console.log(`🎯 Analytics override: forcing MCQ format for ${persona} (original format: ${config.format || 'mcq'})`);
+  
+  // ANALYTICS LOGIC: Allow quick_tip for health personas, force MCQ for others
+  let format = requestedFormat;
+  
+  if (requestedFormat === 'quick_tip') {
+    // Check if this is a health persona
+    const isHealthPersona = persona === 'brain_health_tips' || persona === 'eye_health_tips';
+    
+    if (isHealthPersona) {
+      console.log(`✅ Allowing quick_tip format for health persona: ${persona} (1.2K views breakthrough format)`);
+      // Keep quick_tip format - it works for health!
+    } else {
+      console.log(`🎯 Analytics override: forcing MCQ format for non-health persona: ${persona} (original format: ${requestedFormat})`);
+      format = 'mcq'; // Force MCQ for non-health personas
+    }
+  } else if (requestedFormat !== 'mcq') {
+    console.log(`🎯 Analytics override: forcing MCQ format for ${persona} (original format: ${requestedFormat})`);
+    format = 'mcq'; // Force MCQ for all other non-working formats
+  }
 
   const formatRoutes = FORMAT_PERSONA_ROUTES[format];
   if (!formatRoutes) {
-    // This should never happen since we're forcing MCQ, but safety fallback
+    // Fallback to MCQ if format not found
     const mcqRoutes = FORMAT_PERSONA_ROUTES.mcq;
     const generator = mcqRoutes[persona] || mcqRoutes.default;
     return generator(config);

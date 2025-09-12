@@ -11,7 +11,6 @@ import {
   getPromptVariation,
   createBasePromptStructure
 } from '../../shared/utils';
-import { ContentComponents } from '../../shared/components';
 
 /**
  * Health-specific topic guidelines
@@ -127,7 +126,6 @@ export function generateBrainHealthPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getHealthTopicGuidelines(config.topic);
-  const randomCTA = ContentComponents.getRandomCTA('brain_health_tips');
 
   // Generate randomization elements
   const randomization = generateRandomizationElements();
@@ -307,7 +305,6 @@ export function generateQuickTipPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getHealthTopicGuidelines(config.topic);
-  const randomCTA = ContentComponents.getRandomCTA('brain_health_tips');
 
   return `You are a health expert creating viral "Quick Tip" content for YouTube Shorts.
 
@@ -330,7 +327,7 @@ MANDATORY OUTPUT JSON:
 • "hook": Specific promise with timeframe (under 60 chars)
 • "action": 2-3 specific steps combined into one actionable instruction
 • "result": Scientific reason + immediate benefit combined
-• "cta": Use "${randomCTA}" or similar action CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging health action CTA (under 80 chars - make it compelling and action-oriented)
 
 Create content that viewers immediately want to try. [${timeMarker}-${tokenMarker}]`;
 }
@@ -343,7 +340,6 @@ export function generateChallengePrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getHealthTopicGuidelines(config.topic);
-  const randomCTA = ContentComponents.getRandomCTA('brain_health_tips');
 
   return `You are a brain training expert creating viral "Challenge" content for YouTube Shorts.
 
@@ -375,7 +371,7 @@ MANDATORY OUTPUT JSON:
 • "reveal": Result reveal text (under 60 chars)
 • "trick": The method/science behind the challenge
 • "answer": The correct solution/explanation
-• "cta": Use "${randomCTA}" or similar brain training CTA (under 80 chars - make it compelling and action-oriented)
+• "cta": Use engaging brain training CTA (under 80 chars - make it compelling and action-oriented)
 • "encouragement": Positive reinforcement text
 • "next_challenge": Teaser for next challenge
 • "format_type": "challenge"

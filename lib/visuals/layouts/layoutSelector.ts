@@ -83,16 +83,31 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
 };
 
-// ANALYTICS-DRIVEN: Force MCQ layout only
-// Complex layouts showed 0% engagement, MCQ shows 1.26% engagement
+// ANALYTICS-DRIVEN: MCQ primary + Health Quick Tips breakthrough format
+// MCQ shows 1.26% engagement, Health Quick Tips show 1.2K views breakthrough
 export function detectLayoutType(contentData: any): LayoutType {
-  // ALWAYS return MCQ - analytics prove it's the only working format
-  if (contentData) {
-    const detectedKeys = Object.keys(contentData);
-    console.log(`🎯 Analytics override: forcing MCQ layout (content has keys: ${detectedKeys.join(', ')})`);
+  if (!contentData) {
+    return 'mcq'; // Default fallback
   }
   
-  return 'mcq'; // HARD-CODED: Only format that drives engagement
+  const detectedKeys = Object.keys(contentData);
+  console.log(`🔍 Layout detection: content has keys: ${detectedKeys.join(', ')}`);
+  
+  // ANALYTICS BREAKTHROUGH: Detect quick_tip structure for health content
+  const hasQuickTipStructure = detectedKeys.includes('hook') && 
+                              detectedKeys.includes('action') && 
+                              detectedKeys.includes('result') &&
+                              !detectedKeys.includes('question') &&
+                              !detectedKeys.includes('options');
+  
+  if (hasQuickTipStructure) {
+    console.log(`✅ Detected quick_tip layout structure - allowing for health breakthrough format`);
+    return 'quick_tip';
+  }
+  
+  // Default to MCQ for standard question/answer content
+  console.log(`🎯 Using MCQ layout (proven 1.26% engagement format)`);
+  return 'mcq';
 }
 
 // Get layout definition
@@ -100,30 +115,42 @@ export function getLayout(layoutType: LayoutType): LayoutDefinition {
   return layouts[layoutType];
 }
 
-// Create render functions for a layout - ANALYTICS-DRIVEN MCQ ONLY
+// Create render functions for a layout - ANALYTICS-DRIVEN MCQ + Health Quick Tips
 export function createRenderFunctions(
   layoutType: LayoutType, 
   job: QuizJob, 
   theme: Theme
 ): Array<(canvas: Canvas) => void> {
-  // FORCE MCQ - analytics show it's the only engaging format
-  const forcedLayoutType = 'mcq';
+  // ANALYTICS LOGIC: Allow quick_tip for proven health breakthrough, force MCQ for others
+  let finalLayoutType = layoutType;
   
-  if (layoutType !== 'mcq') {
+  if (layoutType === 'quick_tip') {
+    console.log(`✅ Using quick_tip render functions (1.2K views breakthrough format)`);
+    // Keep quick_tip - it works for health content!
+  } else if (layoutType !== 'mcq') {
     console.log(`🎯 Analytics override: forcing MCQ render functions (requested: ${layoutType})`);
+    finalLayoutType = 'mcq'; // Force MCQ for non-working formats
   }
   
-  const layout = getLayout(forcedLayoutType);
+  const layout = getLayout(finalLayoutType);
   if (!layout) {
-    throw new Error('MCQ layout must be available - this is our only working format');
+    // Fallback to MCQ if layout not found
+    const mcqLayout = getLayout('mcq');
+    if (!mcqLayout) {
+      throw new Error('MCQ layout must be available as fallback');
+    }
+    console.warn(`Layout ${finalLayoutType} not found, falling back to MCQ`);
+    finalLayoutType = 'mcq';
   }
   
-  return layout.frames.map(frameType => {
-    const renderer = layout.renderers[frameType];
+  const finalLayout = getLayout(finalLayoutType);
+  
+  return finalLayout.frames.map(frameType => {
+    const renderer = finalLayout.renderers[frameType];
     if (!renderer) {
       console.warn(`No renderer found for frame type: ${frameType}, using hook frame`);
       // Fallback to hook frame
-      return (canvas: Canvas) => layout.renderers.hook(canvas, job, theme);
+      return (canvas: Canvas) => finalLayout.renderers.hook(canvas, job, theme);
     }
     return (canvas: Canvas) => renderer(canvas, job, theme);
   });

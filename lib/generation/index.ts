@@ -14,7 +14,6 @@ export { generateFormatPrompt } from './routing/promptRouter';
 // Shared utilities and types
 export * from './shared/types';
 export { generateVariationMarkers, addJsonFormatInstructions } from './shared/utils';
-export { ContentComponents } from './shared/components';
 
 // Persona-specific exports (for direct access if needed)
 export * from './personas/english/prompts';
