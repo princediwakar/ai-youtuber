@@ -27,6 +27,8 @@ npm run dev
 
 Account credentials stored in database `accounts` table.
 
+**NOTE:** This is commit d616ba0 state - uses account_id instead of channel_id, NextAuth.js instead of Better Auth.
+
 ## Architecture
 
 **Stack:** Next.js 14, TypeScript, PostgreSQL, NextAuth.js  
@@ -83,11 +85,15 @@ app/
 
 ## Database Schema
 
-**Tables:**
-- `accounts` - Account configs & encrypted credentials
-- `quiz_jobs` - Content generation pipeline tracking
-- `uploaded_videos` - YouTube upload records  
-- `video_analytics` - Performance metrics
+**Tables (Commit d616ba0):**
+- `quiz_jobs` - Content generation pipeline tracking (uses account_id)
+- `uploaded_videos` - YouTube upload records
+
+**Key Changes from Modern Version:**
+- Uses `account_id` instead of `channel_id` 
+- No Better Auth tables (uses NextAuth.js)
+- No `accounts`, `user_channels`, or `video_analytics` tables
+- Simple 2-table structure for this commit
 
 ## Active Accounts
 
