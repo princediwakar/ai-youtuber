@@ -16,26 +16,7 @@ import { config } from '@/lib/config';
 function getFFmpegPath(): string {
   const { existsSync } = require('fs');
   
-  // In production/serverless, use system ffmpeg
-  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    // Vercel has ffmpeg available at this path
-    const vercelFFmpegPath = '/usr/bin/ffmpeg';
-    if (existsSync(vercelFFmpegPath)) {
-      console.log(`✅ Using Vercel system FFmpeg: ${vercelFFmpegPath}`);
-      return vercelFFmpegPath;
-    }
-    
-    // Alternative system paths
-    const systemPaths = ['/bin/ffmpeg', '/usr/local/bin/ffmpeg'];
-    for (const systemPath of systemPaths) {
-      if (existsSync(systemPath)) {
-        console.log(`✅ Using system FFmpeg: ${systemPath}`);
-        return systemPath;
-      }
-    }
-  }
-  
-  // Try ffmpeg-static package for local development
+  // Try ffmpeg-static package first (available in both local and production)
   try {
     const ffmpegStatic = require('ffmpeg-static');
     console.log(`🔍 Checking ffmpeg-static binary: ${ffmpegStatic}`);
@@ -45,7 +26,16 @@ function getFFmpegPath(): string {
       return ffmpegStatic;
     }
   } catch (error) {
-    console.log('📦 ffmpeg-static package not available');
+    console.log('📦 ffmpeg-static package not available, trying system paths');
+  }
+  
+  // Fallback to system paths
+  const systemPaths = ['/usr/bin/ffmpeg', '/bin/ffmpeg', '/usr/local/bin/ffmpeg'];
+  for (const systemPath of systemPaths) {
+    if (existsSync(systemPath)) {
+      console.log(`✅ Using system FFmpeg: ${systemPath}`);
+      return systemPath;
+    }
   }
   
   console.error('❌ FFmpeg binary not found');
