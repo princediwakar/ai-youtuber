@@ -509,24 +509,24 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
     case 2: // Second Frame (varies by format)
       // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
       
-      return 10;
+      return 3;
       
     case 3: // Third Frame (if exists)
       // MCQ: explanation, Common Mistake: practice, Usage Demo: practice, Challenge: reveal
-        return 3;
+        return 2;
       
     case 4: // Fourth Frame (if exists - Challenge: cta)
-        return 4;
+        return 2;
       
     case 5: // Fifth Frame (if exists - rare, but possible for future formats)
-      return 4; // Standard duration for additional frames - increased from 3
+      return 2; // Standard duration for additional frames - increased from 3
       
     default:
-      return 5; // Fallback - increased from 4
+      return 2; // Fallback - increased from 4
   }
 }
 // --- MODIFICATION END ---
 
 
 export const runtime = 'nodejs';
-export const maxDuration = 300;
+export const maxDuration = 60;
