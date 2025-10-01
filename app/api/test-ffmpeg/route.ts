@@ -3,15 +3,15 @@ import { spawn } from 'child_process';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
 
-const ffmpeg = require('@ffmpeg-installer/ffmpeg');
-const ffmpegPath = ffmpeg.path;
+const ffmpegStatic = require('ffmpeg-static');
+const ffmpegPath = ffmpegStatic;
 
 export async function GET(request: NextRequest) {
   try {
     console.log('Testing FFmpeg in serverless environment...');
     
-    // Check if @ffmpeg-installer/ffmpeg provides a path
-    console.log('@ffmpeg-installer/ffmpeg path:', ffmpegPath);
+    // Check if ffmpeg-static provides a path
+    console.log('ffmpeg-static path:', ffmpegPath);
     
     // Test if file exists
     const exists = ffmpegPath ? existsSync(ffmpegPath) : false;

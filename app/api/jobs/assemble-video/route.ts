@@ -12,145 +12,17 @@ import {
 import { QuizJob } from '@/lib/types'; // 💡 FIX: Import the QuizJob type
 import { config } from '@/lib/config';
 
-// FFmpeg path resolution using @ffmpeg-installer/ffmpeg
+// FFmpeg path resolution using ffmpeg-static (reliable for serverless)
 function getFFmpegPath(): string {
-  const { existsSync } = require('fs');
-  
-  console.log('=== FFmpeg Path Resolution Debug ===');
-  console.log('process.cwd():', process.cwd());
-  console.log('__dirname:', __dirname);
-  console.log('NODE_ENV:', process.env.NODE_ENV);
-  console.log('VERCEL:', process.env.VERCEL);
-  console.log('AWS_LAMBDA_FUNCTION_NAME:', process.env.AWS_LAMBDA_FUNCTION_NAME);
-  
   try {
-    // First try: @ffmpeg-installer/ffmpeg
-    const ffmpeg = require('@ffmpeg-installer/ffmpeg');
-    console.log('@ffmpeg-installer/ffmpeg require result:', typeof ffmpeg.path, ffmpeg.path);
-    
-    if (ffmpeg.path && typeof ffmpeg.path === 'string') {
-      console.log('Checking if ffmpeg.path exists:', ffmpeg.path);
-      if (existsSync(ffmpeg.path)) {
-        console.log(`✅ FFmpeg found via @ffmpeg-installer/ffmpeg: ${ffmpeg.path}`);
-        return ffmpeg.path;
-      } else {
-        console.log('❌ @ffmpeg-installer/ffmpeg path does not exist on filesystem');
-      }
-    }
+    // Use ffmpeg-static which is specifically designed for serverless environments
+    const ffmpegStatic = require('ffmpeg-static');
+    console.log(`✅ Using ffmpeg-static binary: ${ffmpegStatic}`);
+    return ffmpegStatic;
   } catch (error) {
-    console.warn('❌ Could not require @ffmpeg-installer/ffmpeg:', error.message);
+    console.error('❌ Failed to get ffmpeg-static path:', error);
+    throw new Error('FFmpeg binary not available. Install ffmpeg-static package.');
   }
-  
-  // Fallback paths for @ffmpeg-installer/ffmpeg
-  const fallbackPaths = [
-    // @ffmpeg-installer/ffmpeg paths in serverless environments
-    '/var/task/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
-    '/opt/nodejs/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
-    '/var/runtime/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
-    
-    // Vercel-specific paths
-    '/vercel/path0/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
-    '/vercel/path1/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
-    '/vercel/path2/node_modules/@ffmpeg-installer/ffmpeg/ffmpeg',
-    
-    // Relative to current working directory
-    path.join(process.cwd(), 'node_modules', '@ffmpeg-installer', 'ffmpeg', 'ffmpeg'),
-    
-    // Relative to __dirname
-    path.join(__dirname, '..', '..', '..', '..', 'node_modules', '@ffmpeg-installer', 'ffmpeg', 'ffmpeg'),
-    path.join(__dirname, '..', '..', '..', 'node_modules', '@ffmpeg-installer', 'ffmpeg', 'ffmpeg')
-  ];
-  
-  console.log('Checking fallback paths...');
-  for (const fallbackPath of fallbackPaths) {
-    console.log(`Checking: ${fallbackPath}`);
-    if (existsSync(fallbackPath)) {
-      console.log(`✅ FFmpeg found at fallback path: ${fallbackPath}`);
-      return fallbackPath;
-    }
-  }
-  
-  // Last resort: try system FFmpeg with proper validation
-  const systemPaths = [
-    '/usr/bin/ffmpeg',
-    '/usr/local/bin/ffmpeg'
-  ];
-  
-  console.log('Checking system paths...');
-  for (const systemPath of systemPaths) {
-    try {
-      console.log(`Checking system path: ${systemPath}`);
-      if (existsSync(systemPath)) {
-        // Test if binary is actually executable
-        const { execSync } = require('child_process');
-        try {
-          execSync(`${systemPath} -version`, { timeout: 5000 });
-          console.log(`✅ FFmpeg found and verified at system path: ${systemPath}`);
-          return systemPath;
-        } catch (execError) {
-          console.log(`❌ FFmpeg at ${systemPath} exists but is not executable:`, execError.message);
-        }
-      }
-    } catch (error) {
-      console.log(`❌ Error checking system path ${systemPath}:`, error.message);
-      continue;
-    }
-  }
-  
-  // Final attempt: debug what's actually available
-  const dirsToCheck = ['/var/task', '/opt/nodejs', process.cwd()];
-  for (const dir of dirsToCheck) {
-    try {
-      if (existsSync(dir)) {
-        console.log(`Contents of ${dir}:`, require('fs').readdirSync(dir).slice(0, 20)); // Limit output
-        
-        const nodeModulesPath = path.join(dir, 'node_modules');
-        if (existsSync(nodeModulesPath)) {
-          const nodeModulesContents = require('fs').readdirSync(nodeModulesPath);
-          console.log(`node_modules packages count: ${nodeModulesContents.length}`);
-          
-          // Check if @ffmpeg-installer/ffmpeg exists
-          if (nodeModulesContents.includes('@ffmpeg-installer')) {
-            console.log(`✅ @ffmpeg-installer directory found in ${nodeModulesPath}`);
-            const ffmpegInstallerPath = path.join(nodeModulesPath, '@ffmpeg-installer');
-            const ffmpegInstallerContents = require('fs').readdirSync(ffmpegInstallerPath);
-            console.log(`@ffmpeg-installer contents:`, ffmpegInstallerContents);
-            
-            if (ffmpegInstallerContents.includes('ffmpeg')) {
-              const ffmpegPackagePath = path.join(ffmpegInstallerPath, 'ffmpeg');
-              const ffmpegPackageContents = require('fs').readdirSync(ffmpegPackagePath);
-              console.log(`@ffmpeg-installer/ffmpeg contents:`, ffmpegPackageContents);
-              
-              // Check for binary files in the package
-              for (const item of ffmpegPackageContents) {
-                if (item.includes('ffmpeg') && !item.includes('.')) { // Likely the binary
-                  const itemPath = path.join(ffmpegPackagePath, item);
-                  try {
-                    const stat = require('fs').statSync(itemPath);
-                    console.log(`${item}: size=${stat.size}, isFile=${stat.isFile()}, mode=${stat.mode.toString(8)}`);
-                    
-                    if (stat.isFile() && stat.size > 1000000) { // FFmpeg binary should be large
-                      console.log(`✅ FOUND BINARY: ${itemPath}, size=${stat.size}, executable=${!!(stat.mode & parseInt('111', 8))}`);
-                      return itemPath;
-                    }
-                  } catch (statError) {
-                    console.log(`Could not stat ${itemPath}:`, statError.message);
-                  }
-                }
-              }
-            }
-          } else {
-            console.log(`❌ @ffmpeg-installer package NOT found in ${nodeModulesPath}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.log(`Could not list contents of ${dir}:`, error.message);
-    }
-  }
-  
-  const allPaths = [...fallbackPaths, ...systemPaths];
-  throw new Error(`FFmpeg binary not found in any location. Environment: ${process.env.VERCEL ? 'Vercel' : 'Other'}. Checked ${allPaths.length} paths: ${allPaths.join(', ')}`);
 }
 
 // Array of available audio files
@@ -381,42 +253,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     return getFrameDuration(questionData, index + 1) || 4;
   });
 
-  // Create individual video clips from static frames
-  const clipPromises = framePaths.map(async (framePath, index) => {
-    const duration = durations[index];
-    const clipPath = path.join(tempDir, `clip-${String(index + 1).padStart(3, '0')}.mp4`);
-    
-    const args = [
-      '-loop', '1',
-      '-i', framePath,
-      '-c:v', 'libx264',
-      '-t', String(duration || 4),
-      '-pix_fmt', 'yuv420p',
-      '-r', '30',
-      '-y', clipPath
-    ];
-
-    await new Promise<void>((resolve, reject) => {
-      const process = spawn(ffmpegPath, args, { cwd: tempDir });
-      let stderr = '';
-      process.stderr?.on('data', (d) => { stderr += d.toString(); });
-      process.on('close', (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`FFmpeg clip creation failed with code ${code}. ${stderr ? 'Stderr: ' + stderr : ''}`));
-      });
-      process.on('error', reject);
-    });
-
-    return clipPath;
-  });
-
-  const clipPaths = await Promise.all(clipPromises);
-
-  // Create concat file for the clips
-  const concatContent = clipPaths.map(path => `file '${path.split('/').pop()}'`).join('\n');
-  const concatFilePath = path.join(tempDir, 'concat.txt');
-  await fs.writeFile(concatFilePath, concatContent);
-
+  // Simplified approach: Create one video directly from frames with faster processing
   const outputVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
   const totalDuration = durations.reduce((acc, d) => acc + (d || 4), 0);
   const audioPath = getRandomAudioFile();
@@ -424,51 +261,118 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   // Extract audio file name for analytics tracking
   const audioFileName = audioPath ? path.basename(audioPath) : null;
 
+  // Use the traditional concat method which is more reliable in serverless
+  // Create individual video clips first, then concat them
+  const clipPaths: string[] = [];
+  
+  for (let i = 0; i < framePaths.length; i++) {
+    const framePath = framePaths[i];
+    const duration = durations[i] || 4;
+    const clipPath = path.join(tempDir, `clip-${i}.mp4`);
+    
+    const clipArgs = [
+      '-loop', '1',
+      '-i', framePath,
+      '-t', String(duration),
+      '-c:v', 'libx264',
+      '-preset', 'ultrafast',
+      '-crf', '28',
+      '-pix_fmt', 'yuv420p',
+      '-vf', 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black',
+      '-y', clipPath
+    ];
+    
+    await new Promise<void>((resolve, reject) => {
+      const process = spawn(ffmpegPath, clipArgs, { cwd: tempDir });
+      let stderr = '';
+      
+      // 30 second timeout per frame
+      const timeoutId = setTimeout(() => {
+        process.kill('SIGKILL');
+        reject(new Error(`Frame ${i} processing timed out after 30 seconds`));
+      }, 30000);
+      
+      process.stderr?.on('data', (d) => { stderr += d.toString(); });
+      process.on('close', (code) => {
+        clearTimeout(timeoutId);
+        if (code === 0) {
+          console.log(`[Job ${job.id}] Frame ${i} processed successfully`);
+          resolve();
+        } else {
+          reject(new Error(`Frame ${i} processing failed with code ${code}: ${stderr.slice(-200)}`));
+        }
+      });
+      process.on('error', (err) => {
+        clearTimeout(timeoutId);
+        reject(new Error(`Frame ${i} process error: ${err.message}`));
+      });
+    });
+    
+    clipPaths.push(clipPath);
+  }
+
+  // Create concat file
+  const concatContent = clipPaths.map(path => `file '${path.split('/').pop()}'`).join('\n');
+  const concatFilePath = path.join(tempDir, 'concat.txt');
+  await fs.writeFile(concatFilePath, concatContent);
+
+  // Final assembly with audio if available
   let ffmpegArgs: string[];
   
   if (audioPath) {
-    // Use background music with reduced volume (0.3 = 30% volume)
     ffmpegArgs = [
       '-f', 'concat',
       '-safe', '0',
       '-i', concatFilePath,
-      '-stream_loop', '-1',
       '-i', audioPath,
-      '-c:v', 'libx264',
+      '-c:v', 'copy',
       '-c:a', 'aac',
       '-filter:a', 'volume=0.3',
       '-shortest',
-      '-t', String(totalDuration || 16),
       '-y', outputVideoPath
     ];
   } else {
-    // Generate ambient background audio with low volume
     ffmpegArgs = [
       '-f', 'concat',
       '-safe', '0',
       '-i', concatFilePath,
-      '-f', 'lavfi',
-      '-i', 'sine=frequency=220:duration=' + String(totalDuration || 16) + ',sine=frequency=330:duration=' + String(totalDuration || 16) + ',sine=frequency=440:duration=' + String(totalDuration || 16),
-      '-filter_complex', '[1:a][2:a][3:a]amix=inputs=3:duration=shortest:weights=0.3 0.4 0.3,volume=0.08,aecho=0.6:0.7:1000:0.2,lowpass=f=800',
-      '-c:v', 'libx264',
-      '-c:a', 'aac',
-      '-shortest',
-      '-t', String(totalDuration || 16),
+      '-c:v', 'copy',
       '-y', outputVideoPath
     ];
   }
 
-  console.log(`[Job ${job.id}] Running FFmpeg with args:`, ffmpegArgs);
+  console.log(`[Job ${job.id}] Running simplified FFmpeg with ${framePaths.length} frames`);
 
   await new Promise<void>((resolve, reject) => {
+    console.log(`[Job ${job.id}] Final assembly command:`, ffmpegArgs.join(' '));
+    
     const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, { cwd: tempDir });
     let stderr = '';
+    let stdout = '';
+    
+    // Set a 90-second timeout for the final assembly
+    const timeoutId = setTimeout(() => {
+      ffmpegProcess.kill('SIGKILL');
+      reject(new Error('FFmpeg final assembly timed out after 90 seconds'));
+    }, 90000);
+    
+    ffmpegProcess.stdout?.on('data', (d) => { stdout += d.toString(); });
     ffmpegProcess.stderr?.on('data', (d) => { stderr += d.toString(); });
+    
     ffmpegProcess.on('close', (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`FFmpeg exited with code ${code}. ${stderr ? 'Stderr: ' + stderr : ''}`));
+      clearTimeout(timeoutId);
+      if (code === 0) {
+        console.log(`[Job ${job.id}] FFmpeg completed successfully`);
+        resolve();
+      } else {
+        reject(new Error(`FFmpeg exited with code ${code}. Stderr: ${stderr.slice(-500)}`));
+      }
     });
-    ffmpegProcess.on('error', (err) => reject(err));
+    
+    ffmpegProcess.on('error', (err) => {
+      clearTimeout(timeoutId);
+      reject(new Error(`FFmpeg process error: ${err.message}`));
+    });
   });
 
   const videoBuffer = await fs.readFile(outputVideoPath);
