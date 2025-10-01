@@ -8,7 +8,7 @@
     },
     "app/api/jobs/assemble-video/route.ts": {
       "maxDuration": 300,
-      "memory": 3008
+      "memory": 2048
     },
     "app/api/jobs/upload-quiz-videos/route.ts": {
       "maxDuration": 300
