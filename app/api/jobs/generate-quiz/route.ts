@@ -35,18 +35,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting generation for account: ${accountId}${preferredFormat ? ` with format: ${preferredFormat}` : ''}`);
 
-    // Fire-and-forget pattern for cron-job.org 30s timeout
-    processGenerationWithValidation(accountId, preferredFormat).catch(error => {
-      console.error('❌ Background generation failed:', error);
-      console.error('❌ Error stack:', error.stack);
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
-    });
+    // FIXED: Process synchronously instead of fire-and-forget
+    const result = await processGenerationWithValidation(accountId, preferredFormat);
 
-    // Immediate response to avoid cron timeout
     return NextResponse.json({ 
       success: true, 
       accountId,
-      message: 'Generation started in background'
+      result,
+      message: 'Generation completed'
     });
 
   } catch (error) {
@@ -56,20 +52,20 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Background processing function that includes validation and generation.
- * Runs asynchronously without blocking the API response.
+ * Processing function that includes validation and generation.
+ * Now runs synchronously to ensure completion in serverless environment.
  */
 async function processGenerationWithValidation(accountId: string, preferredFormat?: string) {
   try {
-    console.log(`🔄 Background processing started for account: ${accountId}`);
+    console.log(`🔄 Processing started for account: ${accountId}`);
 
     // Validate account exists (moved to background)
     let account;
     try {
       account = await getAccountConfig(accountId);
     } catch (error) {
-      console.error(`❌ Invalid accountId in background: ${accountId}`, error);
-      return;
+      console.error(`❌ Invalid accountId: ${accountId}`, error);
+      throw error;
     }
 
     let personasToGenerate: string[] = [];
@@ -95,25 +91,27 @@ async function processGenerationWithValidation(accountId: string, preferredForma
       if (personasToGenerate.length === 0) {
         const message = `No personas scheduled for ${account.name} generation at ${hourOfDay}:00 on day ${dayOfWeek}.`;
         console.log(message);
-        return;
+        return { success: false, message };
       }
     }
 
     console.log(`🚀 Found scheduled personas for ${account.name}: ${personasToGenerate.join(', ')}`);
 
     // Process generation
-    await processGenerationInBackground(accountId, account, personasToGenerate, preferredFormat);
+    const result = await processGenerationInBackground(accountId, account, personasToGenerate, preferredFormat);
+    return result;
 
   } catch (error) {
-    console.error(`❌ Background validation/generation failed for ${accountId}:`, error);
+    console.error(`❌ Validation/generation failed for ${accountId}:`, error);
     console.error(`❌ Error stack for ${accountId}:`, error.stack);
     console.error(`❌ Error details for ${accountId}:`, JSON.stringify(error, null, 2));
+    throw error;
   }
 }
 
 /**
- * Background processing function for content generation.
- * Runs asynchronously without blocking the API response.
+ * Processing function for content generation.
+ * Runs synchronously to ensure completion.
  */
 async function processGenerationInBackground(
   accountId: string, 
@@ -124,7 +122,7 @@ async function processGenerationInBackground(
   let totalCreatedJobs = 0;
 
   try {
-    console.log(`🔄 Background processing started for ${account.name} with ${personasToGenerate.length} personas`);
+    console.log(`🔄 Processing started for ${account.name} with ${personasToGenerate.length} personas`);
 
     // 3. Loop through and generate content for each scheduled persona.
     for (const personaKey of personasToGenerate) {
@@ -172,12 +170,14 @@ async function processGenerationInBackground(
       console.log(`-- ${account.name} batch completed for ${personaConfig.displayName}. Created ${createdCount} jobs.`);
     }
 
-    console.log(`✅ Background processing completed for ${account.name}. Total created: ${totalCreatedJobs} jobs.`);
+    console.log(`✅ Processing completed for ${account.name}. Total created: ${totalCreatedJobs} jobs.`);
+    return { success: true, jobsCreated: totalCreatedJobs, account: account.name };
 
   } catch (error) {
-    console.error(`❌ Background generation failed for ${account.name}:`, error);
+    console.error(`❌ Generation failed for ${account.name}:`, error);
     console.error(`❌ Error stack for ${account.name}:`, error.stack);
     console.error(`❌ Error details for ${account.name}:`, JSON.stringify(error, null, 2));
+    throw error;
   }
 }
 
