@@ -329,8 +329,8 @@ async function processJob(job: QuizJob) {
     if (!frameUrls || frameUrls.length === 0) {
       throw new Error('No frame URLs found in job data');
     }
-    await fs.mkdir(tempDir, { recursive: true });
 
+    await fs.mkdir(tempDir, { recursive: true });
     const { videoUrl, videoSize, audioFile } = await assembleVideoWithConcat(frameUrls, job, tempDir);
     
     await updateJob(job.id, {
@@ -536,4 +536,4 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
 
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 300;
