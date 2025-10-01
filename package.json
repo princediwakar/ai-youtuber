@@ -48,5 +48,12 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "vercel": {
+    "functions": {
+      "app/api/jobs/assemble-video/route.ts": {
+        "includeFiles": "node_modules/ffmpeg-static/**"
+      }
+    }
   }
 }
