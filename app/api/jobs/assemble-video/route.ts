@@ -12,29 +12,20 @@ import {
 import { QuizJob } from '@/lib/types'; // 💡 FIX: Import the QuizJob type
 import { config } from '@/lib/config';
 
-// FFmpeg path resolution - Vercel's official approach
+// FFmpeg path resolution - Use ffmpeg-static directly in production
 function getFFmpegPath(): string {
-  // On Vercel, use simple binary name - Vercel handles FFmpeg automatically
-  if (process.env.VERCEL) {
-    console.log('✅ Using Vercel FFmpeg binary');
-    return 'ffmpeg';
-  }
-  
-  // For local development, use ffmpeg-static
-  if (process.env.NODE_ENV === 'development') {
-    try {
-      const ffmpegStatic = require('ffmpeg-static');
-      if (ffmpegStatic) {
-        console.log(`✅ Using ffmpeg-static for development: ${ffmpegStatic}`);
-        return ffmpegStatic;
-      }
-    } catch (error) {
-      console.warn('ffmpeg-static not available, trying system FFmpeg');
+  try {
+    const ffmpegStatic = require('ffmpeg-static');
+    if (ffmpegStatic) {
+      console.log(`✅ Using ffmpeg-static: ${ffmpegStatic}`);
+      return ffmpegStatic;
     }
+  } catch (error) {
+    console.warn('ffmpeg-static not available:', error);
   }
   
-  // Fallback to system FFmpeg
-  console.log('✅ Using system FFmpeg');
+  // Fallback to system FFmpeg only if ffmpeg-static fails
+  console.log('✅ Fallback to system FFmpeg');
   return 'ffmpeg';
 }
 
