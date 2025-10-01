@@ -1,15 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['googleapis', 'canvas', 'fluent-ffmpeg', 'pg', 'ffmpeg-static']
+    serverComponentsExternalPackages: ['googleapis', 'canvas', 'fluent-ffmpeg', 'pg']
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
-      // Include ffmpeg-static binary in the server bundle
+      // Ensure ffmpeg-static is bundled with its binary
       config.externals = config.externals || [];
-      config.externals.push({
-        'ffmpeg-static': 'ffmpeg-static'
-      });
+      // Don't externalize ffmpeg-static so it gets bundled with the binary
+      if (Array.isArray(config.externals)) {
+        config.externals = config.externals.filter(external => 
+          typeof external === 'string' ? external !== 'ffmpeg-static' : true
+        );
+      }
     }
     return config;
   }
