@@ -21,9 +21,21 @@ function getFFmpegPath(): string {
     const ffmpegStatic = require('ffmpeg-static');
     console.log(`🔍 Checking ffmpeg-static binary: ${ffmpegStatic}`);
     
-    if (ffmpegStatic && existsSync(ffmpegStatic)) {
-      console.log(`✅ Using ffmpeg-static binary: ${ffmpegStatic}`);
-      return ffmpegStatic;
+    if (ffmpegStatic) {
+      // For development, use the actual node_modules path
+      if (process.env.NODE_ENV === 'development') {
+        const actualPath = path.join(process.cwd(), 'node_modules/ffmpeg-static/ffmpeg');
+        if (existsSync(actualPath)) {
+          console.log(`✅ Using development ffmpeg-static binary: ${actualPath}`);
+          return actualPath;
+        }
+      }
+      
+      // For production, use the resolved path
+      if (existsSync(ffmpegStatic)) {
+        console.log(`✅ Using ffmpeg-static binary: ${ffmpegStatic}`);
+        return ffmpegStatic;
+      }
     }
   } catch (error) {
     console.log('📦 ffmpeg-static package not available, trying system paths');
