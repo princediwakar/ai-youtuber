@@ -21,8 +21,5 @@
     "env": {
       "FFMPEG_STATIC_DOWNLOAD_PATH": "/tmp/ffmpeg"
     }
-  },
-  "outputFileTracing": {
-    "packageJsonTracing": true
   }
 }
