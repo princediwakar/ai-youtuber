@@ -8,18 +8,13 @@
     },
     "app/api/jobs/assemble-video/route.ts": {
       "maxDuration": 300,
-      "memory": 1024
+      "memory": 3008
     },
     "app/api/jobs/upload-quiz-videos/route.ts": {
       "maxDuration": 300
     },
     "app/api/jobs/generate-quiz/route.ts": {
       "maxDuration": 300
-    }
-  },
-  "build": {
-    "env": {
-      "FFMPEG_STATIC_DOWNLOAD_PATH": "/tmp/ffmpeg"
     }
   }
 }

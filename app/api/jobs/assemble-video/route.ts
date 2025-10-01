@@ -12,56 +12,30 @@ import {
 import { QuizJob } from '@/lib/types'; // 💡 FIX: Import the QuizJob type
 import { config } from '@/lib/config';
 
-// FFmpeg path resolution - prioritize system paths for serverless
+// FFmpeg path resolution - Vercel's official approach
 function getFFmpegPath(): string {
-  const { existsSync } = require('fs');
-  
-  // In serverless/production, prioritize system FFmpeg
-  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    const systemPaths = ['/usr/bin/ffmpeg', '/bin/ffmpeg', '/usr/local/bin/ffmpeg'];
-    for (const systemPath of systemPaths) {
-      if (existsSync(systemPath)) {
-        console.log(`✅ Using system FFmpeg: ${systemPath}`);
-        return systemPath;
-      }
-    }
-    console.log('🔍 System FFmpeg not found, trying ffmpeg-static...');
+  // On Vercel, use simple binary name - Vercel handles FFmpeg automatically
+  if (process.env.VERCEL) {
+    console.log('✅ Using Vercel FFmpeg binary');
+    return 'ffmpeg';
   }
   
-  // Try ffmpeg-static for local development or as fallback
-  try {
-    const ffmpegStatic = require('ffmpeg-static');
-    console.log(`🔍 Checking ffmpeg-static binary: ${ffmpegStatic}`);
-    
-    if (ffmpegStatic) {
-      // For development, use the actual node_modules path
-      if (process.env.NODE_ENV === 'development') {
-        const actualPath = path.join(process.cwd(), 'node_modules/ffmpeg-static/ffmpeg');
-        if (existsSync(actualPath)) {
-          console.log(`✅ Using development ffmpeg-static binary: ${actualPath}`);
-          return actualPath;
-        }
-      }
-      
-      // For production, use the resolved path if it exists
-      if (existsSync(ffmpegStatic)) {
-        console.log(`✅ Using ffmpeg-static binary: ${ffmpegStatic}`);
+  // For local development, use ffmpeg-static
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const ffmpegStatic = require('ffmpeg-static');
+      if (ffmpegStatic) {
+        console.log(`✅ Using ffmpeg-static for development: ${ffmpegStatic}`);
         return ffmpegStatic;
       }
+    } catch (error) {
+      console.warn('ffmpeg-static not available, trying system FFmpeg');
     }
-  } catch (error) {
-    console.log('📦 ffmpeg-static package not available');
   }
   
-  console.error('❌ FFmpeg binary not found');
-  console.error('Environment:', {
-    NODE_ENV: process.env.NODE_ENV,
-    VERCEL: process.env.VERCEL,
-    PWD: process.cwd(),
-    PATH: process.env.PATH
-  });
-  
-  throw new Error('FFmpeg binary not available');
+  // Fallback to system FFmpeg
+  console.log('✅ Using system FFmpeg');
+  return 'ffmpeg';
 }
 
 // Array of available audio files
