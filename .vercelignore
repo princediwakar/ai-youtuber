@@ -1,6 +1,6 @@
 # Vercel ignore file
 # Ensure FFmpeg binaries are NOT ignored
-!node_modules/ffmpeg-static/**
+!node_modules/@ffmpeg-installer/**
 
 # Standard ignores
 .env.local
