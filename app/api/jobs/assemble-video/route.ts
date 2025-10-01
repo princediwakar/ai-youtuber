@@ -12,11 +12,23 @@ import {
 import { QuizJob } from '@/lib/types'; // 💡 FIX: Import the QuizJob type
 import { config } from '@/lib/config';
 
-// FFmpeg path resolution - use system ffmpeg in production 
+// FFmpeg path resolution - prioritize system paths for serverless
 function getFFmpegPath(): string {
   const { existsSync } = require('fs');
   
-  // Try ffmpeg-static package first (available in both local and production)
+  // In serverless/production, prioritize system FFmpeg
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    const systemPaths = ['/usr/bin/ffmpeg', '/bin/ffmpeg', '/usr/local/bin/ffmpeg'];
+    for (const systemPath of systemPaths) {
+      if (existsSync(systemPath)) {
+        console.log(`✅ Using system FFmpeg: ${systemPath}`);
+        return systemPath;
+      }
+    }
+    console.log('🔍 System FFmpeg not found, trying ffmpeg-static...');
+  }
+  
+  // Try ffmpeg-static for local development or as fallback
   try {
     const ffmpegStatic = require('ffmpeg-static');
     console.log(`🔍 Checking ffmpeg-static binary: ${ffmpegStatic}`);
@@ -31,30 +43,22 @@ function getFFmpegPath(): string {
         }
       }
       
-      // For production, use the resolved path
+      // For production, use the resolved path if it exists
       if (existsSync(ffmpegStatic)) {
         console.log(`✅ Using ffmpeg-static binary: ${ffmpegStatic}`);
         return ffmpegStatic;
       }
     }
   } catch (error) {
-    console.log('📦 ffmpeg-static package not available, trying system paths');
-  }
-  
-  // Fallback to system paths
-  const systemPaths = ['/usr/bin/ffmpeg', '/bin/ffmpeg', '/usr/local/bin/ffmpeg'];
-  for (const systemPath of systemPaths) {
-    if (existsSync(systemPath)) {
-      console.log(`✅ Using system FFmpeg: ${systemPath}`);
-      return systemPath;
-    }
+    console.log('📦 ffmpeg-static package not available');
   }
   
   console.error('❌ FFmpeg binary not found');
   console.error('Environment:', {
     NODE_ENV: process.env.NODE_ENV,
     VERCEL: process.env.VERCEL,
-    PWD: process.cwd()
+    PWD: process.cwd(),
+    PATH: process.env.PATH
   });
   
   throw new Error('FFmpeg binary not available');
