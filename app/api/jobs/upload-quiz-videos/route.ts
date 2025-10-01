@@ -176,7 +176,7 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
     
     const videoBuffer = await downloadVideoFromCloudinary(videoUrl);
     tempFile = path.join('/tmp', `upload-${uuidv4()}.mp4`);
-    await fs.writeFile(tempFile, videoBuffer);
+    await fs.writeFile(tempFile, new Uint8Array(videoBuffer));
 
     // Get playlist ID first so we can include it in metadata
     const playlistId = await getOrCreatePlaylist(youtube, job, playlistMap);
@@ -216,7 +216,7 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
 function generateVideoMetadata(job: QuizJob, playlistId: string | undefined, accountId: string) {
   console.log(`[Job ${job.id}] Generating metadata for accountId: ${accountId}, persona: ${job.persona}`);
   
-  const contentData = job.data.content || job.data.content; // Support both structures
+  const contentData = job.data.content; // Get content data
   const topic_display_name = job.topic_display_name || job.data.topic_display_name || 'Quiz';
   
   console.log(`[Job ${job.id}] Content data exists: ${!!contentData}, Topic: ${topic_display_name}`);

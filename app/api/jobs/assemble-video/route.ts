@@ -112,7 +112,7 @@ async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: st
     const personaName = persona || 'unknown';
     const theme = themeName || 'unknown';
     const destinationPath = path.join(debugDir, `1-video-${personaName}-quiz-${theme}-${jobId}.mp4`);
-    await fs.writeFile(destinationPath, videoBuffer);
+    await fs.writeFile(destinationPath, new Uint8Array(videoBuffer));
     console.log(`[DEBUG] Video for job ${jobId} saved to: ${destinationPath}`);
   } catch (error) {
     console.error(`[DEBUG] Failed to save debug video for job ${jobId}:`, error);
@@ -270,13 +270,13 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     frameUrls.map(async (url, index) => {
       const frameBuffer = await downloadImageFromCloudinary(url);
       const framePath = path.join(tempDir, `frame-${String(index + 1).padStart(3, '0')}.png`);
-      await fs.writeFile(framePath, frameBuffer);
+      await fs.writeFile(framePath, new Uint8Array(frameBuffer));
       return framePath;
     })
   );
 
   // Normalize job data structure for different formats
-  const questionData = job.data.content || job.data.content || {};
+  const questionData = job.data.content || {};
   
   // Determine actual frame count from frameUrls length
   const actualFrameCount = frameUrls.length;
