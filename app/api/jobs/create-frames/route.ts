@@ -26,23 +26,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting frame creation for account: ${accountId || 'all'}`);
 
-    // Process directly - await the work to keep function alive
-    try {
-      await processFrameCreationWithRetry(accountId);
-      return NextResponse.json({ 
-        success: true, 
-        accountId: accountId || 'all',
-        message: 'Frame creation completed successfully'
-      });
-    } catch (error) {
-      console.error('Frame creation failed:', error);
-      return NextResponse.json({ 
-        success: false, 
-        accountId: accountId || 'all',
-        message: 'Frame creation failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }, { status: 500 });
-    }
+    // Fire-and-forget pattern for cron-job.org 30s timeout
+    processFrameCreationWithRetry(accountId).catch(error => {
+      console.error('Background frame creation failed:', error);
+    });
+
+    // Immediate response to avoid cron timeout
+    return NextResponse.json({ 
+      success: true, 
+      accountId: accountId || 'all',
+      message: 'Frame creation started in background'
+    });
   } catch (error) {
     console.error('Frame creation batch failed:', error);
     return NextResponse.json({ success: false, error: 'Frame creation batch failed' }, { status: 500 });

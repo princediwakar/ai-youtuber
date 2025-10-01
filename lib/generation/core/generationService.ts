@@ -6,6 +6,9 @@ import { generatePrompt, type JobConfig } from './promptGenerator';
 import { parseAndValidateResponse, generateContentHash } from './contentValidator';
 import { LayoutType } from '@/lib/visuals/layouts/layoutSelector';
 import { analyticsService, type AIAnalyticsInsights } from '../../analyticsService';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { config } from '@/lib/config';
 
 // ANALYTICS: Track hook patterns from highest-performing videos
 const HIGH_ENGAGEMENT_HOOK_PATTERNS = [
@@ -43,6 +46,7 @@ const deepseekClient = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: 'https://api.deepseek.com',
 });
+
 
 export interface GenerationJobConfig extends JobConfig {
   // Layout selection options

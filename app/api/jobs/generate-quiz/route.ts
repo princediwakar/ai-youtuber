@@ -35,23 +35,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting generation for account: ${accountId}${preferredFormat ? ` with format: ${preferredFormat}` : ''}`);
 
-    // Process directly - await the work to keep function alive
-    try {
-      await processGenerationWithValidation(accountId, preferredFormat);
-      return NextResponse.json({ 
-        success: true, 
-        accountId,
-        message: 'Generation completed successfully'
-      });
-    } catch (error) {
-      console.error('Generation failed:', error);
-      return NextResponse.json({ 
-        success: false, 
-        accountId,
-        message: 'Generation failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }, { status: 500 });
-    }
+    // Fire-and-forget pattern for cron-job.org 30s timeout
+    processGenerationWithValidation(accountId, preferredFormat).catch(error => {
+      console.error('Background generation failed:', error);
+    });
+
+    // Immediate response to avoid cron timeout
+    return NextResponse.json({ 
+      success: true, 
+      accountId,
+      message: 'Generation started in background'
+    });
 
   } catch (error) {
     console.error('❌ Scheduled quiz generation failed:', error);

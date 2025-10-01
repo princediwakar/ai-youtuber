@@ -232,23 +232,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting video assembly for account: ${accountId || 'all'}`);
 
-    // Process directly - await the work to keep function alive
-    try {
-      await processVideoAssemblyWithRetry(accountId);
-      return NextResponse.json({ 
-        success: true, 
-        accountId: accountId || 'all',
-        message: 'Video assembly completed successfully'
-      });
-    } catch (error) {
-      console.error('Video assembly failed:', error);
-      return NextResponse.json({ 
-        success: false, 
-        accountId: accountId || 'all',
-        message: 'Video assembly failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }, { status: 500 });
-    }
+    // Fire-and-forget pattern for cron-job.org 30s timeout
+    processVideoAssemblyWithRetry(accountId).catch(error => {
+      console.error('Background video assembly failed:', error);
+    });
+
+    // Immediate response to avoid cron timeout
+    return NextResponse.json({ 
+      success: true, 
+      accountId: accountId || 'all',
+      message: 'Video assembly started in background'
+    });
 
   } catch (error) {
     console.error('Video assembly batch failed:', error);
@@ -496,18 +490,12 @@ function getFrameDuration(questionData: any, frameNumber: number): number {
     return 5; // Safe fallback for invalid data - increased from 4
   }
   
-  // Improved reading speed calculation: 8-10 chars/second for comfortable video reading
-  const CHARS_PER_SECOND = 10; // Conservative speed for video text comprehension
   const MIN_DURATION = 1.5; // Minimum time to register visual content
-  const EXTRA_PROCESSING_TIME = 1; // Extra time for comprehension and visual processing
   
   switch (frameNumber) {
     case 1: // First Frame (Hook Frame - should be short and punchy)
-      // Hook frames should be brief and attention-grabbing, typically showing just the hook text
-      const hookText = questionData.hook || '';
-      if (hookText.length > 0) {
-        return MIN_DURATION; // Shorter for hooks
-      }
+      // Hook frames should be brief and attention-grabbing, max 1.5s
+      return MIN_DURATION; // 1.5s for hooks
       
       
     case 2: // Second Frame (varies by format)

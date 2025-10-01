@@ -22,6 +22,7 @@ async function getCache(): Promise<Cache> { return memoryCache; }
 async function setCache(cache: Cache): Promise<void> { memoryCache = cache; }
 
 
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -40,23 +41,17 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting upload processing for account: ${accountId || 'multiple'}`);
 
-    // Process directly - await the work to keep function alive
-    try {
-      await processCompleteUploadFlow(accountId);
-      return NextResponse.json({ 
-        success: true, 
-        accountId: accountId || 'multiple',
-        message: 'Upload processing completed successfully'
-      });
-    } catch (error) {
-      console.error('Upload processing failed:', error);
-      return NextResponse.json({ 
-        success: false, 
-        accountId: accountId || 'multiple',
-        message: 'Upload processing failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }, { status: 500 });
-    }
+    // Fire-and-forget pattern for cron-job.org 30s timeout
+    processCompleteUploadFlow(accountId).catch(error => {
+      console.error('Background upload processing failed:', error);
+    });
+
+    // Immediate response to avoid cron timeout
+    return NextResponse.json({ 
+      success: true, 
+      accountId: accountId || 'multiple',
+      message: 'Upload processing started in background'
+    });
 
   } catch (error) {
     console.error('YouTube upload batch failed:', error);

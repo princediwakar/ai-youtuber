@@ -131,8 +131,8 @@ function calculateFrameDuration(questionData: any, frameNumber: number): number 
   const MIN_DURATION = 1.5; // Minimum time to register visual content
   
   switch (frameNumber) {
-    case 1: // First Frame (Hook Frame - should be short and punchy)
-      return MIN_DURATION;
+    case 1: // First Frame (Hook Frame - should be short and punchy, max 1.5s)
+      return MIN_DURATION; // 1.5s for hooks
       
     case 2: // Second Frame (varies by format)
       return 10;
