@@ -232,16 +232,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting video assembly for account: ${accountId || 'all'}`);
 
-    // Fire-and-forget pattern for cron-job.org 30s timeout
-    processVideoAssemblyWithRetry(accountId).catch(error => {
-      console.error('Background video assembly failed:', error);
-    });
+    // FIXED: Process synchronously instead of fire-and-forget
+    const result = await processVideoAssemblyWithRetry(accountId);
 
-    // Immediate response to avoid cron timeout
     return NextResponse.json({ 
       success: true, 
       accountId: accountId || 'all',
-      message: 'Video assembly started in background'
+      result,
+      message: 'Video assembly completed'
     });
 
   } catch (error) {
@@ -269,18 +267,20 @@ async function processVideoAssemblyWithRetry(accountId: string | undefined) {
         `No jobs pending video assembly for account ${accountId}` :
         'No jobs pending video assembly';
       console.log(message);
-      return;
+      return { success: false, message };
     }
 
     console.log(`Found ${jobs.length} jobs for video assembly. Processing...`);
 
     // Process video assembly
-    await processVideoAssemblyInBackground(jobs);
+    const result = await processVideoAssemblyInBackground(jobs);
     
-    console.log(`✅ Background video assembly completed for account: ${accountId || 'all'}`);
+    console.log(`✅ Video assembly completed for account: ${accountId || 'all'}`);
+    return result;
 
   } catch (error) {
-    console.error(`❌ Background video assembly failed for ${accountId}:`, error);
+    console.error(`❌ Video assembly failed for ${accountId}:`, error);
+    throw error;
   }
 }
 
@@ -305,10 +305,18 @@ async function processVideoAssemblyInBackground(jobs: QuizJob[]) {
     });
 
     const successCount = summary.filter(s => s.status === 'success').length;
-    console.log(`✅ Background video assembly completed: ${successCount}/${jobs.length} successful`);
+    console.log(`✅ Video assembly completed: ${successCount}/${jobs.length} successful`);
+    
+    return { 
+      success: true, 
+      processed: jobs.length, 
+      successful: successCount,
+      summary 
+    };
 
   } catch (error) {
-    console.error('❌ Background video assembly failed:', error);
+    console.error('❌ Video assembly failed:', error);
+    throw error;
   }
 }
 

@@ -46,16 +46,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting upload processing for account: ${accountId || 'multiple'}`);
 
-    // Fire-and-forget pattern for cron-job.org 30s timeout
-    processCompleteUploadFlow(accountId).catch(error => {
-      console.error('Background upload processing failed:', error);
-    });
+    // FIXED: Process synchronously instead of fire-and-forget
+    const result = await processCompleteUploadFlow(accountId);
 
-    // Immediate response to avoid cron timeout
     return NextResponse.json({ 
       success: true, 
       accountId: accountId || 'multiple',
-      message: 'Upload processing started in background'
+      result,
+      message: 'Upload processing completed'
     });
 
   } catch (error) {

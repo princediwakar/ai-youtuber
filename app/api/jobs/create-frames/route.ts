@@ -30,16 +30,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting frame creation for account: ${accountId || 'all'}`);
 
-    // Fire-and-forget pattern for cron-job.org 30s timeout
-    processFrameCreationWithRetry(accountId).catch(error => {
-      console.error('Background frame creation failed:', error);
-    });
+    // FIXED: Process synchronously instead of fire-and-forget
+    const result = await processFrameCreationWithRetry(accountId);
 
-    // Immediate response to avoid cron timeout
     return NextResponse.json({ 
       success: true, 
       accountId: accountId || 'all',
-      message: 'Frame creation started in background'
+      result,
+      message: 'Frame creation completed'
     });
   } catch (error) {
     console.error('Frame creation batch failed:', error);
@@ -66,16 +64,18 @@ async function processFrameCreationWithRetry(accountId: string | undefined) {
         `No jobs pending frame creation for account ${accountId}.` :
         'No jobs pending frame creation.';
       console.log(message);
-      return;
+      return { success: false, message };
     }
 
     console.log(`Found ${jobs.length} jobs for frame creation. Processing...`);
 
     // Process frame creation
-    await processFrameCreationInBackground(jobs);
+    const result = await processFrameCreationInBackground(jobs);
+    return result;
 
   } catch (error) {
-    console.error(`❌ Background frame creation failed for ${accountId}:`, error);
+    console.error(`❌ Frame creation failed for ${accountId}:`, error);
+    throw error;
   }
 }
 
@@ -100,10 +100,18 @@ async function processFrameCreationInBackground(jobs: QuizJob[]) {
     });
 
     const successCount = summary.filter(s => s.status === 'success').length;
-    console.log(`✅ Background frame creation completed: ${successCount}/${jobs.length} successful`);
+    console.log(`✅ Frame creation completed: ${successCount}/${jobs.length} successful`);
+    
+    return { 
+      success: true, 
+      processed: jobs.length, 
+      successful: successCount,
+      summary 
+    };
 
   } catch (error) {
-    console.error('❌ Background frame creation failed:', error);
+    console.error('❌ Frame creation failed:', error);
+    throw error;
   }
 }
 
