@@ -53,12 +53,19 @@ export async function uploadImageToCloudinary(
       folder: options.folder || `${accountId}/quiz-frames`,
       public_id: options.public_id,
       format: options.format || 'png',
+      timeout: 120000, // 2 minutes timeout
       ...options,
     };
+
+    // Set up timeout handler
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Upload timeout: Request took longer than 2 minutes'));
+    }, 120000);
 
     const stream = uploader.upload_stream(
       uploadOptions,
       (error: any, result: UploadApiResponse | undefined) => {
+        clearTimeout(timeoutId);
         if (error) {
           console.error(`Cloudinary upload error for account ${accountId}:`, error?.message || error);
           reject(error);
@@ -85,8 +92,9 @@ export async function uploadImageToCloudinary(
     try {
       return await attemptUpload();
     } catch (err: any) {
-      const isDnsError = typeof err?.message === 'string' && /ENOTFOUND|ECONNRESET|ETIMEDOUT/i.test(err.message);
-      if (attempt < maxRetries && isDnsError) {
+      const isRetryableError = typeof err?.message === 'string' && 
+        (/ENOTFOUND|ECONNRESET|ETIMEDOUT|timeout|TimeoutError|Request Timeout/i.test(err.message) || err?.http_code === 499);
+      if (attempt < maxRetries && isRetryableError) {
         const backoffMs = 500 * Math.pow(2, attempt);
         console.warn(`Retrying Cloudinary image upload for ${accountId} in ${backoffMs}ms (attempt ${attempt + 1}/${maxRetries}) due to: ${err.message}`);
         await new Promise(r => setTimeout(r, backoffMs));
@@ -168,12 +176,19 @@ export async function uploadVideoToCloudinary(
       folder: options.folder || `${accountId}/quiz-videos`,
       public_id: options.public_id,
       format: options.format || 'mp4',
+      timeout: 180000, // 3 minutes timeout for videos (larger files)
       ...options,
     };
+
+    // Set up timeout handler
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Video upload timeout: Request took longer than 3 minutes'));
+    }, 180000);
 
     const stream = uploader.upload_stream(
       uploadOptions,
       (error: any, result: UploadApiResponse | undefined) => {
+        clearTimeout(timeoutId);
         if (error) {
           console.error(`Cloudinary video upload error for account ${accountId}:`, error?.message || error);
           reject(error);
@@ -199,8 +214,9 @@ export async function uploadVideoToCloudinary(
     try {
       return await attemptUpload();
     } catch (err: any) {
-      const isDnsError = typeof err?.message === 'string' && /ENOTFOUND|ECONNRESET|ETIMEDOUT/i.test(err.message);
-      if (attempt < maxRetries && isDnsError) {
+      const isRetryableError = typeof err?.message === 'string' && 
+        (/ENOTFOUND|ECONNRESET|ETIMEDOUT|timeout|TimeoutError|Request Timeout/i.test(err.message) || err?.http_code === 499);
+      if (attempt < maxRetries && isRetryableError) {
         const backoffMs = 500 * Math.pow(2, attempt);
         console.warn(`Retrying Cloudinary video upload for ${accountId} in ${backoffMs}ms (attempt ${attempt + 1}/${maxRetries}) due to: ${err.message}`);
         await new Promise(r => setTimeout(r, backoffMs));

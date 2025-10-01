@@ -22,14 +22,10 @@ export async function uploadToYouTube(videoPath: string, metadata: any, youtube:
     throw new Error("YouTube API did not return a video ID.");
   }
 
-  // Upload custom thumbnail if provided
+  // Skip custom thumbnail upload due to permission requirements
+  // YouTube requires channel verification and specific permissions for custom thumbnails
   if (thumbnailUrl) {
-    try {
-      await uploadThumbnailToYouTube(response.data.id, thumbnailUrl, youtube);
-      console.log(`✅ Custom thumbnail uploaded for video ${response.data.id}`);
-    } catch (error) {
-      console.warn(`⚠️ Failed to upload thumbnail for video ${response.data.id}:`, error);
-    }
+    console.log(`ℹ️ Skipping custom thumbnail upload for video ${response.data.id} (requires channel verification)`);
   }
 
   return response.data.id;

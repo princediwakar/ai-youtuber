@@ -224,7 +224,10 @@ function validateSSCContent(data: any, format?: string): ValidationResult {
   }
   
   // Validate options structure based on question type
-  if (data.question_type === 'true_false') {
+  // Check both question_type and content_type for compatibility
+  const isTrue_false = data.question_type === 'true_false' || data.content_type === 'true_false';
+  
+  if (isTrue_false) {
     if (!data.options.A || !data.options.B || data.options.A !== 'True' || data.options.B !== 'False') {
       return {
         success: false,
@@ -238,7 +241,14 @@ function validateSSCContent(data: any, format?: string): ValidationResult {
       };
     }
   } else {
-    // Multiple choice validation
+    // Multiple choice validation - require all A, B, C, D options
+    if (!data.options || typeof data.options !== 'object') {
+      return {
+        success: false,
+        error: 'SSC question must have options object'
+      };
+    }
+    
     if (!data.options.A || !data.options.B || !data.options.C || !data.options.D) {
       return {
         success: false,

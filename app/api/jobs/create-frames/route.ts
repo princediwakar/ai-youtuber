@@ -4,6 +4,10 @@ import { getPendingJobs, updateJob, autoRetryFailedJobs } from '@/lib/database';
 import { createFramesForJob } from '@/lib/frameService';
 import { config } from '@/lib/config';
 import { QuizJob } from '@/lib/types';
+import { initializeErrorHandlers } from '@/lib/errorHandlers';
+
+// Initialize global error handlers
+initializeErrorHandlers();
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;

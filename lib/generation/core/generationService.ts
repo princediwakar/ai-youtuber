@@ -112,10 +112,16 @@ export async function generateAndStoreContent(
     // Get account configuration using the provided accountId
     const account = await getAccountConfig(jobConfig.accountId);
     
-    // Get analytics insights for this persona (with fallback)
+    // Get analytics insights for this persona (with fallback and timeout)
     let analyticsInsights: AIAnalyticsInsights | undefined;
     try {
-      const analyticsResult = await analyticsService.analyzePerformanceWithAI(jobConfig.accountId, jobConfig.persona);
+      // Add 15-second timeout for analytics queries
+      const analyticsPromise = analyticsService.analyzePerformanceWithAI(jobConfig.accountId, jobConfig.persona);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Analytics query timeout')), 15000)
+      );
+      
+      const analyticsResult = await Promise.race([analyticsPromise, timeoutPromise]) as any;
       analyticsInsights = analyticsResult.aiInsights;
       console.log(`[Analytics] Loaded insights for ${jobConfig.persona} (${jobConfig.accountId})`);
     } catch (error) {

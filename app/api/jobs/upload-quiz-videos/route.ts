@@ -13,6 +13,10 @@ import { getOAuth2Client } from '@/lib/googleAuth';
 import { getScheduledPersonasForUpload } from '@/lib/schedule';
 import { getAccountConfig } from '@/lib/accounts';
 import { uploadToYouTube, addVideoToPlaylist } from '@/lib/youtubeUpload';
+import { initializeErrorHandlers } from '@/lib/errorHandlers';
+
+// Initialize global error handlers
+initializeErrorHandlers();
 
 // The in-memory cache for the playlist map is still useful to avoid re-fetching on every run.
 interface Cache {
