@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
 
     // Fire-and-forget pattern for cron-job.org 30s timeout
     processGenerationWithValidation(accountId, preferredFormat).catch(error => {
-      console.error('Background generation failed:', error);
+      console.error('❌ Background generation failed:', error);
+      console.error('❌ Error stack:', error.stack);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
     });
 
     // Immediate response to avoid cron timeout
@@ -104,6 +106,8 @@ async function processGenerationWithValidation(accountId: string, preferredForma
 
   } catch (error) {
     console.error(`❌ Background validation/generation failed for ${accountId}:`, error);
+    console.error(`❌ Error stack for ${accountId}:`, error.stack);
+    console.error(`❌ Error details for ${accountId}:`, JSON.stringify(error, null, 2));
   }
 }
 
@@ -137,7 +141,7 @@ async function processGenerationInBackground(
       const shuffledSubCategories = [...personaConfig.subCategories].sort(() => 0.5 - Math.random());
       const topicsForBatch = shuffledSubCategories.slice(0, config.GENERATE_BATCH_SIZE);
 
-      const generationPromises = topicsForBatch.map(subCategory => {
+      const generationPromises = topicsForBatch.map((subCategory, index) => {
           const jobConfig = {
               persona: personaKey,
               generationDate,
@@ -146,10 +150,13 @@ async function processGenerationInBackground(
               preferredFormat, // Pass through the format parameter
           };
 
+          console.log(`🔄 [DEBUG] Creating promise ${index} for topic: ${subCategory.key}`);
           return generateAndStoreContent(jobConfig);
       });
 
+      console.log(`🔄 [DEBUG] About to await ${generationPromises.length} promises for ${personaKey}`);
       const results = await Promise.allSettled(generationPromises);
+      console.log(`🔄 [DEBUG] Promise.allSettled completed with ${results.length} results`);
       
       // DEBUG: Log promise results
       results.forEach((result, index) => {
@@ -169,6 +176,8 @@ async function processGenerationInBackground(
 
   } catch (error) {
     console.error(`❌ Background generation failed for ${account.name}:`, error);
+    console.error(`❌ Error stack for ${account.name}:`, error.stack);
+    console.error(`❌ Error details for ${account.name}:`, JSON.stringify(error, null, 2));
   }
 }
 

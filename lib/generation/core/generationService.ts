@@ -224,6 +224,14 @@ export async function generateAndStoreContent(
       }
     };
 
+    console.log(`🔄 [DEBUG] About to create job with payload:`, {
+      persona: jobPayload.persona,
+      account_id: jobPayload.account_id,
+      topic: jobPayload.topic,
+      status: jobPayload.status,
+      step: jobPayload.step
+    });
+
     const jobId = await createQuizJob(jobPayload);
 
     console.log(`[Job ${jobId}] ✅ Created ${account.name} ${selectedLayout} content for persona "${jobConfig.persona}" [${timeMarker}-${tokenMarker}]`);
@@ -237,6 +245,9 @@ export async function generateAndStoreContent(
 
   } catch (error) {
     console.error(`❌ Failed to create content for persona "${jobConfig.persona}":`, error);
+    console.error(`❌ Error stack:`, error.stack);
+    console.error(`❌ Error details:`, JSON.stringify(error, null, 2));
+    console.error(`❌ Job config:`, JSON.stringify(jobConfig, null, 2));
     return null;
   }
 }
