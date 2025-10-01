@@ -302,3 +302,46 @@ export async function legacyUploadVideoToCloudinary(
 ): Promise<CloudinaryUploadResult> {
   return uploadVideoToCloudinary(buffer, 'english_shots', options);
 }
+
+/**
+ * Cleanup all Cloudinary assets for a completed job
+ */
+export async function cleanupJobAssets(jobData: any, jobAccountId: string): Promise<void> {
+  try {
+    const cleanupPromises = [];
+    if (jobData.videoUrl) {
+      const videoPublicId = extractPublicIdFromUrl(jobData.videoUrl);
+      if (videoPublicId) {
+        cleanupPromises.push(deleteVideoFromCloudinary(videoPublicId, jobAccountId).catch(err => console.warn(`Failed to delete video ${videoPublicId} for ${jobAccountId}:`, err)));
+      }
+    }
+    if (jobData.frameUrls && Array.isArray(jobData.frameUrls)) {
+      jobData.frameUrls.forEach((frameUrl: string) => {
+        const framePublicId = extractPublicIdFromUrl(frameUrl);
+        if (framePublicId) {
+          cleanupPromises.push(deleteImageFromCloudinary(framePublicId, jobAccountId).catch(err => console.warn(`Failed to delete frame ${framePublicId} for ${jobAccountId}:`, err)));
+        }
+      });
+    }
+    await Promise.allSettled(cleanupPromises);
+    console.log(`🧹 Cleaned up Cloudinary assets for ${jobAccountId} job`);
+  } catch (error) {
+    console.error(`Error during Cloudinary cleanup for ${jobAccountId}:`, error);
+  }
+}
+
+/**
+ * Extract public ID from Cloudinary URL
+ */
+export function extractPublicIdFromUrl(url: string): string | null {
+  try {
+    const match = url.match(/\/v[0-9]+\/(.+?)(?:\.[\w]+)?$/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    return null;
+  } catch (error) {
+    console.warn(`Failed to extract public_id from URL: ${url}`, error);
+    return null;
+  }
+}
