@@ -1,16 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    // Updated to use ffmpeg-static for reliable serverless support
-    serverComponentsExternalPackages: ['googleapis', 'canvas', 'fluent-ffmpeg', 'pg', 'ffmpeg-static']
+    // Updated to use ffmpeg-static for reliable serverless support - remove ffmpeg-static from externals
+    serverComponentsExternalPackages: ['googleapis', 'canvas', 'fluent-ffmpeg', 'pg']
   },
   
-  // This is the added webpack configuration to fix the FFmpeg path issue.
+  // Configure webpack to properly handle ffmpeg-static for serverless
   webpack: (config, { isServer }) => {
-    // This tells Next.js to not bundle this dependency on the server.
-    // Instead, it will be resolved from node_modules at runtime.
     if (isServer) {
-      config.externals.push('ffmpeg-static');
+      // Don't externalize ffmpeg-static - we want it bundled
+      // Remove any existing external for ffmpeg-static
+      config.externals = config.externals.filter(external => {
+        if (typeof external === 'string') {
+          return external !== 'ffmpeg-static';
+        }
+        return true;
+      });
     }
     return config;
   },
