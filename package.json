@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@sparticuz/chromium": "^138.0.2",
     "@tailwindcss/forms": "^0.5.7",
     "canvas": "^3.2.0",

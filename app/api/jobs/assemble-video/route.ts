@@ -12,19 +12,25 @@ import {
 import { QuizJob } from '@/lib/types'; // 💡 FIX: Import the QuizJob type
 import { config } from '@/lib/config';
 
-// FFmpeg path resolution - Use ffmpeg-static directly in production
+// FFmpeg path resolution using @ffmpeg-installer/ffmpeg (working version)
 function getFFmpegPath(): string {
+  const { existsSync } = require('fs');
+  
   try {
-    const ffmpegStatic = require('ffmpeg-static');
-    if (ffmpegStatic) {
-      console.log(`✅ Using ffmpeg-static: ${ffmpegStatic}`);
-      return ffmpegStatic;
+    // First try: @ffmpeg-installer/ffmpeg (the working approach)
+    const ffmpeg = require('@ffmpeg-installer/ffmpeg');
+    
+    if (ffmpeg.path && typeof ffmpeg.path === 'string') {
+      if (existsSync(ffmpeg.path)) {
+        console.log(`✅ FFmpeg found via @ffmpeg-installer/ffmpeg: ${ffmpeg.path}`);
+        return ffmpeg.path;
+      }
     }
   } catch (error) {
-    console.warn('ffmpeg-static not available:', error);
+    console.warn('Could not require @ffmpeg-installer/ffmpeg:', error.message);
   }
   
-  // Fallback to system FFmpeg only if ffmpeg-static fails
+  // Fallback to system FFmpeg
   console.log('✅ Fallback to system FFmpeg');
   return 'ffmpeg';
 }
