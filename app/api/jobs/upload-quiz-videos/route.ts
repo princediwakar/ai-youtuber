@@ -38,20 +38,25 @@ export async function POST(request: NextRequest) {
       // No body or invalid JSON - process all accounts (backward compatibility)
     }
 
-    console.log(`🚀 Queuing upload processing for account: ${accountId || 'multiple'}`);
+    console.log(`🚀 Starting upload processing for account: ${accountId || 'multiple'}`);
 
-    // Fire and forget: Move ALL heavy operations to background
-    setTimeout(() => {
-      processCompleteUploadFlow(accountId).catch(error => {
-        console.error('Background upload processing failed:', error);
+    // Process directly - await the work to keep function alive
+    try {
+      await processCompleteUploadFlow(accountId);
+      return NextResponse.json({ 
+        success: true, 
+        accountId: accountId || 'multiple',
+        message: 'Upload processing completed successfully'
       });
-    }, 0);
-
-    return NextResponse.json({ 
-      success: true, 
-      accountId: accountId || 'multiple',
-      message: 'Upload processing queued in background'
-    });
+    } catch (error) {
+      console.error('Upload processing failed:', error);
+      return NextResponse.json({ 
+        success: false, 
+        accountId: accountId || 'multiple',
+        message: 'Upload processing failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
   } catch (error) {
     console.error('YouTube upload batch failed:', error);
@@ -131,7 +136,7 @@ async function processCompleteUploadFlow(accountId: string | undefined) {
     }
 
     // Process uploads
-    await processUploadWithValidation(accountId, personasToUpload);
+    await processUploadWithValidation(accountId, personasToUpload, account);
 
   } catch (error) {
     console.error(`❌ Background complete upload flow failed for ${accountId}:`, error);
@@ -142,7 +147,7 @@ async function processCompleteUploadFlow(accountId: string | undefined) {
  * Background processing function that includes validation and upload processing.
  * Runs asynchronously without blocking the API response.
  */
-async function processUploadWithValidation(accountId: string | undefined, personasToUpload: string[]) {
+async function processUploadWithValidation(accountId: string | undefined, personasToUpload: string[], account?: any) {
   try {
     console.log(`🔄 Background upload processing started for account: ${accountId || 'multiple'}`);
 
@@ -168,7 +173,7 @@ async function processUploadWithValidation(accountId: string | undefined, person
     console.log(`Found ${jobs.length} jobs for upload. Processing...`);
 
     // Process uploads
-    await processUploadInBackground(jobs, accountId, null, personasToUpload);
+    await processUploadInBackground(jobs, accountId, account || null, personasToUpload);
 
   } catch (error) {
     console.error(`❌ Background upload validation/processing failed for ${accountId}:`, error);
@@ -226,9 +231,10 @@ async function processUploadInBackground(
       }
     }
 
+    const accountName = account && typeof account.name === 'string' ? account.name : (accountId || 'unknown');
     const message = accountId 
       ? (config.DEBUG_MODE 
-          ? `${account!.name} personas (debug mode)` 
+          ? `${accountName} personas (debug mode)` 
           : personasToUpload.join(', '))
       : `All accounts: ${processedAccounts.join(', ')}`;
       

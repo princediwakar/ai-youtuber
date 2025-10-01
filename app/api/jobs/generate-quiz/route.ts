@@ -33,21 +33,25 @@ export async function POST(request: NextRequest) {
       // No body or invalid JSON - use default
     }
 
-    console.log(`🚀 Queuing generation for account: ${accountId}${preferredFormat ? ` with format: ${preferredFormat}` : ''}`);
+    console.log(`🚀 Starting generation for account: ${accountId}${preferredFormat ? ` with format: ${preferredFormat}` : ''}`);
 
-    // Fire and forget: Use setTimeout for true fire-and-forget
-    // Move ALL heavy operations to background
-    setTimeout(() => {
-      processGenerationWithValidation(accountId, preferredFormat).catch(error => {
-        console.error('Background generation failed:', error);
+    // Process directly - await the work to keep function alive
+    try {
+      await processGenerationWithValidation(accountId, preferredFormat);
+      return NextResponse.json({ 
+        success: true, 
+        accountId,
+        message: 'Generation completed successfully'
       });
-    }, 0);
-
-    return NextResponse.json({ 
-      success: true, 
-      accountId,
-      message: 'Generation queued in background'
-    });
+    } catch (error) {
+      console.error('Generation failed:', error);
+      return NextResponse.json({ 
+        success: false, 
+        accountId,
+        message: 'Generation failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
   } catch (error) {
     console.error('❌ Scheduled quiz generation failed:', error);

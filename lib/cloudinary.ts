@@ -16,12 +16,18 @@ export interface CloudinaryUploadResult {
 async function getCloudinaryForAccount(accountId: string) {
   const accountConfig = await getAccountConfig(accountId);
   
+  const cfg = {
+    cloud_name: accountConfig.cloudinaryCloudName,
+    api_key: accountConfig.cloudinaryApiKey,
+    api_secret: accountConfig.cloudinaryApiSecret,
+  } as const;
+
+  // Ensure the global cloudinary client is configured for this account
+  // Cloudinary SDK expects global configuration rather than per-call credentials
+  cloudinary.config(cfg);
+
   return {
-    config: {
-      cloud_name: accountConfig.cloudinaryCloudName,
-      api_key: accountConfig.cloudinaryApiKey,
-      api_secret: accountConfig.cloudinaryApiSecret,
-    },
+    config: cfg,
     uploader: cloudinary.uploader,
   };
 }
@@ -39,23 +45,22 @@ export async function uploadImageToCloudinary(
     format?: string;
   } = {}
 ): Promise<CloudinaryUploadResult> {
-  const { config, uploader } = await getCloudinaryForAccount(accountId);
-  
-  return new Promise((resolve, reject) => {
+  const { uploader } = await getCloudinaryForAccount(accountId);
+
+  const attemptUpload = (): Promise<CloudinaryUploadResult> => new Promise((resolve, reject) => {
     const uploadOptions = {
       resource_type: options.resource_type || 'image',
       folder: options.folder || `${accountId}/quiz-frames`,
       public_id: options.public_id,
       format: options.format || 'png',
-      ...config,
       ...options,
     };
 
-    uploader.upload_stream(
+    const stream = uploader.upload_stream(
       uploadOptions,
       (error: any, result: UploadApiResponse | undefined) => {
         if (error) {
-          console.error(`Cloudinary upload error for account ${accountId}:`, error);
+          console.error(`Cloudinary upload error for account ${accountId}:`, error?.message || error);
           reject(error);
         } else if (result) {
           resolve({
@@ -70,8 +75,27 @@ export async function uploadImageToCloudinary(
           reject(new Error('Upload failed: No result returned'));
         }
       }
-    ).end(buffer);
+    );
+    stream.end(buffer);
   });
+
+  // Simple retry for transient DNS/network errors
+  const maxRetries = 2;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await attemptUpload();
+    } catch (err: any) {
+      const isDnsError = typeof err?.message === 'string' && /ENOTFOUND|ECONNRESET|ETIMEDOUT/i.test(err.message);
+      if (attempt < maxRetries && isDnsError) {
+        const backoffMs = 500 * Math.pow(2, attempt);
+        console.warn(`Retrying Cloudinary image upload for ${accountId} in ${backoffMs}ms (attempt ${attempt + 1}/${maxRetries}) due to: ${err.message}`);
+        await new Promise(r => setTimeout(r, backoffMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Unreachable
 }
 
 /**
@@ -136,23 +160,22 @@ export async function uploadVideoToCloudinary(
     format?: string; 
   } = {}
 ): Promise<CloudinaryUploadResult> {
-  const { config, uploader } = await getCloudinaryForAccount(accountId);
-  
-  return new Promise((resolve, reject) => {
+  const { uploader } = await getCloudinaryForAccount(accountId);
+
+  const attemptUpload = (): Promise<CloudinaryUploadResult> => new Promise((resolve, reject) => {
     const uploadOptions = {
       resource_type: 'video' as const,
       folder: options.folder || `${accountId}/quiz-videos`,
       public_id: options.public_id,
       format: options.format || 'mp4',
-      ...config,
       ...options,
     };
 
-    uploader.upload_stream(
+    const stream = uploader.upload_stream(
       uploadOptions,
       (error: any, result: UploadApiResponse | undefined) => {
         if (error) {
-          console.error(`Cloudinary video upload error for account ${accountId}:`, error);
+          console.error(`Cloudinary video upload error for account ${accountId}:`, error?.message || error);
           reject(error);
         } else if (result) {
           resolve({
@@ -167,8 +190,26 @@ export async function uploadVideoToCloudinary(
           reject(new Error('Video upload failed: No result returned'));
         }
       }
-    ).end(buffer);
+    );
+    stream.end(buffer);
   });
+
+  const maxRetries = 2;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await attemptUpload();
+    } catch (err: any) {
+      const isDnsError = typeof err?.message === 'string' && /ENOTFOUND|ECONNRESET|ETIMEDOUT/i.test(err.message);
+      if (attempt < maxRetries && isDnsError) {
+        const backoffMs = 500 * Math.pow(2, attempt);
+        console.warn(`Retrying Cloudinary video upload for ${accountId} in ${backoffMs}ms (attempt ${attempt + 1}/${maxRetries}) due to: ${err.message}`);
+        await new Promise(r => setTimeout(r, backoffMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Unreachable
 }
 
 /**

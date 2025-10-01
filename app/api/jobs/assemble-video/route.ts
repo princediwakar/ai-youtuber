@@ -230,20 +230,25 @@ export async function POST(request: NextRequest) {
       // No body or invalid JSON - process all accounts
     }
 
-    console.log(`🚀 Queuing video assembly for account: ${accountId || 'all'}`);
+    console.log(`🚀 Starting video assembly for account: ${accountId || 'all'}`);
 
-    // Fire and forget: Move heavy operations to background
-    setTimeout(() => {
-      processVideoAssemblyWithRetry(accountId).catch(error => {
-        console.error('Background video assembly failed:', error);
+    // Process directly - await the work to keep function alive
+    try {
+      await processVideoAssemblyWithRetry(accountId);
+      return NextResponse.json({ 
+        success: true, 
+        accountId: accountId || 'all',
+        message: 'Video assembly completed successfully'
       });
-    }, 0);
-
-    return NextResponse.json({ 
-      success: true, 
-      accountId: accountId || 'all',
-      message: 'Video assembly queued in background'
-    });
+    } catch (error) {
+      console.error('Video assembly failed:', error);
+      return NextResponse.json({ 
+        success: false, 
+        accountId: accountId || 'all',
+        message: 'Video assembly failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 });
+    }
 
   } catch (error) {
     console.error('Video assembly batch failed:', error);
@@ -391,9 +396,11 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
 
     await new Promise<void>((resolve, reject) => {
       const process = spawn(ffmpegPath, args, { cwd: tempDir });
+      let stderr = '';
+      process.stderr?.on('data', (d) => { stderr += d.toString(); });
       process.on('close', (code) => {
         if (code === 0) resolve();
-        else reject(new Error(`FFmpeg clip creation failed with code ${code}`));
+        else reject(new Error(`FFmpeg clip creation failed with code ${code}. ${stderr ? 'Stderr: ' + stderr : ''}`));
       });
       process.on('error', reject);
     });
@@ -453,9 +460,11 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
 
   await new Promise<void>((resolve, reject) => {
     const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, { cwd: tempDir });
+    let stderr = '';
+    ffmpegProcess.stderr?.on('data', (d) => { stderr += d.toString(); });
     ffmpegProcess.on('close', (code) => {
       if (code === 0) resolve();
-      else reject(new Error(`FFmpeg exited with code ${code}`));
+      else reject(new Error(`FFmpeg exited with code ${code}. ${stderr ? 'Stderr: ' + stderr : ''}`));
     });
     ffmpegProcess.on('error', (err) => reject(err));
   });

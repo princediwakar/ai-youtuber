@@ -24,20 +24,25 @@ export async function POST(request: NextRequest) {
       // No body or invalid JSON - process all accounts
     }
 
-    console.log(`🚀 Queuing frame creation for account: ${accountId || 'all'}`);
+    console.log(`🚀 Starting frame creation for account: ${accountId || 'all'}`);
 
-    // Fire and forget: Move heavy operations to background
-    setTimeout(() => {
-      processFrameCreationWithRetry(accountId).catch(error => {
-        console.error('Background frame creation failed:', error);
+    // Process directly - await the work to keep function alive
+    try {
+      await processFrameCreationWithRetry(accountId);
+      return NextResponse.json({ 
+        success: true, 
+        accountId: accountId || 'all',
+        message: 'Frame creation completed successfully'
       });
-    }, 0);
-
-    return NextResponse.json({ 
-      success: true, 
-      accountId: accountId || 'all',
-      message: 'Frame creation queued in background'
-    });
+    } catch (error) {
+      console.error('Frame creation failed:', error);
+      return NextResponse.json({ 
+        success: false, 
+        accountId: accountId || 'all',
+        message: 'Frame creation failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 });
+    }
   } catch (error) {
     console.error('Frame creation batch failed:', error);
     return NextResponse.json({ success: false, error: 'Frame creation batch failed' }, { status: 500 });

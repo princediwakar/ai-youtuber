@@ -80,8 +80,16 @@ class AccountService {
     const decipher = crypto.createDecipheriv(this.algorithm, this.encryptionKey, iv);
     decipher.setAuthTag(authTag);
     
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
+    let decrypted: string;
+    try {
+      decrypted = decipher.update(encrypted, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+    } catch (e: any) {
+      // Provide a clearer hint when decryption fails due to wrong secret
+      const hint = 'Failed to decrypt account credentials. Ensure NEXTAUTH_SECRET matches the key used to encrypt database secrets.';
+      const err = new Error(`${hint} (${e?.message || 'decryption error'})`);
+      throw err;
+    }
     
     return decrypted;
   }
