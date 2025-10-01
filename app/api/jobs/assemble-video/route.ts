@@ -476,6 +476,13 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   // Save debug video locally if DEBUG_MODE is enabled
   await saveDebugVideo(videoBuffer, job.id, job.data.themeName, job.persona);
   
+  if (config.DEBUG_MODE) {
+    // In DEBUG_MODE, skip Cloudinary upload to speed up testing
+    const localVideoUrl = `local://generated-videos/1-video-${job.persona}-quiz-${job.data.themeName || 'unknown'}-${job.id}.mp4`;
+    console.log(`[DEBUG] Skipping Cloudinary upload, using local URL: ${localVideoUrl}`);
+    return { videoUrl: localVideoUrl, videoSize: videoBuffer.length, audioFile: audioFileName };
+  }
+  
   // Get account ID from job data
   const accountId = job.account_id;
   if (!accountId) {
