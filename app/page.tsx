@@ -1,17 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { RefreshCw, Play, Database, Youtube, AlertCircle, CheckCircle, Clock, Video, X } from 'lucide-react';
-import { QuizJob as QuizJobType } from '@/lib/types';
+import { RefreshCw, Database, Youtube, CheckCircle, Video, X } from 'lucide-react';
 
-interface JobStats {
-  total: number;
-  pending: number;
-  completed: number;
-  failed: number;
+interface ChannelStats {
+  accountId: string;
+  channelName: string;
+  totalVideos: number;
+  totalViews: number;
+  avgEngagementRate: number;
+  lastUpload: string | null;
+  status: 'active' | 'inactive';
 }
 
-type QuizJob = QuizJobType;
+interface PersonaStats {
+  personaName: string;
+  accountId: string;
+  totalVideos: number;
+  avgEngagementRate: number;
+  lastVideo: string | null;
+}
+
+interface AnalyticsStats {
+  videosPublished: number;
+  totalViews: number;
+  avgEngagement: number;
+  bestChannel: string;
+  channels: ChannelStats[];
+  personas: PersonaStats[];
+}
+
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => {
   const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
@@ -26,10 +44,8 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
 };
 
 export default function QuizDashboard() {
-  const [stats, setStats] = useState<JobStats | null>(null);
-  const [recentJobs, setRecentJobs] = useState<QuizJob[]>([]);
+  const [stats, setStats] = useState<AnalyticsStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [testing, setTesting] = useState<number | null>(null);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -49,7 +65,6 @@ export default function QuizDashboard() {
       if (!response.ok) throw new Error('Failed to fetch data');
       const data = await response.json();
       setStats(data.stats);
-      setRecentJobs(data.recentJobs);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
       showNotification('Could not refresh dashboard data.', 'error');
@@ -57,41 +72,6 @@ export default function QuizDashboard() {
     setLoading(false);
   };
 
-  const testPipeline = async (step: number) => {
-    setTesting(step);
-    try {
-      const response = await fetch('/api/test-pipeline-manual', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ step })
-      });
-
-      const data = await response.json();
-      if (!data.success) throw new Error(data.error || `Step ${step} failed with an unknown error.`);
-      
-      const processedCount = data.processed ?? data.created ?? data.summary?.[0]?.created ?? 0;
-      showNotification(`Step ${step} triggered! Processed: ${processedCount}`, 'success');
-      
-      setTimeout(fetchDashboardData, 1000);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      showNotification(errorMessage, 'error');
-    }
-    setTesting(null);
-  };
-
-  const getStepName = (step: number) => {
-    const steps: { [key: number]: string } = {
-      1: 'Generation',
-      2: 'Frame Creation', 
-      3: 'Video Assembly',
-      4: 'YouTube Upload',
-      5: 'Completed'
-    };
-    return steps[step] || 'Unknown';
-  };
 
   if (loading) {
     return (
@@ -109,79 +89,48 @@ export default function QuizDashboard() {
       {notification && <Toast message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Automated Content Pipeline</h1>
-          <p className="text-gray-400">Live monitor for the video generation and upload system.</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Analytics Dashboard</h1>
+          <p className="text-gray-400">Performance metrics for your YouTube channels.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Stats Cards */}
-          <StatCard icon={Database} title="Total Jobs" value={stats?.total || 0} color="blue" />
-          <StatCard icon={Clock} title="Pending" value={stats?.pending || 0} color="yellow" />
-          <StatCard icon={CheckCircle} title="Completed" value={stats?.completed || 0} color="green" />
-          <StatCard icon={AlertCircle} title="Failed" value={stats?.failed || 0} color="red" />
+          {/* Analytics Cards */}
+          <StatCard icon={Video} title="Videos Published" value={stats?.videosPublished || 0} color="blue" />
+          <StatCard icon={Database} title="Total Views" value={stats?.totalViews || 0} color="green" />
+          <StatCard icon={CheckCircle} title="Avg Engagement" value={`${stats?.avgEngagement || 0}%`} color="yellow" />
+          <StatCard icon={Youtube} title="Best Channel" value={stats?.bestChannel || 'No Data'} color="red" />
         </div>
 
-        <div className="bg-gray-800/50 rounded-lg shadow-lg mb-8 border border-gray-700">
-          <div className="p-6 border-b border-gray-700">
-            <h2 className="text-xl font-semibold text-white">Pipeline Controls</h2>
-            <p className="text-gray-400 mt-1">Manually trigger individual steps of the pipeline.</p>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <PipelineButton step={1} label="Generate" icon={Play} color="green" onClick={testPipeline} testing={testing} />
-              <PipelineButton step={2} label="Frames" icon={Video} color="yellow" onClick={testPipeline} testing={testing} />
-              <PipelineButton step={3} label="Assemble" icon={Video} color="purple" onClick={testPipeline} testing={testing} />
-              <PipelineButton step={4} label="Upload" icon={Youtube} color="red" onClick={testPipeline} testing={testing} />
+        {/* Channel Breakdown Section */}
+        {stats?.channels && stats.channels.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-4">Channel Performance</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {stats.channels.map((channel) => (
+                <ChannelCard key={channel.accountId} channel={channel} />
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="bg-gray-800/50 rounded-lg shadow-lg border border-gray-700">
-          <div className="p-6 border-b border-gray-700 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-white">Recent Jobs</h2>
-              <p className="text-gray-400 mt-1">Showing the last 20 jobs processed.</p>
+        {/* Persona Breakdown Section */}
+        {stats?.personas && stats.personas.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-4">Content Personas</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {stats.personas.map((persona, index) => (
+                <PersonaCard key={`${persona.accountId}-${persona.personaName}`} persona={persona} />
+              ))}
             </div>
+          </div>
+        )}
+
+        <div className="bg-gray-800/50 rounded-lg shadow-lg border border-gray-700 p-6 text-center">
+          <div className="flex items-center justify-center">
             <button onClick={fetchDashboardData} className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh Analytics</span>
             </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Job ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Content</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Current Step</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Error</th>
-                </tr>
-              </thead>
-              <tbody className="bg-gray-800/50 divide-y divide-gray-700">
-                {recentJobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-gray-700/50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-400">{job.id.slice(-8)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      {job.topic_display_name || job.data?.topic_display_name || job.topic}
-                      <div className="text-xs text-gray-400">{job.persona}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{getStepName(job.step)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon(job.status)}
-                        <span className="text-sm text-white capitalize">{job.status.replace('_', ' ')}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{new Date(job.created_at).toLocaleString()}</td>
-                    <td className="px-6 py-4 text-sm text-red-400 max-w-xs truncate">
-                      {job.error_message && (<span title={job.error_message}>{job.error_message}</span>)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
@@ -190,7 +139,7 @@ export default function QuizDashboard() {
 }
 
 // Helper components for a cleaner main component
-const StatCard = ({ icon: Icon, title, value, color }: { icon: React.ElementType, title: string, value: number, color: string }) => {
+const StatCard = ({ icon: Icon, title, value, color }: { icon: React.ElementType, title: string, value: number | string, color: string }) => {
   const colors = {
     blue: 'text-blue-400',
     yellow: 'text-yellow-400',
@@ -208,31 +157,73 @@ const StatCard = ({ icon: Icon, title, value, color }: { icon: React.ElementType
   );
 };
 
-const PipelineButton = ({ step, label, icon: Icon, color, onClick, testing }: { step: number, label: string, icon: React.ElementType, color: string, onClick: (step: number) => void, testing: number | null }) => {
-  const colors = {
-    green: 'bg-green-500/10 hover:bg-green-500/20 text-green-300',
-    yellow: 'bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300',
-    purple: 'bg-purple-500/10 hover:bg-purple-500/20 text-purple-300',
-    red: 'bg-red-500/10 hover:bg-red-500/20 text-red-300',
+const ChannelCard = ({ channel }: { channel: ChannelStats }) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleDateString();
   };
-  const isThisTesting = testing === step;
+
   return (
-    <button
-      onClick={() => onClick(step)}
-      disabled={!!testing}
-      className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${colors[color as keyof typeof colors]}`}
-    >
-      {isThisTesting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
-      <span>{label}</span>
-    </button>
+    <div className="bg-gray-800/50 rounded-lg shadow-lg p-6 border border-gray-700">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-white">{channel.channelName}</h3>
+        <span className={`px-2 py-1 text-xs rounded-full ${
+          channel.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+        }`}>
+          {channel.status}
+        </span>
+      </div>
+      
+      <div className="space-y-3">
+        <div className="flex justify-between">
+          <span className="text-gray-400">Videos:</span>
+          <span className="text-white font-medium">{channel.totalVideos}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Views:</span>
+          <span className="text-white font-medium">{channel.totalViews.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Engagement:</span>
+          <span className="text-white font-medium">{channel.avgEngagementRate}%</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Last Upload:</span>
+          <span className="text-white font-medium text-sm">{formatDate(channel.lastUpload)}</span>
+        </div>
+      </div>
+    </div>
   );
 };
 
-const getStatusIcon = (status: string) => {
-  if (status.includes('pending')) return <Clock className="w-4 h-4 text-yellow-400" />;
-  switch (status) {
-    case 'completed': return <CheckCircle className="w-4 h-4 text-green-400" />;
-    case 'failed': return <AlertCircle className="w-4 h-4 text-red-400" />;
-    default: return <Clock className="w-4 h-4 text-yellow-400" />;
-  }
+const PersonaCard = ({ persona }: { persona: PersonaStats }) => {
+  const formatPersonaName = (name: string) => {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  return (
+    <div className="bg-gray-800/50 rounded-lg shadow-lg p-4 border border-gray-700">
+      <h4 className="text-md font-semibold text-white mb-3">{formatPersonaName(persona.personaName)}</h4>
+      
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-400">Videos:</span>
+          <span className="text-white font-medium">{persona.totalVideos}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Engagement:</span>
+          <span className="text-white font-medium">{persona.avgEngagementRate}%</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Last Video:</span>
+          <span className="text-white font-medium text-xs">{formatDate(persona.lastVideo)}</span>
+        </div>
+      </div>
+    </div>
+  );
 };
