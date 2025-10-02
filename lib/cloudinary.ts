@@ -103,7 +103,7 @@ export async function uploadImageToCloudinary(
       throw err;
     }
   }
-  // Unreachable
+  throw new Error('Upload failed after all retries');
 }
 
 /**
@@ -225,7 +225,7 @@ export async function uploadVideoToCloudinary(
       throw err;
     }
   }
-  // Unreachable
+  throw new Error('Video upload failed after all retries');
 }
 
 /**

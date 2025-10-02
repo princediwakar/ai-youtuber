@@ -14,72 +14,116 @@ import { getDynamicContext } from '../../core/contentSource';
  * Moved from topicGuidelines.ts for better organization and reduced dependencies
  */
 const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
-  // SSC Exam Preparation - High-Frequency Facts
-  ssc_history: {
-    focus: 'One historical fact that appears in every government exam',
-    hook: 'This history fact appears in 90% of SSC exams',
-    scenarios: ['SSC CGL', 'CHSL', 'state exams'],
-    engagement: 'Memorize this fact for your next exam'
+  // GENERAL AWARENESS - History
+  ssc_ancient_history: {
+    focus: 'One ancient Indian history fact with dynasty/period details',
+    hook: 'This ancient history fact appears in 90% of SSC papers',
+    scenarios: ['SSC CGL Tier-1', 'CHSL', 'MTS General Awareness'],
+    engagement: 'Memorize this for ancient history section'
   },
-  ssc_geography: {
-    focus: 'One geography fact or memory trick that saves exam time',
-    hook: 'This geography trick helps you remember 20+ facts instantly',
-    scenarios: ['state capitals', 'river origins', 'mountain peaks'],
-    engagement: 'Use this trick for your geography preparation'
+  ssc_medieval_history: {
+    focus: 'One medieval period fact about rulers, battles, or architecture',
+    hook: 'This medieval fact is asked in every SSC exam',
+    scenarios: ['Mughal period', 'Delhi Sultanate', 'architecture questions'],
+    engagement: 'Remember this for medieval history questions'
   },
+  ssc_modern_history: {
+    focus: 'One modern Indian history fact about freedom struggle',
+    hook: 'This freedom struggle fact appears in all government exams',
+    scenarios: ['independence movement', 'national leaders', 'important events'],
+    engagement: 'Essential for modern history section'
+  },
+  
+  // GENERAL AWARENESS - Geography  
+  ssc_physical_geography: {
+    focus: 'One physical geography fact about landforms, climate, or rivers',
+    hook: 'This geography fact helps crack multiple questions',
+    scenarios: ['Indian rivers', 'mountain ranges', 'climate zones'],
+    engagement: 'Use this for geography section preparation'
+  },
+  ssc_indian_geography: {
+    focus: 'One Indian geography fact about states, capitals, or boundaries',
+    hook: 'This trick helps remember 10+ geography facts instantly',
+    scenarios: ['state capitals', 'boundaries', 'important locations'],
+    engagement: 'Master this for static GK questions'
+  },
+  
+  // GENERAL AWARENESS - Polity
+  ssc_constitution: {
+    focus: 'One constitutional article, amendment, or fundamental right',
+    hook: 'This constitution fact appears in every SSC polity section',
+    scenarios: ['fundamental rights', 'directive principles', 'constitutional articles'],
+    engagement: 'Crucial for Indian polity questions'
+  },
+  ssc_government: {
+    focus: 'One fact about government structure, posts, or procedures',
+    hook: 'This government fact is essential for all SSC exams',
+    scenarios: ['constitutional posts', 'parliament procedures', 'government structure'],
+    engagement: 'Remember this for polity section'
+  },
+  
+  // GENERAL AWARENESS - Current Affairs
+  ssc_current_affairs: {
+    focus: 'One 2024-2025 current affairs fact about appointments/schemes/summits',
+    hook: 'This 2025 update will definitely be in your SSC exam',
+    scenarios: ['recent appointments', 'new schemes', 'international summits'],
+    engagement: 'Note this down for current affairs preparation'
+  },
+  
+  // GENERAL AWARENESS - Science
+  ssc_physics: {
+    focus: 'One physics concept, formula, or unit with practical application',
+    hook: 'This physics fact appears in every SSC science section',
+    scenarios: ['units and measurements', 'basic concepts', 'everyday physics'],
+    engagement: 'Essential for general science questions'
+  },
+  ssc_chemistry: {
+    focus: 'One chemistry fact about elements, compounds, or reactions',
+    hook: 'This chemistry fact helps solve multiple science questions',
+    scenarios: ['chemical reactions', 'elements', 'everyday chemistry'],
+    engagement: 'Remember this for chemistry section'
+  },
+  ssc_biology: {
+    focus: 'One biology fact about human body, plants, or diseases',
+    hook: 'This biology fact is asked in all SSC science sections',
+    scenarios: ['human body', 'plant biology', 'diseases and health'],
+    engagement: 'Crucial for biology questions'
+  },
+  
+  // ENGLISH COMPREHENSION
   ssc_grammar: {
-    focus: 'One grammar rule that solves 90% of SSC English questions',
+    focus: 'One grammar rule for tenses, voice, or error detection',
     hook: 'Master this rule to crack SSC English section',
     scenarios: ['error spotting', 'sentence improvement', 'fill-in-blanks'],
     engagement: 'Apply this rule to practice questions immediately'
   },
-  ssc_vocab: {
-    focus: 'One SSC word with synonym, antonym, and usage in 15 seconds',
+  ssc_vocabulary: {
+    focus: 'One SSC word with synonym, antonym, and one-word substitution',
     hook: 'This word appears in every SSC vocabulary section',
     scenarios: ['synonyms', 'antonyms', 'one-word substitutions'],
-    engagement: 'Practice using this word in a sentence'
+    engagement: 'Practice using this word in context'
   },
-  ssc_current_affairs: {
-    focus: 'One 2025 current affairs fact that will be in your next exam',
-    hook: 'This 2025 update will definitely be in your SSC exam',
-    scenarios: ['recent appointments', 'new schemes', 'major events'],
-    engagement: 'Note this down for your current affairs preparation'
+  
+  // QUANTITATIVE APTITUDE
+  ssc_number_system: {
+    focus: 'One number system trick for divisibility, LCM, or HCF',
+    hook: 'This math trick saves 2 minutes per question',
+    scenarios: ['number properties', 'divisibility rules', 'calculation shortcuts'],
+    engagement: 'Practice this shortcut for faster calculations'
   },
-  ssc_important_dates: {
-    focus: 'One crucial date with memory trick that appears in all exams',
-    hook: 'Never forget this date that appears in every government exam',
-    scenarios: ['independence movement', 'constitution dates', 'historical events'],
-    engagement: 'Use the memory trick to remember this date'
+  ssc_percentage: {
+    focus: 'One percentage/ratio trick for quick mental calculation',
+    hook: 'This percentage trick works for 90% of SSC math questions',
+    scenarios: ['percentage problems', 'profit-loss', 'ratio-proportion'],
+    engagement: 'Use this trick in your next practice session'
   },
-  ssc_states_capitals: {
-    focus: 'One state-capital trick that helps remember multiple pairs',
-    hook: 'This trick helps you remember 10+ state capitals instantly',
-    scenarios: ['SSC geography section', 'static GK questions', 'quick revision'],
-    engagement: 'Use this trick to memorize state capitals now'
-  },
-  ssc_govt_schemes: {
-    focus: 'One government scheme name, purpose, and launch year in 15 seconds',
-    hook: 'This government scheme will definitely be in your exam',
-    scenarios: ['scheme-based questions', 'current affairs', 'policy knowledge'],
-    engagement: 'Remember the scheme name and purpose for exams'
-  },
-  ssc_gk_tricks: {
-    focus: 'One memory trick that helps remember multiple GK facts instantly',
-    hook: 'This GK trick will save you 10 minutes in every exam',
-    scenarios: ['static GK', 'quick revision', 'exam shortcuts'],
-    engagement: 'Use this trick for your GK preparation immediately'
-  },
-  ssc_numbers: {
-    focus: 'One important number (year, count, percentage) with memorable context',
-    hook: 'This number appears in 80% of SSC questions',
-    scenarios: ['statistical questions', 'numerical facts', 'data queries'],
-    engagement: 'Memorize this number for your next exam'
-  },
-  ssc_shortcuts: {
-    focus: 'One exam-solving shortcut that saves crucial seconds',
-    hook: 'This shortcut saves 30 seconds per question',
-    scenarios: ['time management', 'quick elimination', 'calculation tricks'],
-    engagement: 'Practice this shortcut right now'
+  
+  // GENERAL INTELLIGENCE & REASONING
+  ssc_reasoning: {
+    focus: 'One reasoning pattern for series, coding, or logical puzzles',
+    hook: 'This reasoning trick solves multiple question types',
+    scenarios: ['number series', 'coding-decoding', 'pattern recognition'],
+    engagement: 'Apply this pattern to solve similar questions'
   }
 };
 
@@ -88,6 +132,84 @@ const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
  */
 function getSSCTopicGuidelines(topic: string): TopicGuideline | undefined {
   return SSC_TOPIC_GUIDELINES[topic];
+}
+
+/**
+ * Generates simplified SSC prompt for single-frame format
+ * REIMPLEMENTED: Based on SSC MCQ format logic for better content generation
+ */
+export function generateSimplifiedSSCPrompt(config: PromptConfig): string {
+  const { topicData, topic, markers, timingContext, analyticsInsights } = config;
+  const { timeMarker, tokenMarker } = markers;
+  const guidelines = getSSCTopicGuidelines(topic);
+  
+  const primaryAudience = 'SSC exam aspirants';
+  const timingPrefix = timingContext ? `${timingContext.timeOfDay.toUpperCase()} STUDY` : 'VIRAL STUDY';
+  const audienceContext = timingContext?.audience || primaryAudience;
+  
+  if (topicData) {
+    return `You are an expert SSC coaching instructor creating addictive exam preparation content for YouTube Shorts.
+
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential SSC exam concepts for government job preparation'}
+
+${timingPrefix} STRATEGY:
+• HOOK: Create competitive achievement hooks - under 25 chars, topper-focused + success differentiation
+• PSYCHOLOGY: Use achievement motivation + social proof (what successful candidates know vs failed candidates)
+• SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'real SSC exam patterns and previous year questions'}
+• ENGAGEMENT: ${guidelines?.engagement || 'Create immediate exam advantage for serious aspirants'}
+• PATTERN: "Toppers know this" + success differentiation + strategic advantage
+• TIMING: Perfect for ${timingContext?.timeOfDay || 'daily'} study sessions
+
+Generate exam content that targets ${audienceContext} preparing for government jobs:
+
+CONTENT APPROACH:
+• Present concepts that appear frequently in SSC exams
+• Include practical application in government job context  
+• Create "This could be in my exam" moments that boost preparation focus
+• Lead with confidence-building ("Master this and crack SSC!")
+
+FACT SELECTION CRITERIA:
+• PRECISION: Choose facts that directly address the topic focus: "${guidelines?.focus}"
+• RELEVANCE: Focus on information that ${audienceContext} encounter in actual exams
+• DIFFICULTY: Important enough to be tested but achievable for motivated aspirants
+• IMPACT: Provide knowledge that immediately improves exam performance
+• SCENARIOS: Perfect for ${guidelines?.scenarios?.join(', ') || 'SSC exam contexts'}
+
+MANDATORY OUTPUT JSON:
+• "fact_title": One powerful fact/concept that directly relates to "${guidelines?.focus || topic}" (exam-focused title)
+• "key_info": Core information in exam-relevant format (dates, numbers, names - under 60 chars)
+• "category": Subject category that appears in SSC syllabus (e.g., "History", "Geography", "Polity", "Science")
+• "definition": Clear explanation in exam context (under 100 chars)
+• "usage": How this appears in ${guidelines?.scenarios?.join(', ') || 'SSC exams'} or application context (under 120 chars)
+• "format_type": "mcq"
+
+Create exam content that makes aspirants feel more confident and prepared for success. Focus specifically on: ${guidelines?.focus || 'SSC exam preparation'}
+
+Target the specific challenge: ${guidelines?.engagement || 'Upgrade your exam preparation'}
+
+[${timeMarker}-${tokenMarker}]`;
+  } else {
+    return `You are an expert SSC exam coach creating viral preparation content for YouTube Shorts.
+
+Generate exam content for ${primaryAudience} on "${topic}" that challenges while building exam confidence.
+
+REQUIREMENTS:
+• FACT FOCUS: Choose information that directly addresses the topic "${topic}"
+• PRACTICAL: Focus on facts frequently tested in SSC exams
+• ENGAGEMENT: Create immediate "exam preparation upgrade" value
+• DEFINITION: Provide clear explanation that improves exam readiness (under 100 characters)
+• USAGE: Include practical example that shows exam application (under 120 characters)
+
+OUTPUT FORMAT:
+• "fact_title": Exam-relevant fact/concept specifically relevant to "${topic}"
+• "key_info": Core information in exam format (dates, numbers, names)
+• "category": Subject category from SSC syllabus
+• "definition": Clear, exam-focused explanation
+• "usage": SSC exam context example
+• "format_type": "mcq"
+
+Make aspirants feel accomplished and ready to tackle their government job exam. [${timeMarker}-${tokenMarker}]`;
+  }
 }
 
 /**

@@ -2,58 +2,62 @@
 
 /**
  * Maps each persona to a curated list of appropriate theme names.
- * This ensures the visual style matches the content's tone for brand consistency.
- * NOTE: This map now uses the new theme names from 'appThemes.ts'.
+ * UPDATED: Now includes premium video-optimized themes for maximum engagement
+ * Focus on high-contrast, vibrant themes that perform well in social media videos.
  */
 export const PersonaThemeMap: Record<string, string[]> = {
 
-  // English vocabulary - educational themes with good readability
+  // English vocabulary - premium themes optimized for video engagement
   english_vocab_builder: [
-    'VintageScroll',    // Classic scholarly feel
-    'SakuraGrove',      // Clean and focused
-    'CanyonSunset',     // Warm and welcoming
-    'MintyFresh',       // Clean and modern
-    'SunsetBeach'       // Vibrant and engaging
+    'ElectricPurple',   // Bold and attention-grabbing ⚡
+    'NeonCyber',        // High contrast for social media 💫
+    'GoldenHour',       // Premium, luxurious feel 🌟
+    'SunsetVibes',      // Warm and engaging 🌅
+    'ArcticGlow',       // Clean, modern, crisp ❄️
+    'CosmicDawn',       // Dramatic gradients for impact
+    'CanyonSunset'      // Warm and approachable (backup)
   ],
   
-  // Brain health - calming and professional themes for wellness content
+  // Brain health - wellness themes with video appeal
   brain_health_tips: [
-    'VintageScroll',    // Professional and trustworthy
-    'SakuraGrove',      // Natural and calming
-    'CanyonSunset',     // Warm earth tones
-    'MintyFresh',       // Clean health aesthetic
-    'SunsetBeach',      // Positive energy
+    'ArcticGlow',       // Clean, modern health aesthetic ❄️
+    'SunsetVibes',      // Positive, calming energy 🌅
+    'MintyFresh',       // Fresh health feel
+    'GoldenHour',       // Premium wellness vibe 🌟
+    'SakuraGrove',      // Natural and trustworthy
+    'CanyonSunset'      // Warm earth tones
   ],
   
-  // Eye health - themes with good contrast and eye-friendly colors
+  // Eye health - high-contrast themes optimized for visual content
   eye_health_tips: [
-    'VintageScroll',    // Classic scholarly feel
-    'SakuraGrove',      // Clean and focused
-    'CanyonSunset',     // Warm and welcoming
-    'MintyFresh',       // Clean and modern
-    'SunsetBeach',       // Vibrant and engaging
-    'CosmicDawn'        // Dramatic but eye-conscious gradients
+    'ElectricPurple',   // Bold contrast for eye health ⚡
+    'NeonCyber',        // High visibility 💫
+    'ArcticGlow',       // Clean, eye-friendly ❄️
+    'GoldenHour',       // Luxurious health appeal 🌟
+    'SunsetVibes',      // Warm, approachable 🌅
+    'MintyFresh'        // Clean medical aesthetic
   ],
   
-  // SSC exam preparation - professional and authoritative themes for government exam content
+  // SSC exam preparation - authoritative yet engaging themes for education
   ssc_shots: [
-    'VintageScroll',    // Professional scholarly feel
-    'MintyFresh',       // Clean and focused  
-    'SakuraGrove',      // Calm and trustworthy
-    'CanyonSunset',     // Warm institutional colors
+    'ElectricPurple',   // Bold authority ⚡
+    'GoldenHour',       // Premium education feel 🌟
+    'ArcticGlow',       // Clean, focused study ❄️
+    'NeonCyber',        // Modern exam prep 💫
+    'MintyFresh',       // Clean academic look
+    'CanyonSunset'      // Warm institutional feel
   ],
 
-  // Astronomy content - cosmic and space-themed visuals for wonder and amazement
+  // Astronomy content - cosmic themes optimized for space wonder
   space_facts_quiz: [
-    'VintageScroll',    // Easy on the eyes
-    'SakuraGrove',      // Gentle natural colors
-    'CanyonSunset',     // Warm, comfortable tones
-    'MintyFresh',       // Clean and soothing
-    'SunsetBeach',      // Bright but not harsh
-    'CosmicDawn'        // Dramatic 
-    // Removed shared themes to ensure complete isolation from other content
+    'NeonCyber',        // Perfect for space content 💫
+    'CosmicDawn',       // Cosmic gradients for space
+    'ElectricPurple',   // Universe mystery ⚡
+    'EnchantedForest',  // Dark space backdrop
+    'ArcticGlow',       // Stellar clarity ❄️
+    'GoldenHour'        // Solar system gold 🌟
   ],
   
-  // A default set of themes for any new persona not explicitly listed.
-  default: ['MintyFresh', 'VintageScroll', 'SakuraGrove'],
+  // Default set optimized for maximum video engagement
+  default: ['ElectricPurple', 'NeonCyber', 'GoldenHour'],
 };

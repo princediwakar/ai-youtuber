@@ -149,3 +149,13 @@ The project uses Model Context Protocol (MCP) for enhanced development capabilit
 **IDE MCP:**
 - `mcp__ide__getDiagnostics` - Language diagnostics
 - `mcp__ide__executeCode` - Jupyter code execution
+
+
+
+
+<!-- 
+│   curl -X POST http://localhost:3000/api/jobs/generate-quiz \                                                                   │
+│     -H "Authorization: Bearer tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c=" \                                                   │
+│     -H "Content-Type: application/json" \                                                                                       │
+│     -d '{"accountId": "english_shots", "forceFormat": "simplified_word"}'
+ -->

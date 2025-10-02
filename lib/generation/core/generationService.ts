@@ -1,9 +1,10 @@
 import OpenAI from 'openai';
-import { createQuizJob } from '@/lib/database';
+import { createQuizJob, query } from '@/lib/database';
 import { MasterPersonas } from '@/lib/personas';
 import { getAccountConfig } from '@/lib/accounts';
 import { generatePrompt, type JobConfig } from './promptGenerator';
 import { parseAndValidateResponse, generateContentHash } from './contentValidator';
+import { generateVariationMarkers } from '../shared/utils';
 import { LayoutType } from '@/lib/visuals/layouts/layoutSelector';
 import { analyticsService, type AIAnalyticsInsights } from '../../analyticsService';
 import { promises as fs } from 'fs';
@@ -47,6 +48,29 @@ const deepseekClient = new OpenAI({
   baseURL: 'https://api.deepseek.com',
 });
 
+/**
+ * Check for duplicate content in recent jobs
+ */
+async function checkForDuplicateContent(contentHash: string, accountId: string, persona: string): Promise<boolean> {
+  try {
+    // Check for content with the same hash in the last 24 hours for this account/persona
+    const result = await query(`
+      SELECT id 
+      FROM quiz_jobs 
+      WHERE account_id = $1 
+        AND persona = $2 
+        AND data->'variation_markers'->>'content_hash' = $3
+        AND created_at > NOW() - INTERVAL '24 hours'
+      LIMIT 1
+    `, [accountId, persona, contentHash]);
+    
+    return result.rows.length > 0;
+  } catch (error) {
+    console.warn('Failed to check for duplicate content:', error);
+    return false; // If check fails, proceed with generation
+  }
+}
+
 
 export interface GenerationJobConfig extends JobConfig {
   // Layout selection options
@@ -72,10 +96,21 @@ const PERSONA_LAYOUT_MAP: Record<string, LayoutType[]> = {
  * Data shows it's the only format that drives engagement
  */
 function selectLayoutForPersona(persona: string, preferredLayout?: LayoutType): LayoutType {
-  console.log(`🎯 Analytics override: forcing MCQ layout for ${persona} (requested: ${preferredLayout || 'none'})`);
+  // ANALYTICS-DRIVEN: Use simplified formats for maximum engagement
+  // Addresses 73% zero engagement by using ultra-simple single-frame format
   
-  // HARD-CODED: Analytics prove MCQ is the only working format
-  return 'mcq';
+  if (persona === 'ssc_shots') {
+    console.log(`✅ Using MCQ layout for SSC persona: ${persona} (best performing format)`);
+    return 'mcq'; // Force MCQ for better engagement
+  }
+  
+  if (persona === 'brain_health_tips' || persona === 'eye_health_tips') {
+    console.log(`✅ Using quick_tip layout for health persona: ${persona} (1.2K views breakthrough format)`);
+    return 'quick_tip'; // Keep proven health format
+  }
+  
+  console.log(`✅ Using simplified_word layout for ${persona} (ultra-simple single frame)`);
+  return 'simplified_word'; // Default to simplified for maximum engagement
 }
 
 export interface GenerationResult {
@@ -171,6 +206,46 @@ export async function generateAndStoreContent(
     }
 
     const contentData = validationResult.data;
+    
+    // Check for duplicate content
+    const contentHash = generateContentHash(contentData);
+    const isDuplicate = await checkForDuplicateContent(contentHash, jobConfig.accountId, jobConfig.persona);
+    
+    if (isDuplicate) {
+      console.warn(`⚠️ Duplicate content detected (hash: ${contentHash}) for ${jobConfig.persona} - ${jobConfig.topic}. Regenerating...`);
+      
+      // Try one more time with different variation markers
+      const retryPromptResult = await generatePrompt({
+        ...jobConfig
+        // generatePrompt will create new markers internally for variation
+      });
+      
+      const retryResponse = await deepseekClient.chat.completions.create({
+        model: "deepseek-chat",
+        messages: [{ role: "user", content: retryPromptResult.prompt }],
+        temperature: 0.9, // Increase temperature for more variation
+      }, {
+        timeout: AI_TIMEOUT,
+      });
+
+      const retryContent = retryResponse.choices[0].message.content;
+      if (!retryContent) {
+        throw new Error('AI returned no content on retry.');
+      }
+
+      const retryValidationResult = parseAndValidateResponse(retryContent, jobConfig.persona, selectedLayout);
+      if (!retryValidationResult.success || !retryValidationResult.data) {
+        console.warn(`Retry validation failed, using original content: ${retryValidationResult.error}`);
+      } else {
+        const retryContentHash = generateContentHash(retryValidationResult.data);
+        if (retryContentHash !== contentHash) {
+          console.log(`✅ Successfully generated unique content on retry (new hash: ${retryContentHash})`);
+          Object.assign(contentData, retryValidationResult.data);
+        } else {
+          console.warn(`⚠️ Retry still produced duplicate content, proceeding with original`);
+        }
+      }
+    }
 
     // ANALYTICS: Track hook effectiveness for optimization
     const hookAnalysis = analyzeHookEffectiveness(contentData);
@@ -245,7 +320,7 @@ export async function generateAndStoreContent(
 
   } catch (error) {
     console.error(`❌ Failed to create content for persona "${jobConfig.persona}":`, error);
-    console.error(`❌ Error stack:`, error.stack);
+    console.error(`❌ Error stack:`, error instanceof Error ? error.stack : 'No stack trace available');
     console.error(`❌ Error details:`, JSON.stringify(error, null, 2));
     console.error(`❌ Job config:`, JSON.stringify(jobConfig, null, 2));
     return null;

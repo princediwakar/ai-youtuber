@@ -103,7 +103,7 @@ async function processGenerationWithValidation(accountId: string, preferredForma
 
   } catch (error) {
     console.error(`❌ Validation/generation failed for ${accountId}:`, error);
-    console.error(`❌ Error stack for ${accountId}:`, error.stack);
+    console.error(`❌ Error stack for ${accountId}:`, error instanceof Error ? error.stack : 'No stack trace available');
     console.error(`❌ Error details for ${accountId}:`, JSON.stringify(error, null, 2));
     throw error;
   }
@@ -175,7 +175,7 @@ async function processGenerationInBackground(
 
   } catch (error) {
     console.error(`❌ Generation failed for ${account.name}:`, error);
-    console.error(`❌ Error stack for ${account.name}:`, error.stack);
+    console.error(`❌ Error stack for ${account.name}:`, error instanceof Error ? error.stack : 'No stack trace available');
     console.error(`❌ Error details for ${account.name}:`, JSON.stringify(error, null, 2));
     throw error;
   }

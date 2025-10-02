@@ -107,4 +107,62 @@ export const themes: Record<string, Theme> = {
     button: { background: ['#64DDBB', '#48BCA8'], text: '#FFFFFF', shadow: 'rgba(0, 0, 0, 0.1)' },
     feedback: { correct: ['#28A745', '#20C997'] },
   },
+
+  // --- 🚀 PREMIUM VIDEO-OPTIMIZED THEMES ---
+
+  // 5. Neon Cyber 💫 - High contrast for social media
+  NeonCyber: {
+    name: 'NeonCyber',
+    fontFamily: 'Poppins',
+    page: { background: ['#0a0a0a', '#1a1a2e'] },
+    header: { background: 'rgba(255, 255, 255, 0.1)', text: '#00ffff' },
+    text: { primary: '#ffffff', secondary: 'rgba(255, 255, 255, 0.7)', onAccent: '#000000' },
+    button: { background: ['#ff006e', '#8338ec'], text: '#ffffff', shadow: 'rgba(255, 0, 110, 0.3)' },
+    feedback: { correct: ['#00ffff', '#0080ff'] },
+  },
+
+  // 6. Sunset Vibes 🌅 - Warm and engaging
+  SunsetVibes: {
+    name: 'SunsetVibes',
+    fontFamily: 'Poppins',
+    page: { background: ['#ff9a8b', '#a8e6cf'] },
+    header: { background: 'rgba(255, 255, 255, 0.2)', text: '#2c3e50' },
+    text: { primary: '#2c3e50', secondary: 'rgba(44, 62, 80, 0.7)', onAccent: '#ffffff' },
+    button: { background: ['#ff6b6b', '#4ecdc4'], text: '#ffffff', shadow: 'rgba(255, 107, 107, 0.3)' },
+    feedback: { correct: ['#f39c12', '#e67e22'] },
+  },
+
+
+  // 8. Electric Purple ⚡ - Bold and attention-grabbing
+  ElectricPurple: {
+    name: 'ElectricPurple',
+    fontFamily: 'Poppins',
+    page: { background: ['#4776e6', '#8e54e9'] },
+    header: { background: 'rgba(255, 255, 255, 0.1)', text: '#ffffff' },
+    text: { primary: '#ffffff', secondary: 'rgba(255, 255, 255, 0.85)', onAccent: '#2d1b69' },
+    button: { background: ['#ff4081', '#ff6ec7'], text: '#ffffff', shadow: 'rgba(255, 64, 129, 0.4)' },
+    feedback: { correct: ['#00e676', '#69f0ae'] },
+  },
+
+  // 9. Golden Hour 🌟 - Premium, luxurious feel
+  GoldenHour: {
+    name: 'GoldenHour',
+    fontFamily: 'Poppins',
+    page: { background: ['#f7971e', '#ffd200'] },
+    header: { background: 'rgba(0, 0, 0, 0.1)', text: '#2c3e50' },
+    text: { primary: '#2c3e50', secondary: 'rgba(44, 62, 80, 0.8)', onAccent: '#ffffff' },
+    button: { background: ['#e74c3c', '#c0392b'], text: '#ffffff', shadow: 'rgba(231, 76, 60, 0.3)' },
+    feedback: { correct: ['#27ae60', '#2ecc71'] },
+  },
+
+  // 10. Arctic Glow ❄️ - Clean, modern, crisp
+  ArcticGlow: {
+    name: 'ArcticGlow',
+    fontFamily: 'Poppins',
+    page: { background: ['#e0eafc', '#cfdef3'] },
+    header: { background: 'rgba(52, 73, 94, 0.08)', text: '#34495e' },
+    text: { primary: '#2c3e50', secondary: 'rgba(44, 62, 80, 0.7)', onAccent: '#ffffff' },
+    button: { background: ['#3498db', '#2980b9'], text: '#ffffff', shadow: 'rgba(52, 152, 219, 0.3)' },
+    feedback: { correct: ['#1abc9c', '#16a085'] },
+  },
 };

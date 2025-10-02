@@ -324,6 +324,8 @@ function validateEnglishContent(data: any, format?: string): ValidationResult {
     return validateUsageDemoFormat(data);
   } else if (format === 'challenge') {
     return validateChallengeFormat(data);
+  } else if (format === 'simplified_word' || data.format_type === 'simplified_word') {
+    return validateSimplifiedWordFormat(data);
   }
 
   // Default MCQ validation for English content
@@ -352,6 +354,62 @@ function validateEnglishContent(data: any, format?: string): ValidationResult {
 }
 
 // Format-specific validation functions
+
+/**
+ * Validates Simplified Word format structure for single-frame videos
+ */
+function validateSimplifiedWordFormat(data: any): ValidationResult {
+  const requiredFields = ['word', 'definition', 'usage', 'format_type'];
+  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
+  
+  if (missingFields.length > 0) {
+    return {
+      success: false,
+      error: `Simplified Word format missing required fields: ${missingFields.join(', ')}`
+    };
+  }
+
+  // Validate format_type
+  if (data.format_type !== 'simplified_word') {
+    return {
+      success: false,
+      error: 'Simplified Word format must have format_type: "simplified_word"'
+    };
+  }
+
+  // Optional fields validation (part_of_speech, pronunciation)
+  if (data.part_of_speech && typeof data.part_of_speech !== 'string') {
+    return {
+      success: false,
+      error: 'part_of_speech must be a string if provided'
+    };
+  }
+
+  if (data.pronunciation && typeof data.pronunciation !== 'string') {
+    return {
+      success: false,
+      error: 'pronunciation must be a string if provided'
+    };
+  }
+
+  // Validate content for mathematical accuracy and nonsensical patterns
+  const allContent = [data.word, data.definition, data.usage].join(' ');
+  
+  // Check for nonsensical mathematical patterns
+  const mathErrors = validateMathematicalAccuracy(allContent);
+  if (mathErrors.length > 0) {
+    return {
+      success: false,
+      error: `Content contains mathematical errors: ${mathErrors.join(', ')}`
+    };
+  }
+
+  return { success: true, data };
+}
+
+/**
+ * Validates Simplified SSC format structure for single-frame videos
+ */
 
 /**
  * Validates Common Mistake format structure
@@ -527,15 +585,81 @@ function validateSSCQuickTipFormat(data: any): ValidationResult {
 }
 
 /**
+ * Validates mathematical expressions for accuracy and detects nonsensical patterns
+ */
+function validateMathematicalAccuracy(content: string): string[] {
+  const errors: string[] = [];
+  
+  // Pattern 1: Basic arithmetic equations like "X/Y=Z" or "X*Y=Z"
+  const basicMathPattern = /(\d+)\s*([+\-*/])\s*(\d+)\s*=\s*(\d+)/g;
+  let match;
+  
+  while ((match = basicMathPattern.exec(content)) !== null) {
+    const [fullMatch, num1Str, operator, num2Str, resultStr] = match;
+    const num1 = parseInt(num1Str);
+    const num2 = parseInt(num2Str);
+    const expectedResult = parseInt(resultStr);
+    
+    let actualResult: number;
+    switch (operator) {
+      case '+':
+        actualResult = num1 + num2;
+        break;
+      case '-':
+        actualResult = num1 - num2;
+        break;
+      case '*':
+        actualResult = num1 * num2;
+        break;
+      case '/':
+        actualResult = num1 / num2;
+        break;
+      default:
+        continue;
+    }
+    
+    if (Math.abs(actualResult - expectedResult) > 0.01) {
+      errors.push(`${fullMatch} is incorrect (should be ${actualResult})`);
+    }
+  }
+  
+  // Pattern 2: Year derivations like "X=>YYYY" where X doesn't logically lead to YYYY
+  const yearDerivationPattern = /(\d+)\s*=>\s*(\d{4})/g;
+  while ((match = yearDerivationPattern.exec(content)) !== null) {
+    const [fullMatch, sourceStr, yearStr] = match;
+    const source = parseInt(sourceStr);
+    const year = parseInt(yearStr);
+    
+    // Flag obvious nonsensical year derivations
+    if (source < 100 && (year < 1800 || year > 2100)) {
+      errors.push(`${fullMatch} appears to be a nonsensical year derivation`);
+    }
+  }
+  
+  // Pattern 3: Mathematical expressions that don't make logical sense
+  const nonsensicalPattern = /(\d+\/\d+\s*=\s*\d+\s*=>\s*\d{4})/g;
+  while ((match = nonsensicalPattern.exec(content)) !== null) {
+    errors.push(`${match[0]} contains multiple nonsensical relationships`);
+  }
+  
+  return errors;
+}
+
+/**
  * Generates a content hash for duplicate detection and tracking
  */
 export function generateContentHash(content: ContentData): string {
   const contentString = JSON.stringify({
+    // Primary content identifiers - prioritize the main word/concept
     main: content.question || content.hook || content.target_word || content.target_concept || 
           content.challenge_question || content.traditional_approach || content.content,
     answer: content.answer || content.correct || content.advanced_word || content.smart_shortcut || 
             content.correct_answer || content.result,
-    content_type: content.question_type || content.content_type || content.challenge_type || 'format_based'
+    content_type: content.question_type || content.content_type || content.challenge_type || 'format_based',
+    // For simplified word format, include definition to ensure uniqueness
+    definition: content.definition,
+    // Include usage to catch similar words with different examples
+    usage: content.usage_example
   });
 
   // Simple hash function (for production, use crypto.createHash)

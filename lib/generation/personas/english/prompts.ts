@@ -80,6 +80,88 @@ function getEnglishTopicGuidelines(topic: string): TopicGuideline | undefined {
 }
 
 /**
+ * Generates simplified word format prompt for single-frame videos
+ * REIMPLEMENTED: Based on MCQ format logic for better content generation
+ */
+export function generateSimplifiedWordPrompt(config: PromptConfig): string {
+  const { topicData, topic, markers, timingContext, analyticsInsights } = config;
+  const { timeMarker, tokenMarker } = markers;
+  const guidelines = getEnglishTopicGuidelines(topic);
+  
+  const primaryAudience = 'English learners';
+  const timingPrefix = timingContext ? `${timingContext.timeOfDay.toUpperCase()} LEARNING` : 'VIRAL LEARNING';
+  const audienceContext = timingContext?.audience || primaryAudience;
+  
+  if (topicData) {
+    return `You are a viral English education expert creating addictive vocabulary content for YouTube Shorts.
+
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential English vocabulary mastery'}
+
+${timingPrefix} STRATEGY:
+• HOOK: Generate contextual hooks based on the specific vocabulary being taught (15-25 chars, reference actual word/concept)
+• PSYCHOLOGY: Use social proof (90% statistics) + embarrassment avoidance + high self-efficacy (you can quickly fix this)
+• SCENARIOS: Apply to ${guidelines?.scenarios?.join(', ') || 'professional and academic communication'}
+• ENGAGEMENT: ${guidelines?.engagement || 'Create immediate vocabulary upgrade opportunities'}
+• PATTERN: Social proof statistic + "Are you making this mistake?" + quick confidence fix
+• TIMING: Perfect for ${timingContext?.timeOfDay || 'daily'} learning sessions
+
+Generate vocabulary content that targets ${audienceContext} who want to sound more fluent and professional:
+
+CONTENT APPROACH:
+• Lead with confidence-building ("Master this and sound fluent!")
+• Present vocabulary that elevates communication skills
+• Include practical, immediate application opportunities
+• Create "aha!" moments that boost learning motivation
+
+WORD SELECTION CRITERIA:
+• PRECISION: Choose words that directly address the topic focus: "${guidelines?.focus}"
+• RELEVANCE: Focus on vocabulary that ${audienceContext} encounter in real situations
+• DIFFICULTY: Challenging enough to teach but achievable for motivated learners
+• IMPACT: Provide vocabulary that immediately improves communication
+• SCENARIOS: Perfect for ${guidelines?.scenarios?.join(', ') || 'professional contexts'}
+
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "word": "vocabulary_word_here",
+  "pronunciation": "phonetic_guide_here", 
+  "part_of_speech": "noun/verb/adjective/etc",
+  "definition": "clear_definition_under_100_chars",
+  "usage": "example_sentence_under_120_chars",
+  "format_type": "simplified_word"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
+
+[${timeMarker}-${tokenMarker}]`;
+  } else {
+    return `You are an expert English educator creating viral vocabulary content for YouTube Shorts.
+
+Generate vocabulary content for ${primaryAudience} on "${topic}" that challenges while building confidence.
+
+REQUIREMENTS:
+• WORD FOCUS: Choose vocabulary that directly addresses the topic "${topic}"
+• PRACTICAL: Focus on words used in professional and academic contexts
+• ENGAGEMENT: Create immediate "vocabulary upgrade" value
+• DEFINITION: Provide clear explanation that elevates communication (under 100 characters)
+• USAGE: Include practical example that shows professional application (under 120 characters)
+
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "word": "vocabulary_word_here",
+  "pronunciation": "phonetic_guide_here",
+  "part_of_speech": "noun/verb/adjective/etc", 
+  "definition": "clear_definition",
+  "usage": "professional_context_example",
+  "format_type": "simplified_word"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
+
+[${timeMarker}-${tokenMarker}]`;
+  }
+}
+
+/**
  * Generates main English vocabulary prompt for MCQ format
  */
 export function generateEnglishPrompt(config: PromptConfig): string {

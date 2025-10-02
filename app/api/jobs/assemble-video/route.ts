@@ -27,7 +27,7 @@ function getFFmpegPath(): string {
       }
     }
   } catch (error) {
-    console.warn('Could not require @ffmpeg-installer/ffmpeg:', error.message);
+    console.warn('Could not require @ffmpeg-installer/ffmpeg:', error instanceof Error ? error.message : String(error));
   }
   
   // Fallback to system FFmpeg
@@ -65,7 +65,7 @@ function getRandomAudioFile(): string {
       const audioFiles = require('fs').readdirSync(publicAudioDir);
       console.log(`Available audio files:`, audioFiles);
     } catch (err) {
-      console.log(`Could not read audio directory:`, err.message);
+      console.log(`Could not read audio directory:`, err instanceof Error ? err.message : String(err));
     }
   } else {
     console.log(`Audio directory does not exist: ${publicAudioDir}`);
@@ -254,13 +254,14 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
 
   // Normalize job data structure for different formats
   const questionData = job.data.content || {};
+  const layoutType = job.data.layoutType || 'mcq'; // Get layout type from job data
   
   // Determine actual frame count from frameUrls length
   const actualFrameCount = frameUrls.length;
   
   // Generate durations array based on actual frame count
   const durations = Array.from({ length: actualFrameCount }, (_, index) => {
-    return getFrameDuration(questionData, index + 1) || 4;
+    return getFrameDuration(questionData, index + 1, layoutType) || 4;
   });
 
   // Simplified approach: Create one video directly from frames with faster processing
@@ -412,9 +413,17 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
 }
 
 
-function getFrameDuration(questionData: any, frameNumber: number): number {
+function getFrameDuration(questionData: any, frameNumber: number, layoutType?: string): number {
   if (!questionData || typeof questionData !== 'object') {
     return 5; // Safe fallback for invalid data - increased from 4
+  }
+  
+  // SIMPLIFIED FORMATS: Single frame gets full video duration
+  if (layoutType === 'simplified_word') {
+    if (frameNumber === 1) {
+      return 15; // 15 seconds for the single comprehensive frame
+    }
+    return 0; // No other frames should exist
   }
   
   const MIN_DURATION = 1.5; // Minimum time to register visual content

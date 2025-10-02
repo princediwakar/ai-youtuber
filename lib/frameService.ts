@@ -1,4 +1,4 @@
-//lib/frameService.ts
+  //lib/frameService.ts
 import { createCanvas, Canvas, registerFont } from 'canvas';
 import path from 'path';
 import { promises as fs } from 'fs';
@@ -71,7 +71,7 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
   
   // Calculate frame durations for analytics tracking
   const frameDurations = Array.from({ length: layout.frames.length }, (_, index) => {
-    return calculateFrameDuration(contentData, index + 1) || 4;
+    return calculateFrameDuration(contentData, index + 1, layoutType) || 4;
   });
   
   const { updateJob } = await import('@/lib/database');
@@ -123,9 +123,17 @@ function selectThemeForPersona(persona: string): { theme: Theme; themeName: stri
   };
 }
 
-function calculateFrameDuration(questionData: any, frameNumber: number): number {
+function calculateFrameDuration(questionData: any, frameNumber: number, layoutType?: string): number {
   if (!questionData || typeof questionData !== 'object') {
     return 5; // Safe fallback for invalid data
+  }
+  
+  // SIMPLIFIED FORMATS: Single frame gets full video duration
+  if (layoutType === 'simplified_word') {
+    if (frameNumber === 1) {
+      return 15; // 15 seconds for the single comprehensive frame
+    }
+    return 0; // No other frames should exist
   }
   
   const MIN_DURATION = 1.5; // Minimum time to register visual content

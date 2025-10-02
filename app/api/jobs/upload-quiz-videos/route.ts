@@ -309,7 +309,7 @@ function generateDescription(accountId: string, contentData: any, topicName: str
     'astronomy_shots': '🚀 Amazing space facts!'
   };
   
-  const hook = contentData.hook || defaultHooks[accountId] || '🎯 Test your knowledge!';
+  const hook = contentData.hook || (defaultHooks as any)[accountId] || '🎯 Test your knowledge!';
   const question = contentData.question || contentData.content || 'Check out this knowledge!';
   const explanation = contentData.explanation || 'Watch for the answer!';
   

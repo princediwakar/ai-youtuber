@@ -154,7 +154,7 @@ class AccountService {
         ['active']
       );
 
-      return result.rows.map(row => this.mapRowToAccount(row));
+      return result.rows.map((row: any) => this.mapRowToAccount(row));
     } catch (error) {
       console.error('Error fetching all accounts:', error);
       throw new Error('Failed to fetch accounts');

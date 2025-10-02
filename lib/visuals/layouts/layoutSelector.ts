@@ -8,8 +8,9 @@ import * as commonMistakeLayout from './commonMistakeLayout';
 import * as quickFixLayout from './quickFixLayout';
 import * as usageDemoLayout from './usageDemoLayout';
 import * as challengeLayout from './challengeLayout';
+import * as simplifiedWordLayout from './simplifiedWordLayout';
 
-export type LayoutType = 'mcq' | 'quick_tip' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'challenge';
+export type LayoutType = 'mcq' | 'quick_tip' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'challenge' | 'simplified_word';
 
 export interface LayoutDefinition {
   type: LayoutType;
@@ -19,8 +20,15 @@ export interface LayoutDefinition {
   };
 }
 
-// Layout definitions for all 6 supported formats (hook frames now enabled)
+// Layout definitions for all supported formats (including new simplified format)
 export const layouts: Record<LayoutType, LayoutDefinition> = {
+  simplified_word: {
+    type: 'simplified_word',
+    frames: ['word'],
+    renderers: {
+      word: simplifiedWordLayout.renderWordFrame,
+    },
+  },
   mcq: {
     type: 'mcq',
     frames: ['hook', 'question', 'answer', 'explanation', 'cta'],
@@ -83,15 +91,35 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
 };
 
-// ANALYTICS-DRIVEN: MCQ primary + Health Quick Tips breakthrough format
-// MCQ shows 1.26% engagement, Health Quick Tips show 1.2K views breakthrough
+// ANALYTICS-DRIVEN: Simplified Word format for maximum engagement
+// Addressing 73% zero engagement by using ultra-simple single-frame format
 export function detectLayoutType(contentData: any): LayoutType {
   if (!contentData) {
-    return 'mcq'; // Default fallback
+    return 'mcq'; // Proven default with 1.26% engagement
   }
   
   const detectedKeys = Object.keys(contentData);
   console.log(`🔍 Layout detection: content has keys: ${detectedKeys.join(', ')}`);
+  
+  // PRIORITY 1: Force MCQ for SSC content (analytics-driven decision)
+  const hasSSCStructure = detectedKeys.includes('fact_title') || 
+                          detectedKeys.includes('key_info');
+  
+  if (hasSSCStructure) {
+    console.log(`🔄 Detected SSC content - using MCQ layout (best performing format)`);
+    return 'mcq'; // Force MCQ for better engagement
+  }
+  
+  // PRIORITY 2: Detect simplified word format structure
+  const hasSimplifiedWordStructure = detectedKeys.includes('word') && 
+                                     detectedKeys.includes('definition') &&
+                                     detectedKeys.includes('format_type') &&
+                                     contentData.format_type === 'simplified_word';
+  
+  if (hasSimplifiedWordStructure) {
+    console.log(`✅ Detected simplified_word layout - using ultra-simple single frame format`);
+    return 'simplified_word';
+  }
   
   // ANALYTICS BREAKTHROUGH: Detect quick_tip structure for health content
   const hasQuickTipStructure = detectedKeys.includes('hook') && 
@@ -105,8 +133,19 @@ export function detectLayoutType(contentData: any): LayoutType {
     return 'quick_tip';
   }
   
-  // Default to MCQ for standard question/answer content
-  console.log(`🎯 Using MCQ layout (proven 1.26% engagement format)`);
+  // PROVEN FORMAT: MCQ for traditional content (1.26% engagement success)
+  const hasMCQStructure = detectedKeys.includes('question') && 
+                         detectedKeys.includes('options') ||
+                         detectedKeys.includes('hook') && 
+                         detectedKeys.includes('explanation');
+  
+  if (hasMCQStructure) {
+    console.log(`✅ Detected MCQ layout structure - using proven format (1.26% engagement)`);
+    return 'mcq';
+  }
+  
+  // Default to proven MCQ format
+  console.log(`🎯 Using MCQ layout (proven default format)`);
   return 'mcq';
 }
 
@@ -115,26 +154,29 @@ export function getLayout(layoutType: LayoutType): LayoutDefinition {
   return layouts[layoutType];
 }
 
-// Create render functions for a layout - ANALYTICS-DRIVEN MCQ + Health Quick Tips
+// Create render functions for a layout - ANALYTICS-DRIVEN with Simplified Word priority
 export function createRenderFunctions(
   layoutType: LayoutType, 
   job: QuizJob, 
   theme: Theme
 ): Array<(canvas: Canvas) => void> {
-  // ANALYTICS LOGIC: Allow quick_tip for proven health breakthrough, force MCQ for others
+  // ANALYTICS LOGIC: Prioritize simplified_word for maximum engagement
   let finalLayoutType = layoutType;
   
-  if (layoutType === 'quick_tip') {
+  if (layoutType === 'simplified_word') {
+    console.log(`✅ Using simplified_word render functions (ultra-simple single frame)`);
+    // Keep simplified_word - maximum simplicity for engagement
+  } else if (layoutType === 'quick_tip') {
     console.log(`✅ Using quick_tip render functions (1.2K views breakthrough format)`);
     // Keep quick_tip - it works for health content!
-  } else if (layoutType !== 'mcq') {
-    console.log(`🎯 Analytics override: forcing MCQ render functions (requested: ${layoutType})`);
-    finalLayoutType = 'mcq'; // Force MCQ for non-working formats
+  } else {
+    console.log(`✅ Using requested layout: ${layoutType}`);
+    // Keep all layouts available - no forced overrides
   }
   
   const layout = getLayout(finalLayoutType);
   if (!layout) {
-    // Fallback to MCQ if layout not found
+    // Fallback to proven MCQ if layout not found
     const mcqLayout = getLayout('mcq');
     if (!mcqLayout) {
       throw new Error('MCQ layout must be available as fallback');
@@ -148,9 +190,9 @@ export function createRenderFunctions(
   return finalLayout.frames.map(frameType => {
     const renderer = finalLayout.renderers[frameType];
     if (!renderer) {
-      console.warn(`No renderer found for frame type: ${frameType}, using hook frame`);
-      // Fallback to hook frame
-      return (canvas: Canvas) => finalLayout.renderers.hook(canvas, job, theme);
+      console.warn(`No renderer found for frame type: ${frameType}, using word frame`);
+      // Fallback to word frame for simplified layout
+      return (canvas: Canvas) => finalLayout.renderers.word || finalLayout.renderers.hook(canvas, job, theme);
     }
     return (canvas: Canvas) => renderer(canvas, job, theme);
   });

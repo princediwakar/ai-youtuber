@@ -10,6 +10,7 @@ const MANAGER_TAG = (key: string) => `[managed-by:quiz-app; key:${key}]`;
 const playlistCreationLocks = new Map<string, Promise<string>>();
 
 const FORMAT_DISPLAY_NAMES: Record<LayoutType, string> = {
+  simplified_word: 'Vocabulary Lessons',
   mcq: 'Quiz Questions', common_mistake: 'Common Mistakes', quick_fix: 'Quick Fixes', 
   usage_demo: 'Usage Examples', quick_tip: 'Quick Tips', 
   challenge: 'Interactive Challenges'
@@ -120,6 +121,7 @@ function generateTags(accountId: string, persona: PersonaType, topic: string, fo
   };
   
   const formatHashtags: Record<FormatType, string[]> = {
+    simplified_word: ['#Vocabulary', '#WordOfTheDay', '#Learn'],
     mcq: ['#Quiz', '#Test', '#MCQ'],
     common_mistake: ['#Mistakes', '#Fix', '#Avoid'],
     quick_fix: ['#QuickFix', '#Upgrade', '#Improve'],

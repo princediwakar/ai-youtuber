@@ -53,6 +53,7 @@ export type PersonaType =
   | 'space_facts_quiz';
 
 export type FormatType = 
+  | 'simplified_word'
   | 'mcq'
   | 'common_mistake'
   | 'quick_fix'
