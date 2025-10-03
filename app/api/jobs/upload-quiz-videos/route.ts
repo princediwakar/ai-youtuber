@@ -46,14 +46,15 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting upload processing for account: ${accountId || 'multiple'}`);
 
-    // FIXED: Process synchronously instead of fire-and-forget
-    const result = await processCompleteUploadFlow(accountId);
+    // Process asynchronously to prevent timeout
+    processCompleteUploadFlow(accountId).catch(error => {
+      console.error('Background upload processing failed:', error);
+    });
 
     return NextResponse.json({ 
       success: true, 
       accountId: accountId || 'multiple',
-      result,
-      message: 'Upload processing completed'
+      message: 'Upload processing started in background'
     });
 
   } catch (error) {

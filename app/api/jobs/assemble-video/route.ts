@@ -114,14 +114,15 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting video assembly for account: ${accountId || 'all'}`);
 
-    // FIXED: Process synchronously instead of fire-and-forget
-    const result = await processVideoAssemblyWithRetry(accountId);
+    // Process asynchronously to prevent timeout
+    processVideoAssemblyWithRetry(accountId).catch(error => {
+      console.error('Background video assembly failed:', error);
+    });
 
     return NextResponse.json({ 
       success: true, 
       accountId: accountId || 'all',
-      result,
-      message: 'Video assembly completed'
+      message: 'Video assembly started in background'
     });
 
   } catch (error) {
@@ -297,11 +298,11 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
       const process = spawn(ffmpegPath, clipArgs, { cwd: tempDir });
       let stderr = '';
       
-      // 30 second timeout per frame
+      // 15 second timeout per frame
       const timeoutId = setTimeout(() => {
         process.kill('SIGKILL');
-        reject(new Error(`Frame ${i} processing timed out after 30 seconds`));
-      }, 30000);
+        reject(new Error(`Frame ${i} processing timed out after 15 seconds`));
+      }, 15000);
       
       process.stderr?.on('data', (d) => { stderr += d.toString(); });
       process.on('close', (code) => {
@@ -361,11 +362,11 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     let stderr = '';
     let stdout = '';
     
-    // Set a 90-second timeout for the final assembly
+    // Set a 60-second timeout for the final assembly
     const timeoutId = setTimeout(() => {
       ffmpegProcess.kill('SIGKILL');
-      reject(new Error('FFmpeg final assembly timed out after 90 seconds'));
-    }, 90000);
+      reject(new Error('FFmpeg final assembly timed out after 60 seconds'));
+    }, 60000);
     
     ffmpegProcess.stdout?.on('data', (d) => { stdout += d.toString(); });
     ffmpegProcess.stderr?.on('data', (d) => { stderr += d.toString(); });
