@@ -30,14 +30,15 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting frame creation for account: ${accountId || 'all'}`);
 
-    // FIXED: Process synchronously instead of fire-and-forget
-    const result = await processFrameCreationWithRetry(accountId);
+    // Process asynchronously to prevent timeout
+    processFrameCreationWithRetry(accountId).catch(error => {
+      console.error('Background frame creation failed:', error);
+    });
 
     return NextResponse.json({ 
       success: true, 
       accountId: accountId || 'all',
-      result,
-      message: 'Frame creation completed'
+      message: 'Frame creation started in background'
     });
   } catch (error) {
     console.error('Frame creation batch failed:', error);
