@@ -398,6 +398,97 @@ class AnalyticsInsightsService {
     };
   }
 
+
+ /**
+   * ADDED: Get comprehensive parameter performance analytics
+   */
+ async getParameterAnalytics(accountId?: string, persona?: string) {
+  const params: any[] = [];
+  const conditions: string[] = [];
+
+  if (accountId) {
+    params.push(accountId);
+    conditions.push(`va.account_id = $${params.length}`);
+  }
+  if (persona) {
+    params.push(persona);
+    conditions.push(`qj.persona = $${params.length}`);
+  }
+  
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')} AND va.collected_at > NOW() - INTERVAL '60 days'` : `WHERE va.collected_at > NOW() - INTERVAL '60 days'`;
+
+  // Theme + Audio combinations
+  const themeAudioData = await query(`
+    SELECT 
+      va.theme_name as theme,
+      va.audio_file as audio,
+      ROUND(AVG(va.engagement_rate), 2) as "avgEngagementRate",
+      COUNT(*) as "videoCount"
+    FROM video_analytics va
+    JOIN quiz_jobs qj ON va.job_id = qj.id
+    ${whereClause.replace('WHERE', 'WHERE va.theme_name IS NOT NULL AND')}
+    GROUP BY va.theme_name, va.audio_file
+    HAVING COUNT(*) >= 1
+    ORDER BY "avgEngagementRate" DESC
+    LIMIT 10
+  `, params);
+
+  // Duration analytics
+  const durationData = await query(`
+    SELECT 
+      CASE 
+        WHEN va.total_duration IS NULL THEN 'Unknown'
+        WHEN va.total_duration < 15 THEN 'Short (< 15s)'
+        WHEN va.total_duration < 30 THEN 'Medium (15-30s)'
+        ELSE 'Long (30s+)'
+      END as "durationRange",
+      ROUND(AVG(va.engagement_rate), 2) as "avgEngagementRate",
+      COUNT(*) as "videoCount"
+    FROM video_analytics va
+    JOIN quiz_jobs qj ON va.job_id = qj.id
+    ${whereClause}
+    GROUP BY "durationRange"
+    ORDER BY "avgEngagementRate" DESC
+  `, params);
+
+  // Question type performance
+  const questionTypeData = await query(`
+    SELECT 
+      COALESCE(va.question_type, 'Unknown') as "questionType",
+      ROUND(AVG(va.engagement_rate), 2) as "avgEngagementRate",
+      COUNT(*) as "videoCount"
+    FROM video_analytics va
+    JOIN quiz_jobs qj ON va.job_id = qj.id
+    ${whereClause}
+    GROUP BY va.question_type
+    HAVING COUNT(*) >= 2
+    ORDER BY "avgEngagementRate" DESC
+  `, params);
+
+  // Hook type performance
+  const hookTypeData = await query(`
+    SELECT 
+      COALESCE(va.hook_type, 'Unknown') as "hookType",
+      ROUND(AVG(va.engagement_rate), 2) as "avgEngagementRate",
+      COUNT(*) as "videoCount"
+    FROM video_analytics va
+    JOIN quiz_jobs qj ON va.job_id = qj.id
+    ${whereClause.replace('WHERE', 'WHERE va.hook_type IS NOT NULL AND')}
+    GROUP BY va.hook_type
+    HAVING COUNT(*) >= 2
+    ORDER BY "avgEngagementRate" DESC
+  `, params);
+
+  return {
+    themeAudioCombinations: themeAudioData.rows,
+    durationAnalytics: durationData.rows,
+    questionTypePerformance: questionTypeData.rows,
+    hookTypePerformance: hookTypeData.rows
+  };
+}
+
+
+
   /**
    * Get audio performance analytics
    */

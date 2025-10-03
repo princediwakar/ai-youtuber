@@ -1,5 +1,6 @@
+// app/api/analytics/summary/route.ts
 import { NextResponse } from 'next/server';
-import { analyticsInsightsService as analyticsService } from '@/lib/analytics/insightsService';
+import { analyticsCollectionService as analyticsService } from '@/lib/analytics/collectionService';
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';

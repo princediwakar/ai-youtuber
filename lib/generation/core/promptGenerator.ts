@@ -15,7 +15,7 @@ import {
   addJsonFormatInstructions,
   type PromptConfig
 } from '../routing/promptRouter';
-import type { AIAnalyticsInsights } from '../../analytics/insightsService';
+import type { AIAnalyticsInsights } from '../../analytics/types';
 import { 
   generateTopicWeights, 
   getTimingContext, 

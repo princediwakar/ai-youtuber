@@ -3,7 +3,7 @@
  * Centralized type definitions for better maintainability
  */
 
-import type { AIAnalyticsInsights } from '../../analytics/insightsService';
+import type { AIAnalyticsInsights } from '../../analytics/types';
 import type { TimingContext } from './analyticsOptimizer';
 
 export interface VariationMarkers {

@@ -1,5 +1,11 @@
+// lib/refinementService.ts
 import { query } from './database';
-import { analyticsInsightsService as analyticsService, type AIAnalyticsInsights } from './analytics/insightsService';
+import type { AIAnalyticsInsights } from './analytics/types';
+// Import for AI-powered analysis
+import { analyticsInsightsService } from './analytics/insightsService';
+// FIX: Add import for the collection service to get basic data summaries
+import { analyticsCollectionService } from './analytics/collectionService';
+
 
 export interface ContentInsight {
   topic: string;
@@ -17,7 +23,7 @@ export interface PersonaInsights {
   avgViews: number;
   topicInsights: ContentInsight[];
   recommendations: string[];
-  aiInsights?: AIAnalyticsInsights; // New AI-powered insights
+  aiInsights?: AIAnalyticsInsights;
 }
 
 export interface RefinementReport {
@@ -49,7 +55,7 @@ class RefinementService {
       WHERE qj.persona = $1
         AND va.collected_at > NOW() - INTERVAL '30 days'
       GROUP BY qj.topic, qj.topic_display_name
-      HAVING COUNT(*) >= 2  -- Only analyze topics with 2+ videos
+      HAVING COUNT(*) >= 2
       ORDER BY avg_engagement_rate DESC, avg_views DESC
     `, [persona]);
 
@@ -66,7 +72,6 @@ class RefinementService {
    * Generate insights and recommendations for a specific persona
    */
   async generatePersonaInsights(persona: string, accountId: string, includeAI: boolean = true): Promise<PersonaInsights> {
-    // Get overall stats for the persona
     const overallStats = await query(`
       SELECT 
         COUNT(*) as total_videos,
@@ -81,19 +86,17 @@ class RefinementService {
     const stats = overallStats.rows[0];
     const topicInsights = await this.analyzeTopicPerformance(persona);
 
-    // Generate basic recommendations based on performance patterns
     const recommendations = this.generateRecommendations(topicInsights, parseFloat(stats.avg_engagement_rate || '0'));
 
     let aiInsights: AIAnalyticsInsights | undefined = undefined;
 
-    // Generate AI-powered insights if requested and we have sufficient data
     if (includeAI && parseInt(stats.total_videos) >= 5) {
       try {
         console.log(`[RefinementService] Generating AI insights for ${persona}`);
-        const aiAnalysis = await analyticsService.analyzePerformanceWithAI(accountId, persona);
+        // This call correctly uses the insights service
+        const aiAnalysis = await analyticsInsightsService.analyzePerformanceWithAI(accountId, persona);
         aiInsights = aiAnalysis.aiInsights;
         
-        // Merge AI recommendations with basic recommendations
         if (aiInsights.contentRecommendations.length > 0) {
           recommendations.push('=== AI-Powered Recommendations ===');
           recommendations.push(...aiInsights.contentRecommendations);
@@ -134,17 +137,14 @@ class RefinementService {
     const bestTopic = topicInsights[0];
     const worstTopic = topicInsights[topicInsights.length - 1];
 
-    // High-performing topic recommendations
     if (bestTopic.avgEngagementRate > avgEngagementRate * 1.5) {
       recommendations.push(`Focus more on "${bestTopic.topic}" content - it shows ${bestTopic.avgEngagementRate}% engagement rate`);
     }
 
-    // Low-performing topic recommendations
     if (worstTopic.avgEngagementRate < avgEngagementRate * 0.5) {
       recommendations.push(`Reconsider "${worstTopic.topic}" content strategy - engagement rate is below average`);
     }
 
-    // Engagement rate analysis
     if (avgEngagementRate < 0.5) {
       recommendations.push('Consider improving titles with more engaging questions or emotional hooks');
       recommendations.push('Experiment with different visual styles or question formats');
@@ -152,12 +152,10 @@ class RefinementService {
       recommendations.push('Great engagement rate! Scale successful content patterns to similar topics');
     }
 
-    // Topic diversity recommendations
     if (topicInsights.length < 3) {
       recommendations.push('Diversify content topics to identify new high-performing areas');
     }
 
-    // Views vs engagement analysis
     const highViewsLowEngagement = topicInsights.filter(t => t.avgViews > 200 && t.avgEngagementRate < 0.3);
     if (highViewsLowEngagement.length > 0) {
       recommendations.push('Some high-view topics have low engagement - focus on improving call-to-action or question difficulty');
@@ -172,14 +170,12 @@ class RefinementService {
   async generateRefinementReport(): Promise<RefinementReport> {
     console.log('[RefinementService] Generating content refinement report...');
 
-    // Get all active personas from accounts
     const accountsResult = await query(`
       SELECT id, personas FROM accounts WHERE status = 'active'
     `);
 
     const accountInsights: PersonaInsights[] = [];
 
-    // Analyze each persona
     for (const account of accountsResult.rows) {
       const personas = account.personas as string[];
       
@@ -195,7 +191,6 @@ class RefinementService {
       }
     }
 
-    // Generate global insights
     const allTopicInsights = accountInsights.flatMap(ai => ai.topicInsights);
     const globalInsights = this.generateGlobalInsights(allTopicInsights, accountInsights);
 
@@ -212,19 +207,16 @@ class RefinementService {
    * Generate cross-account insights and recommendations
    */
   private generateGlobalInsights(allTopics: ContentInsight[], accountInsights: PersonaInsights[]) {
-    // Sort topics by performance
     const sortedTopics = [...allTopics].sort((a, b) => b.avgEngagementRate - a.avgEngagementRate);
     
     const bestPerformingTopics = sortedTopics.slice(0, 5);
     const worstPerformingTopics = sortedTopics.slice(-5).reverse();
     
-    // Calculate optimal engagement rate (top 25% average)
     const topQuartileSize = Math.max(1, Math.floor(sortedTopics.length * 0.25));
     const optimalEngagementRate = topQuartileSize > 0 
       ? sortedTopics.slice(0, topQuartileSize).reduce((sum, t) => sum + t.avgEngagementRate, 0) / topQuartileSize
       : 0;
 
-    // Generate global recommendations
     const recommendedImprovements: string[] = [];
 
     if (bestPerformingTopics.length > 0) {
@@ -256,9 +248,6 @@ class RefinementService {
     const allRecommendations: string[] = [];
 
     for (const insights of report.accountInsights) {
-      // For now, we'll log recommendations rather than automatically updating prompts
-      // This ensures human oversight for AI prompt modifications
-      
       console.log(`[RefinementService] Insights for ${insights.persona} (${insights.accountId}):`);
       console.log(`  - Engagement Rate: ${insights.avgEngagementRate}%`);
       console.log(`  - Top Topic: ${insights.topicInsights[0]?.topic || 'N/A'}`);
@@ -271,7 +260,6 @@ class RefinementService {
       updatedCount++;
     }
 
-    // Global recommendations
     report.globalInsights.recommendedImprovements.forEach(rec => {
       console.log(`[Global] ${rec}`);
       allRecommendations.push(`[Global] ${rec}`);
@@ -321,9 +309,9 @@ class RefinementService {
     topRecommendations: string[];
   }> {
     try {
-      const result = await analyticsService.getAnalyticsSummary();
+      // FIX: Call getAnalyticsSummary on the collection service
+      const result = await analyticsCollectionService.getAnalyticsSummary();
       
-      // Get personas count
       const personasResult = await query(`
         SELECT COUNT(DISTINCT persona) as persona_count
         FROM quiz_jobs qj
@@ -332,7 +320,7 @@ class RefinementService {
       `);
 
       return {
-        lastAnalysis: new Date(), // In production, store this in database
+        lastAnalysis: new Date(),
         totalPersonas: parseInt(personasResult.rows[0]?.persona_count || '0'),
         avgEngagementRate: result.avgEngagementRate,
         topRecommendations: [
@@ -349,6 +337,5 @@ class RefinementService {
   }
 }
 
-// Export singleton instance
 export const refinementService = new RefinementService();
 export default refinementService;

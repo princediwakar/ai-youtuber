@@ -1,5 +1,6 @@
+// app/api/dashboard/route.ts
 import { NextResponse } from 'next/server';
-import { analyticsInsightsService as analyticsService } from '@/lib/analytics/insightsService';
+import { analyticsCollectionService as analyticsService } from '@/lib/analytics/collectionService';
 
 // This export ensures that Next.js treats this route as a dynamic API endpoint,
 // preventing it from caching responses and always fetching the latest data.
