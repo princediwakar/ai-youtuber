@@ -15,7 +15,7 @@ import {
   addJsonFormatInstructions,
   type PromptConfig
 } from '../routing/promptRouter';
-import type { AIAnalyticsInsights } from '../../analyticsService';
+import type { AIAnalyticsInsights } from '../../analytics/insightsService';
 import { 
   generateTopicWeights, 
   getTimingContext, 
@@ -91,6 +91,7 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
   };
   
   // Use format-aware prompt generation for new formats or layouts
+  // This handles the weighted layout selection from generationService.ts
   if ((jobConfig.preferredFormat && jobConfig.preferredFormat !== 'mcq') || 
       (jobConfig.preferredLayout && jobConfig.preferredLayout !== 'mcq')) {
     prompt = generateFormatPrompt(promptConfig);
@@ -104,11 +105,8 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
       throw new Error(`Topic "${topic}" not found for persona "${persona}"`);
     }
     
-    // Use analytics-driven format selection or fallback to randomization
-    const optimalFormat = getOptimalFormat(analyticsInsights, 'multiple_choice');
-    const rand = Math.random();
-    const questionFormat = analyticsInsights ? optimalFormat : 
-      (rand < 0.7 ? 'multiple_choice' : 'true_false');
+    // Use analytics-driven format selection or default to multiple_choice
+    const questionFormat = getOptimalFormat(analyticsInsights, 'multiple_choice');
     
     promptConfig.questionFormat = questionFormat;
     
@@ -124,11 +122,8 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
   else if (persona === 'english_vocab_builder') {
     prompt = generateEnglishPrompt(promptConfig);
     
-    // Use analytics-driven format selection
-    const optimalFormat = getOptimalFormat(analyticsInsights, 'multiple_choice');
-    const rand = Math.random();
-    const questionFormat = analyticsInsights ? optimalFormat :
-      (rand < 0.85 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason'));
+    // Use analytics-driven format selection or default to multiple_choice
+    const questionFormat = getOptimalFormat(analyticsInsights, 'multiple_choice');
     
     prompt = addJsonFormatInstructions(prompt, questionFormat);
   }
@@ -140,11 +135,8 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
       prompt = generateSSCMCQPrompt(promptConfig);
     }
     
-    // Use analytics-driven format selection
-    const optimalFormat = getOptimalFormat(analyticsInsights, 'multiple_choice');
-    const rand = Math.random();
-    const questionFormat = analyticsInsights ? optimalFormat :
-      (rand < 0.85 ? 'multiple_choice' : (rand < 1 ? 'true_false' : 'assertion_reason'));
+    // Use analytics-driven format selection or default to multiple_choice
+    const questionFormat = getOptimalFormat(analyticsInsights, 'multiple_choice');
     
     prompt = addJsonFormatInstructions(prompt, questionFormat);
   }

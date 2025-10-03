@@ -3,7 +3,7 @@
  * Uses performance data to enhance prompt generation
  */
 
-import type { AIAnalyticsInsights } from '../../analyticsService';
+import type { AIAnalyticsInsights } from '../../analytics/insightsService';
 
 export interface TopicWeight {
   topic: string;

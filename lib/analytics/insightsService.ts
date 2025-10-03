@@ -7,6 +7,40 @@ class AnalyticsInsightsService {
   private readonly apiUrl = 'https://api.deepseek.com/v1/chat/completions';
 
   /**
+   * Return empty analytics data when parameters are invalid or data is unavailable
+   */
+  private getEmptyAnalyticsData(accountId: string, persona: string): AnalyticsDataForAI {
+    return {
+      accountId,
+      persona,
+      totalVideos: 0,
+      avgEngagementRate: 0,
+      avgViews: 0,
+      topPerformingTopics: [],
+      underperformingTopics: [],
+      recentTrends: {
+        engagementTrend: 'stable',
+        viewsTrend: 'stable',
+        topicPerformanceShifts: []
+      },
+      timingInsights: {
+        bestHours: [],
+        bestDays: [],
+        worstHours: [],
+        worstDays: [],
+        hourlyData: [],
+        weeklyData: []
+      },
+      formatInsights: {
+        bestFormat: 'mcq',
+        worstFormat: 'unknown',
+        mostConsistent: 'mcq',
+        formatData: []
+      }
+    };
+  }
+
+  /**
    * Complete AI-powered analytics workflow
    */
   async analyzePerformanceWithAI(accountId: string, persona: string): Promise<{
@@ -30,10 +64,35 @@ class AnalyticsInsightsService {
    * Collect comprehensive analytics data for AI analysis
    */
   async collectAnalyticsDataForAI(accountId: string, persona: string): Promise<AnalyticsDataForAI> {
-    // This implementation remains the same as before...
     console.log(`[InsightsService] Collecting AI data for ${persona} (${accountId})`);
 
-    const overallStats = await query(`
+    // Validate parameters to prevent SQL errors
+    if (!accountId || !persona || typeof accountId !== "string" || typeof persona !== "string") {
+      console.log(`[InsightsService] Invalid parameters: accountId="${accountId}", persona="${persona}"`);
+      return this.getEmptyAnalyticsData(accountId || "unknown", persona || "unknown");
+    }
+
+    // Additional validation for SQL injection prevention
+    if (accountId.includes(";") || persona.includes(";") || accountId.includes("--") || persona.includes("--")) {
+      console.log(`[InsightsService] Potentially unsafe parameters detected`);
+      return this.getEmptyAnalyticsData(accountId, persona);
+    }
+
+    // Add timeout wrapper for database queries
+    const queryWithTimeout = async <T>(queryFn: () => Promise<T>, timeoutMs: number = 10000): Promise<T | null> => {
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout')), timeoutMs)
+        );
+        return await Promise.race([queryFn(), timeoutPromise]);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Query failed';
+        console.log(`[InsightsService] Query skipped: ${errorMessage}`);
+        return null;
+      }
+    };
+
+    const overallStats = await queryWithTimeout(() => query(`
       SELECT 
         COUNT(*) as total_videos,
         ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
@@ -42,9 +101,13 @@ class AnalyticsInsightsService {
       JOIN quiz_jobs qj ON va.job_id = qj.id
       WHERE qj.persona = $1 AND va.account_id = $2
         AND va.collected_at > NOW() - INTERVAL '30 days'
-    `, [persona, accountId]);
+    `, [persona, accountId]));
 
-    const topTopics = await query(`
+    if (!overallStats) {
+      return this.getEmptyAnalyticsData(accountId, persona);
+    }
+
+    const topTopics = await queryWithTimeout(() => query(`
       SELECT 
         qj.topic_display_name as topic,
         ROUND(AVG(va.engagement_rate), 2) as engagement_rate,
@@ -55,9 +118,9 @@ class AnalyticsInsightsService {
       WHERE qj.persona = $1 AND va.account_id = $2 AND va.collected_at > NOW() - INTERVAL '30 days'
       GROUP BY qj.topic_display_name HAVING COUNT(*) >= 2
       ORDER BY engagement_rate DESC, views DESC LIMIT 5
-    `, [persona, accountId]);
+    `, [persona, accountId]));
 
-    const underTopics = await query(`
+    const underTopics = await queryWithTimeout(() => query(`
       SELECT 
         qj.topic_display_name as topic,
         ROUND(AVG(va.engagement_rate), 2) as engagement_rate,
@@ -68,9 +131,9 @@ class AnalyticsInsightsService {
       WHERE qj.persona = $1 AND va.account_id = $2 AND va.collected_at > NOW() - INTERVAL '30 days'
       GROUP BY qj.topic_display_name HAVING COUNT(*) >= 2
       ORDER BY engagement_rate ASC, views ASC LIMIT 3
-    `, [persona, accountId]);
+    `, [persona, accountId]));
 
-    const trendData = await query(`
+    const trendData = await queryWithTimeout(() => query(`
       WITH recent AS (
         SELECT AVG(va.engagement_rate) as recent_engagement, AVG(va.views) as recent_views
         FROM video_analytics va JOIN quiz_jobs qj ON va.job_id = qj.id
@@ -83,10 +146,10 @@ class AnalyticsInsightsService {
       )
       SELECT r.recent_engagement, r.recent_views, p.prev_engagement, p.prev_views
       FROM recent r, previous p
-    `, [persona, accountId]);
+    `, [persona, accountId]));
 
     const stats = overallStats.rows[0];
-    const trend = trendData.rows[0];
+    const trend = trendData?.rows[0];
 
     const engagementTrend = !trend || !trend.prev_engagement ? 'stable' : 
       trend.recent_engagement > trend.prev_engagement * 1.1 ? 'increasing' :
@@ -105,22 +168,22 @@ class AnalyticsInsightsService {
       totalVideos: parseInt(stats?.total_videos || '0'),
       avgEngagementRate: parseFloat(stats?.avg_engagement_rate || '0'),
       avgViews: parseInt(stats?.avg_views || '0'),
-      topPerformingTopics: topTopics.rows.map((row: any) => ({ topic: row.topic || 'Unknown', engagementRate: parseFloat(row.engagement_rate), views: parseInt(row.views), videoCount: parseInt(row.video_count) })),
-      underperformingTopics: underTopics.rows.map((row: any) => ({ topic: row.topic || 'Unknown', engagementRate: parseFloat(row.engagement_rate), views: parseInt(row.views), videoCount: parseInt(row.video_count) })),
+      topPerformingTopics: topTopics?.rows?.map((row: any) => ({ topic: row.topic || 'Unknown', engagementRate: parseFloat(row.engagement_rate), views: parseInt(row.views), videoCount: parseInt(row.video_count) })) || [],
+      underperformingTopics: underTopics?.rows?.map((row: any) => ({ topic: row.topic || 'Unknown', engagementRate: parseFloat(row.engagement_rate), views: parseInt(row.views), videoCount: parseInt(row.video_count) })) || [],
       recentTrends: { engagementTrend, viewsTrend, topicPerformanceShifts: [] },
       timingInsights: {
-        bestHours: timingAnalytics.bestTimingRecommendations.bestHours,
-        bestDays: timingAnalytics.bestTimingRecommendations.bestDays,
-        worstHours: timingAnalytics.bestTimingRecommendations.worstHours,
-        worstDays: timingAnalytics.bestTimingRecommendations.worstDays,
-        hourlyData: timingAnalytics.hourlyPerformance.map(h => ({ hour: h.hour, avgEngagementRate: h.avgEngagementRate, videoCount: h.videoCount })),
-        weeklyData: timingAnalytics.weeklyPerformance.map(d => ({ dayOfWeek: d.dayOfWeek, dayName: d.dayName, avgEngagementRate: d.avgEngagementRate, videoCount: d.videoCount }))
+        bestHours: timingAnalytics?.bestTimingRecommendations?.bestHours || [],
+        bestDays: timingAnalytics?.bestTimingRecommendations?.bestDays || [],
+        worstHours: timingAnalytics?.bestTimingRecommendations?.worstHours || [],
+        worstDays: timingAnalytics?.bestTimingRecommendations?.worstDays || [],
+        hourlyData: timingAnalytics?.hourlyPerformance?.map(h => ({ hour: h.hour, avgEngagementRate: h.avgEngagementRate, videoCount: h.videoCount })) || [],
+        weeklyData: timingAnalytics?.weeklyPerformance?.map(d => ({ dayOfWeek: d.dayOfWeek, dayName: d.dayName, avgEngagementRate: d.avgEngagementRate, videoCount: d.videoCount })) || []
       },
       formatInsights: {
-        bestFormat: formatAnalytics.formatRecommendations.bestFormat,
-        worstFormat: formatAnalytics.formatRecommendations.worstFormat,
-        mostConsistent: formatAnalytics.formatRecommendations.mostConsistent,
-        formatData: formatAnalytics.formatPerformance.map(f => ({ format: f.format, avgEngagementRate: f.avgEngagementRate, videoCount: f.videoCount, consistency: f.consistency }))
+        bestFormat: formatAnalytics?.formatRecommendations?.bestFormat || 'mcq',
+        worstFormat: formatAnalytics?.formatRecommendations?.worstFormat || 'unknown',
+        mostConsistent: formatAnalytics?.formatRecommendations?.mostConsistent || 'mcq',
+        formatData: formatAnalytics?.formatPerformance?.map(f => ({ format: f.format, avgEngagementRate: f.avgEngagementRate, videoCount: f.videoCount, consistency: f.consistency })) || []
       }
     };
   }

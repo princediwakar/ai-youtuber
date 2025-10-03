@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { analyticsService } from '@/lib/analyticsService';
+import { analyticsInsightsService as analyticsService } from '@/lib/analytics/insightsService';
 import { getAllAccounts } from '@/lib/accounts';
 
 // Force dynamic rendering for this API route

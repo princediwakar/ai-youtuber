@@ -323,11 +323,15 @@ CONTENT REQUIREMENTS:
 
 TARGET: Health-conscious adults seeking quick wins
 
-MANDATORY OUTPUT JSON:
-• "hook": Specific promise with timeframe (under 60 chars)
-• "action": 2-3 specific steps combined into one actionable instruction
-• "result": Scientific reason + immediate benefit combined
-• "cta": Use engaging health action CTA (under 80 chars - make it compelling and action-oriented)
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "hook": "specific_promise_with_timeframe_under_60_chars",
+  "action": "2_3_specific_steps_combined_into_one_actionable_instruction",
+  "result": "scientific_reason_plus_immediate_benefit_combined",
+  "cta": "engaging_health_action_CTA_under_80_chars"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create content that viewers immediately want to try. [${timeMarker}-${tokenMarker}]`;
 }
@@ -361,20 +365,24 @@ CONTENT REQUIREMENTS:
 
 TARGET: People who want to train their brain and improve memory
 
-MANDATORY OUTPUT JSON:
-• "hook": Exciting challenge invitation (under 60 chars)
-• "setup": Clear challenge instructions
-• "instructions": Specific steps for the challenge
-• "challenge_type": "memory" or "visual" or "logic"
-• "challenge_items": Array of items to remember/observe (if memory challenge)
-• "challenge_content": The actual challenge content/puzzle
-• "reveal": Result reveal text (under 60 chars)
-• "trick": The method/science behind the challenge
-• "answer": The correct solution/explanation
-• "cta": Use engaging brain training CTA (under 80 chars - make it compelling and action-oriented)
-• "encouragement": Positive reinforcement text
-• "next_challenge": Teaser for next challenge
-• "format_type": "challenge"
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "hook": "exciting_challenge_invitation_under_60_chars",
+  "setup": "clear_challenge_instructions",
+  "instructions": "specific_steps_for_the_challenge",
+  "challenge_type": "memory_or_visual_or_logic",
+  "challenge_items": ["array_of_items_to_remember_if_memory_challenge"],
+  "challenge_content": "actual_challenge_content_puzzle",
+  "reveal": "result_reveal_text_under_60_chars",
+  "trick": "method_science_behind_challenge",
+  "answer": "correct_solution_explanation",
+  "cta": "engaging_brain_training_CTA_under_80_chars",
+  "encouragement": "positive_reinforcement_text",
+  "next_challenge": "teaser_for_next_challenge",
+  "format_type": "challenge"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create interactive content that viewers must engage with actively. [${timeMarker}-${tokenMarker}]`;
 }

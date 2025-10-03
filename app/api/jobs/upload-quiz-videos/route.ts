@@ -68,12 +68,20 @@ export async function POST(request: NextRequest) {
  * Runs asynchronously without blocking the API response.
  */
 async function processCompleteUploadFlow(accountId: string | undefined) {
+  // Global timeout for entire upload process (4 minutes max)
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error('Upload process exceeded 4 minute limit'));
+    }, 240000);
+  });
+
   try {
     console.log(`🔄 Background upload flow started for account: ${accountId || 'multiple'}`);
 
-    // Validate account and get personas to upload
-    let account: any;
-    let personasToUpload: string[] = [];
+    const uploadPromise = (async () => {
+      // Validate account and get personas to upload
+      let account: any;
+      let personasToUpload: string[] = [];
     
     if (accountId) {
       try {
@@ -161,9 +169,32 @@ async function processCompleteUploadFlow(accountId: string | undefined) {
       : `All accounts: ${processedAccounts.join(', ')}`;
       
     console.log(`✅ Background YouTube upload completed. Processed ${totalSuccessfulJobs} jobs for: ${message}.`);
+    
+    return { success: true, processed: totalSuccessfulJobs, accounts: processedAccounts };
+    })();
+
+    return await Promise.race([uploadPromise, timeoutPromise]);
 
   } catch (error) {
     console.error(`❌ Background upload flow failed for ${accountId}:`, error);
+    
+    // If it's a timeout error, mark pending jobs as failed
+    if (error instanceof Error && error.message.includes('exceeded 4 minute limit')) {
+      try {
+        const jobs = await getPendingJobs(4, config.UPLOAD_CONCURRENCY);
+        const accountJobs = accountId ? jobs.filter(job => job.account_id === accountId) : jobs;
+        for (const job of accountJobs) {
+          await updateJob(job.id, {
+            status: 'failed',
+            error_message: 'Upload timed out due to Vercel execution limit'
+          });
+        }
+      } catch (updateError) {
+        console.error('Failed to update timed-out jobs:', updateError);
+      }
+    }
+    
+    throw error;
   }
 }
 

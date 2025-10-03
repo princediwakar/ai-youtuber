@@ -1,3 +1,4 @@
+// lib/generation/personas/ssc/prompts.ts
 /**
  * SSC (Staff Selection Commission) exam preparation prompt templates
  * Government exam focused content for competitive exam aspirants
@@ -175,13 +176,17 @@ FACT SELECTION CRITERIA:
 • IMPACT: Provide knowledge that immediately improves exam performance
 • SCENARIOS: Perfect for ${guidelines?.scenarios?.join(', ') || 'SSC exam contexts'}
 
-MANDATORY OUTPUT JSON:
-• "fact_title": One powerful fact/concept that directly relates to "${guidelines?.focus || topic}" (exam-focused title)
-• "key_info": Core information in exam-relevant format (dates, numbers, names - under 60 chars)
-• "category": Subject category that appears in SSC syllabus (e.g., "History", "Geography", "Polity", "Science")
-• "definition": Clear explanation in exam context (under 100 chars)
-• "usage": How this appears in ${guidelines?.scenarios?.join(', ') || 'SSC exams'} or application context (under 120 chars)
-• "format_type": "mcq"
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "fact_title": "powerful_fact_concept_exam_focused_title",
+  "key_info": "core_information_exam_relevant_format_under_60_chars", 
+  "category": "subject_category_SSC_syllabus_History_Geography_Polity_Science",
+  "definition": "clear_explanation_exam_context_under_100_chars",
+  "usage": "how_this_appears_in_SSC_exams_application_context_under_120_chars",
+  "format_type": "mcq"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create exam content that makes aspirants feel more confident and prepared for success. Focus specifically on: ${guidelines?.focus || 'SSC exam preparation'}
 
@@ -260,7 +265,7 @@ MANDATORY OUTPUT:
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this answer is correct + current affairs relevance (under 120 characters)
 • "cta": Use engaging current affairs CTA (under 80 chars - make it compelling and action-oriented)
-• "content_type": Will be set automatically
+• "content_type": "multiple_choice"
 
 Create current affairs content that makes aspirants confident about 2025 updates. [${timeMarker}-${tokenMarker}]`;
   } else {
@@ -324,7 +329,7 @@ MANDATORY OUTPUT:
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this answer is correct + exam relevance tip (under 120 characters)
 • "cta": Use engaging exam preparation CTA (under 80 chars - make it compelling and action-oriented)
-• "content_type": Will be set automatically
+• "content_type": "multiple_choice"
 
 Create exam content that makes aspirants feel more confident and prepared for success. [${timeMarker}-${tokenMarker}]`;
   } else {
@@ -369,14 +374,18 @@ CONTENT REQUIREMENTS:
 
 TARGET: SSC aspirants who want to avoid common exam pitfalls
 
-MANDATORY OUTPUT JSON:
-• "hook": Attention-grabbing opener about the mistake (under 60 chars)
-• "mistake": The incorrect approach most aspirants use
-• "correct": The expert strategy that ensures success
-• "practice": Practice instruction with the correct approach
-• "explanation": Why experts use this strategy (under 100 chars)
-• "cta": Use engaging SSC exam CTA exam hack CTA (under 80 chars - make it compelling and action-oriented)
-• "format_type": "common_mistake"
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "hook": "attention_grabbing_opener_about_mistake_under_60_chars",
+  "mistake": "incorrect_approach_most_aspirants_use",
+  "correct": "expert_strategy_that_ensures_success",
+  "practice": "practice_instruction_with_correct_approach",
+  "explanation": "why_experts_use_this_strategy_under_100_chars",
+  "cta": "engaging_SSC_exam_hack_CTA_under_80_chars",
+  "format_type": "common_mistake"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create content that makes aspirants feel embarrassed about their mistake but excited to fix it. [${timeMarker}-${tokenMarker}]`;
 }
@@ -384,35 +393,44 @@ Create content that makes aspirants feel embarrassed about their mistake but exc
 /**
  * Generates Quick Tip format prompt (SSC)
  */
+/**
+ * Generates Quick Tip format prompt (SSC)
+ */
 export function generateSSCQuickTipPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
 
-  return `You are an SSC exam expert creating viral "Quick Tip" content for YouTube Shorts.
+  return `You are an SSC exam expert creating viral "Quick Tip" content for YouTube Shorts. Your sole focus is on strategies for the Indian SSC (Staff Selection Commission) government exams.
 
 TOPIC: "${topicData.displayName}" - Instant exam performance upgrades
 
 FORMAT: Quick Tip (3 frames)
 Frame 1 (Hook): "Crack SSC faster with this trick"
-Frame 2 (Before): "Instead of memorizing everything..."
-Frame 3 (After): "Use this smart shortcut"
+Frame 2 (Before): "Traditional Approach: [Time-consuming method]"
+Frame 3 (After): "Smart Shortcut: [Faster, more effective method]"
 
 CONTENT REQUIREMENTS:
-• HOOK: Promise immediate exam advantage
-• BEFORE: Time-consuming traditional approach that most aspirants use
-• AFTER: Smart shortcut that saves time and improves accuracy
-• Include specific application in SSC exam context
+• The tip MUST be a concrete study or problem-solving shortcut for the given SSC topic.
+• ABSOLUTELY NO health, wellness, exercise, or generic "brain-boosting" advice.
+• HOOK: Promise an immediate exam advantage.
+• TRADITIONAL_APPROACH: Describe a time-consuming method most aspirants use for the specific SSC topic.
+• SMART_SHORTCUT: Provide an efficient, alternative strategy that saves time and improves accuracy.
+• APPLICATION_EXAMPLE: Show how to apply the shortcut in a specific SSC exam context.
 
-TARGET: SSC aspirants who want to study smarter, not harder
+TARGET: SSC aspirants who want to study smarter, not harder.
 
-MANDATORY OUTPUT JSON:
-• "hook": Promise of quick exam advantage (under 60 chars)
-• "traditional_approach": The time-consuming method most use
-• "smart_shortcut": The efficient alternative strategy
-• "application_example": Specific SSC exam context example
-• "explanation": Why the shortcut works better (under 120 chars)
-• "cta": Use engaging SSC exam CTA study improvement CTA (under 80 chars - make it compelling and action-oriented)
-• "format_type": "quick_tip"
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "hook": "promise_of_quick_exam_advantage_under_60_chars",
+  "traditional_approach": "time_consuming_method_most_use_for_ssc_topic",
+  "smart_shortcut": "efficient_alternative_strategy_for_ssc_topic",
+  "application_example": "specific_SSC_exam_context_example",
+  "explanation": "why_shortcut_works_better_under_120_chars",
+  "cta": "engaging_SSC_exam_study_improvement_CTA_under_80_chars",
+  "format_type": "quick_tip"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create content that makes aspirants immediately feel more strategic about their preparation. [${timeMarker}-${tokenMarker}]`;
 }
@@ -442,18 +460,22 @@ CONTENT REQUIREMENTS:
 
 TARGET: Advanced SSC aspirants who want strategic precision
 
-MANDATORY OUTPUT JSON:
-• "hook": Promise about strategic concept mastery (under 60 chars)
-• "target_concept": The SSC strategy/concept to demonstrate
-• "wrong_scenario": Situation showing incorrect application
-• "wrong_context": Brief explanation of why it's wrong (under 80 chars)
-• "right_scenario": Situation showing perfect application
-• "right_context": Brief explanation of why it's correct (under 80 chars)
-• "practice": Practice instruction with scenario
-• "practice_scenario": Specific SSC context for aspirant to practice
-• "explanation": Why strategic usage matters for exam success (under 120 chars)
-• "cta": Use engaging SSC exam CTA strategy mastery CTA (under 80 chars - make it compelling and action-oriented)
-• "format_type": "usage_demo"
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "hook": "promise_about_strategic_concept_mastery_under_60_chars",
+  "target_concept": "SSC_strategy_concept_to_demonstrate",
+  "wrong_scenario": "situation_showing_incorrect_application",
+  "wrong_context": "brief_explanation_why_wrong_under_80_chars",
+  "right_scenario": "situation_showing_perfect_application",
+  "right_context": "brief_explanation_why_correct_under_80_chars",
+  "practice": "practice_instruction_with_scenario",
+  "practice_scenario": "specific_SSC_context_for_aspirant_to_practice",
+  "explanation": "why_strategic_usage_matters_for_exam_success_under_120_chars",
+  "cta": "engaging_SSC_exam_strategy_mastery_CTA_under_80_chars",
+  "format_type": "usage_demo"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create content that makes aspirants confident about strategic concept application. [${timeMarker}-${tokenMarker}]`;
 }
@@ -482,15 +504,19 @@ CONTENT REQUIREMENTS:
 
 TARGET: SSC aspirants who want to test their preparation level
 
-MANDATORY OUTPUT JSON:
-• "hook": Challenge opener that tests preparation (under 60 chars)
-• "challenge_question": The moderately difficult test question
-• "time_limit": Suggested time limit (e.g., "30 seconds")
-• "correct_answer": The right answer with brief explanation
-• "confidence_message": Success message for those who got it right (under 80 chars)
-• "learning_tip": Quick tip for those who got it wrong (under 100 chars)
-• "cta": Use engaging SSC exam CTA daily testing CTA (under 80 chars - make it compelling and action-oriented)
-• "format_type": "challenge"
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "hook": "challenge_opener_that_tests_preparation_under_60_chars",
+  "challenge_question": "moderately_difficult_test_question",
+  "time_limit": "suggested_time_limit_eg_30_seconds",
+  "correct_answer": "right_answer_with_brief_explanation",
+  "confidence_message": "success_message_for_those_who_got_it_right_under_80_chars",
+  "learning_tip": "quick_tip_for_those_who_got_it_wrong_under_100_chars",
+  "cta": "engaging_SSC_exam_daily_testing_CTA_under_80_chars",
+  "format_type": "challenge"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create content that makes aspirants excited to test and improve their preparation. [${timeMarker}-${tokenMarker}]`;
 }

@@ -1,5 +1,5 @@
 import { query } from './database';
-import { analyticsService, type AIAnalyticsInsights } from './analyticsService';
+import { analyticsInsightsService as analyticsService, type AIAnalyticsInsights } from './analytics/insightsService';
 
 export interface ContentInsight {
   topic: string;

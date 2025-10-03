@@ -68,6 +68,7 @@ export async function uploadImageToCloudinary(
         clearTimeout(timeoutId);
         if (error) {
           console.error(`Cloudinary upload error for account ${accountId}:`, error?.message || error);
+          console.error(error);
           reject(error);
         } else if (result) {
           resolve({

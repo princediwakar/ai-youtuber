@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Database, Youtube, CheckCircle, Video, X } from 'lucide-react';
 
 interface ChannelStats {
@@ -48,18 +48,14 @@ export default function QuizDashboard() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
-  useEffect(() => {
-    fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const showNotification = (message: string, type: 'success' | 'error') => {
+  const showNotification = useCallback((message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000);
-  };
+  }, [setNotification]);
 
-  const fetchDashboardData = async () => {
+
+
+  const fetchDashboardData = useCallback(async () => {
     try {
       const response = await fetch('/api/dashboard');
       if (!response.ok) throw new Error('Failed to fetch data');
@@ -70,7 +66,14 @@ export default function QuizDashboard() {
       showNotification('Could not refresh dashboard data.', 'error');
     }
     setLoading(false);
-  };
+  }, [showNotification]);
+
+  useEffect(() => {
+    fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 10000);
+    return () => clearInterval(interval);
+  }, [fetchDashboardData]);
+
 
 
   if (loading) {

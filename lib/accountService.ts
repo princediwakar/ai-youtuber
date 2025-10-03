@@ -1,3 +1,4 @@
+// lib/accountService.ts
 import { query } from './database';
 import crypto from 'crypto';
 
@@ -38,7 +39,7 @@ interface EncryptedAccountRow {
 }
 
 class AccountService {
-  private readonly encryptionKey: Buffer;
+  private readonly encryptionKey: crypto.KeyObject;
   private readonly algorithm = 'aes-256-gcm';
   private accountCache: Map<string, Account> = new Map();
   private cacheExpiry: Map<string, number> = new Map();
@@ -51,7 +52,7 @@ class AccountService {
     }
     
     // Create a 32-byte key for AES-256
-    this.encryptionKey = crypto.scryptSync(key, 'salt', 32);
+    this.encryptionKey = crypto.createSecretKey(crypto.scryptSync(key, 'salt', 32));
   }
 
   private encrypt(text: string): string {
@@ -115,8 +116,8 @@ class AccountService {
       cloudinaryCloudName: this.decrypt(row.cloudinary_cloud_name_encrypted),
       cloudinaryApiKey: this.decrypt(row.cloudinary_api_key_encrypted),
       cloudinaryApiSecret: this.decrypt(row.cloudinary_api_secret_encrypted),
-      personas: row.personas,
-      branding: row.branding,
+      personas: row.personas as string[],
+      branding: row.branding as Account['branding'],
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };

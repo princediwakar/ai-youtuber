@@ -12,7 +12,8 @@ export function getPool(): Pool {
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
       max: 1,
       idleTimeoutMillis: 0,
-      connectionTimeoutMillis: 10000,
+      connectionTimeoutMillis: 30000,
+      query_timeout: 60000,
     });
   }
   return pool;
@@ -21,7 +22,8 @@ export function createClient(): Client {
   return new Client({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 30000,
+    query_timeout: 60000,
   });
 }
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { analyticsService } from '@/lib/analyticsService';
+import { analyticsInsightsService as analyticsService } from '@/lib/analytics/insightsService';
 
 // This export ensures that Next.js treats this route as a dynamic API endpoint,
 // preventing it from caching responses and always fetching the latest data.

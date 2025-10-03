@@ -1,3 +1,4 @@
+// lib/generation/core/generationService.ts
 import OpenAI from 'openai';
 import { createQuizJob, query } from '@/lib/database';
 import { MasterPersonas } from '@/lib/personas';
@@ -6,7 +7,7 @@ import { generatePrompt, type JobConfig } from './promptGenerator';
 import { parseAndValidateResponse, generateContentHash } from './contentValidator';
 import { generateVariationMarkers } from '../shared/utils';
 import { LayoutType } from '@/lib/visuals/layouts/layoutSelector';
-import { analyticsService, type AIAnalyticsInsights } from '../../analyticsService';
+import { analyticsInsightsService as analyticsService } from '../../analytics/insightsService';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { config } from '@/lib/config';
@@ -95,22 +96,90 @@ const PERSONA_LAYOUT_MAP: Record<string, LayoutType[]> = {
  * ANALYTICS-DRIVEN: Always return MCQ layout
  * Data shows it's the only format that drives engagement
  */
-function selectLayoutForPersona(persona: string, preferredLayout?: LayoutType): LayoutType {
-  // ANALYTICS-DRIVEN: Use simplified formats for maximum engagement
-  // Addresses 73% zero engagement by using ultra-simple single-frame format
-  
-  if (persona === 'ssc_shots') {
-    console.log(`✅ Using MCQ layout for SSC persona: ${persona} (best performing format)`);
-    return 'mcq'; // Force MCQ for better engagement
+// Weighted layout distribution for better content variety
+// 60% MCQ (best performing), 40% other formats for experimentation
+interface LayoutWeight {
+  layout: LayoutType;
+  weight: number;
+}
+
+function getLayoutDistributionForPersona(persona: string): LayoutWeight[] {
+  // English vocabulary - balanced format distribution matching prompt router
+  if (persona === 'english_vocab_builder') {
+    return [
+      { layout: 'mcq', weight: 60 },           // 60% MCQ (best engagement)
+      { layout: 'simplified_word', weight: 20 }, // 20% vocabulary format
+      { layout: 'quick_fix', weight: 10 },      // 10% quick fixes
+      { layout: 'usage_demo', weight: 10 }      // 10% usage examples
+    ];
   }
   
+  // Health content - mix of tips and quizzes matching prompt router
   if (persona === 'brain_health_tips' || persona === 'eye_health_tips') {
-    console.log(`✅ Using quick_tip layout for health persona: ${persona} (1.2K views breakthrough format)`);
-    return 'quick_tip'; // Keep proven health format
+    return [
+      { layout: 'mcq', weight: 60 },           // 60% MCQ
+      { layout: 'quick_tip', weight: 25 },     // 25% tips (proven format)
+      { layout: 'challenge', weight: 15 }      // 15% challenges
+    ];
   }
   
-  console.log(`✅ Using simplified_word layout for ${persona} (ultra-simple single frame)`);
-  return 'simplified_word'; // Default to simplified for maximum engagement
+  // SSC exam content - variety matching prompt router
+  if (persona === 'ssc_shots') {
+    return [
+      { layout: 'mcq', weight: 55 },           // 55% MCQ (exam focus)
+      { layout: 'quick_tip', weight: 20 },     // 20% study tips
+      { layout: 'common_mistake', weight: 15 }, // 15% common mistakes
+      { layout: 'usage_demo', weight: 10 }     // 10% usage demos
+    ];
+  }
+  
+  // Astronomy/space content - limited variety matching prompt router
+  if (persona === 'space_facts_quiz') {
+    return [
+      { layout: 'mcq', weight: 80 },           // 80% MCQ (quiz focus)
+      { layout: 'quick_tip', weight: 20 }      // 20% space facts
+    ];
+  }
+  
+  // Default distribution for any other personas
+  return [
+    { layout: 'mcq', weight: 70 },           // 70% MCQ (safest bet)
+    { layout: 'quick_tip', weight: 30 }      // 30% tips
+  ];
+}
+
+function selectWeightedRandomLayout(weights: LayoutWeight[]): LayoutType {
+  const totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
+  const random = Math.random() * totalWeight;
+  
+  let currentWeight = 0;
+  for (const item of weights) {
+    currentWeight += item.weight;
+    if (random <= currentWeight) {
+      return item.layout;
+    }
+  }
+  
+  // Fallback to MCQ if something goes wrong
+  return 'mcq';
+}
+
+function selectLayoutForPersona(persona: string, preferredLayout?: LayoutType): LayoutType {
+  // If a specific layout is requested, use it
+  if (preferredLayout) {
+    console.log(`✅ Using requested layout: ${preferredLayout} for ${persona}`);
+    return preferredLayout;
+  }
+  
+  // Get persona-specific layout distribution
+  const layoutWeights = getLayoutDistributionForPersona(persona);
+  const selectedLayout = selectWeightedRandomLayout(layoutWeights);
+  
+  const weightInfo = layoutWeights.find(w => w.layout === selectedLayout)?.weight || 0;
+  console.log(`✅ Randomly selected ${selectedLayout} layout for ${persona} (${weightInfo}% weight)`);
+  console.log(`🔄 Layout will be passed as preferredLayout to promptGenerator`);
+  
+  return selectedLayout;
 }
 
 export interface GenerationResult {
@@ -147,21 +216,22 @@ export async function generateAndStoreContent(
     // Get account configuration using the provided accountId
     const account = await getAccountConfig(jobConfig.accountId);
     
-    // Get analytics insights for this persona (with fallback and timeout)
-    let analyticsInsights: AIAnalyticsInsights | undefined;
+    // Get analytics insights for this persona (with proper timeout handling)
+    let analyticsInsights: any | undefined;
     try {
-      // Add 15-second timeout for analytics queries
+      // Add 10-second timeout for analytics queries
       const analyticsPromise = analyticsService.analyzePerformanceWithAI(jobConfig.accountId, jobConfig.persona);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Analytics query timeout')), 15000)
+        setTimeout(() => reject(new Error('Analytics query timeout')), 10000)
       );
       
       const analyticsResult = await Promise.race([analyticsPromise, timeoutPromise]) as any;
       analyticsInsights = analyticsResult.aiInsights;
-      console.log(`[Analytics] Loaded insights for ${jobConfig.persona} (${jobConfig.accountId})`);
+      console.log(`[Analytics] Loaded insights for ${jobConfig.persona}`);
     } catch (error) {
-      console.warn(`[Analytics] Could not load insights for ${jobConfig.persona}:`, error);
-      // Continue without analytics insights
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.log(`[Analytics] Skipping insights for ${jobConfig.persona}: ${errorMessage}`);
+      // Continue without analytics insights - graceful degradation
     }
 
     // Determine upload timing for prompt optimization
@@ -171,7 +241,9 @@ export async function generateAndStoreContent(
     const uploadHour = istTime.getHours();
     
     // Select appropriate layout for this persona
-    const selectedLayout: LayoutType = selectLayoutForPersona(jobConfig.persona, jobConfig.preferredLayout);
+    // If preferredFormat is specified, use it as preferredLayout
+    const preferredLayout = jobConfig.preferredLayout || jobConfig.preferredFormat as LayoutType;
+    const selectedLayout: LayoutType = selectLayoutForPersona(jobConfig.persona, preferredLayout);
     
     // Create enhanced job config with layout and analytics information
     const enhancedJobConfig: GenerationJobConfig = {
@@ -199,9 +271,12 @@ export async function generateAndStoreContent(
       throw new Error('AI returned no content.');
     }
 
+    console.log(`[DEBUG] AI response for ${jobConfig.persona}:`, content.substring(0, 500) + '...');
+
     // Parse and validate the response
     const validationResult = parseAndValidateResponse(content, jobConfig.persona, selectedLayout);
     if (!validationResult.success || !validationResult.data) {
+      console.log(`[DEBUG] Validation failed for ${jobConfig.persona}. Raw content:`, content);
       throw new Error(`Validation failed: ${validationResult.error}`);
     }
 

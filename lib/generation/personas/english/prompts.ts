@@ -177,7 +177,7 @@ RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
   "format_type": "simplified_word"
 }
 
-IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
+CRITICAL: Return EXACTLY ONE JSON object as shown above. Do NOT return an array. Do NOT return multiple objects. The format_type MUST be "simplified_word" exactly. Do NOT use markdown formatting (no triple backticks). Return ONLY the single JSON object above. No markdown, no explanations, no additional content.
 
 [${timeMarker}-${tokenMarker}]`;
   } else {
@@ -191,7 +191,7 @@ ENHANCED GENERATION APPROACH: ${selectedPattern.approach.replace('_', ' ').toUpp
 Generate vocabulary content for ${primaryAudience} on "${topic}" that challenges while building confidence.
 
 ENHANCED REQUIREMENTS:
-• WORD FOCUS: Choose vocabulary that directly addresses the topic "${topic}" with ${selectedCategory} emphasis
+• WORD FOCUS: Choose ONE vocabulary word that directly addresses the topic "${topic}" with ${selectedCategory} emphasis (even for synonym topics, choose only one word)
 • PRACTICAL: Focus on words used in professional and academic contexts
 • ENGAGEMENT: Create immediate "vocabulary upgrade" value
 • DEFINITION: Provide clear explanation that elevates communication (under 100 characters)
@@ -209,7 +209,7 @@ RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
   "format_type": "simplified_word"
 }
 
-IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
+CRITICAL: Return EXACTLY ONE JSON object as shown above. Do NOT return an array. Do NOT return multiple objects. The format_type MUST be "simplified_word" exactly. Do NOT use markdown formatting (no triple backticks). Return ONLY the single JSON object above. No markdown, no explanations, no additional content.
 
 [${timeMarker}-${tokenMarker}]`;
   }
@@ -262,7 +262,7 @@ MANDATORY OUTPUT:
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": Why this answer elevates communication + usage tip (under 120 characters)
 • "cta": Generate an engaging English learning CTA (under 80 chars - make it compelling and action-oriented)
-• "content_type": Will be set automatically
+• "content_type": "multiple_choice"
 
 Create vocabulary content that makes learners feel smarter and more confident immediately. [${timeMarker}-${tokenMarker}]`;
   } else {
@@ -312,14 +312,18 @@ CONTENT REQUIREMENTS:
 
 TARGET: Intermediate English learners who want to sound more native
 
-MANDATORY OUTPUT JSON:
-• "hook": Generate contextual hook based on the specific mistake being corrected (under 25 chars)
-• "mistake": The incorrect version most learners use  
-• "correct": The native speaker version
-• "practice": Practice instruction with the correct form
-• "explanation": Why natives use this version (under 100 chars)
-• "cta": Use engaging English learning CTA (under 80 chars - make it compelling and action-oriented)
-• "format_type": "common_mistake"
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "hook": "contextual_hook_based_on_mistake_under_25_chars",
+  "mistake": "incorrect_version_most_learners_use",
+  "correct": "native_speaker_version",
+  "practice": "practice_instruction_with_correct_form",
+  "explanation": "why_natives_use_this_version_under_100_chars",
+  "cta": "engaging_English_learning_CTA_under_80_chars",
+  "format_type": "common_mistake"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create content that makes learners feel embarrassed about their mistake but excited to fix it. [${timeMarker}-${tokenMarker}]`;
 }
@@ -348,14 +352,18 @@ CONTENT REQUIREMENTS:
 
 TARGET: Intermediate learners who want to sound more professional
 
-MANDATORY OUTPUT JSON:
-• "hook": Generate contextual hook based on the vocabulary upgrade being shown (under 25 chars)
-• "basic_word": The simple word to replace
-• "advanced_word": The sophisticated alternative
-• "usage_example": Professional context example
-• "explanation": Why the advanced word is better (under 100 chars)
-• "cta": Use engaging English upgrade CTA (under 80 chars - make it compelling and action-oriented)  
-• "format_type": "quick_fix"
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "hook": "contextual_hook_based_on_vocabulary_upgrade_under_25_chars",
+  "basic_word": "simple_word_to_replace",
+  "advanced_word": "sophisticated_alternative",
+  "usage_example": "professional_context_example",
+  "explanation": "why_advanced_word_is_better_under_100_chars",
+  "cta": "engaging_English_upgrade_CTA_under_80_chars",
+  "format_type": "quick_fix"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create content that makes learners immediately feel more sophisticated. [${timeMarker}-${tokenMarker}]`;
 }
@@ -385,17 +393,21 @@ CONTENT REQUIREMENTS:
 
 TARGET: Advanced learners who want contextual precision
 
-MANDATORY OUTPUT JSON:
-• "hook": Generate contextual hook based on the word usage being demonstrated (under 25 chars)
-• "target_word": The advanced vocabulary word to demonstrate
-• "wrong_example": Sentence showing incorrect contextual usage
-• "wrong_context": Brief explanation of why it's wrong (under 80 chars)
-• "right_example": Sentence showing perfect contextual usage
-• "right_context": Brief explanation of why it's correct (under 80 chars) 
-• "practice": Practice instruction with scenario
-• "practice_scenario": Specific context for learner to practice
-• "cta": Use engaging vocabulary mastery CTA (under 80 chars - make it compelling and action-oriented)
-• "format_type": "usage_demo"
+RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
+{
+  "hook": "contextual_hook_based_on_word_usage_under_25_chars",
+  "target_word": "advanced_vocabulary_word_to_demonstrate",
+  "wrong_example": "sentence_showing_incorrect_contextual_usage",
+  "wrong_context": "brief_explanation_why_wrong_under_80_chars",
+  "right_example": "sentence_showing_perfect_contextual_usage",
+  "right_context": "brief_explanation_why_correct_under_80_chars",
+  "practice": "practice_instruction_with_scenario",
+  "practice_scenario": "specific_context_for_learner_to_practice",
+  "cta": "engaging_vocabulary_mastery_CTA_under_80_chars",
+  "format_type": "usage_demo"
+}
+
+IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create content that makes learners confident about contextual word usage. [${timeMarker}-${tokenMarker}]`;
 }

@@ -1,18 +1,19 @@
+// lib/generation/routing/promptRouter.ts
 /**
  * Prompt router for content generation
  * Routes to persona-specific prompt templates for better maintainability
  */
 
 // Import shared utilities
-import { 
-  VariationMarkers, 
-  PromptConfig, 
+import {
+  VariationMarkers,
+  PromptConfig,
   generateVariationMarkers,
   addJsonFormatInstructions
 } from '../shared/utils';
 
 // Import persona-specific prompts
-import { 
+import {
   generateEnglishPrompt,
   generateSimplifiedWordPrompt,
   generateCommonMistakePrompt,
@@ -20,14 +21,14 @@ import {
   generateUsageDemoPrompt
 } from '../personas/english/prompts';
 
-import { 
+import {
   generateBrainHealthPrompt,
   generateEyeHealthPrompt,
   generateQuickTipPrompt,
   generateChallengePrompt
 } from '../personas/health/prompts';
 
-import { 
+import {
   generateSSCMCQPrompt,
   generateSimplifiedSSCPrompt,
   generateSSCCommonMistakePrompt,
@@ -48,7 +49,7 @@ export type { VariationMarkers, PromptConfig };
 export { generateVariationMarkers, addJsonFormatInstructions };
 
 // Re-export persona-specific functions for backward compatibility
-export { 
+export {
   generateBrainHealthPrompt,
   generateEyeHealthPrompt,
   generateEnglishPrompt,
@@ -73,6 +74,7 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
   // AVAILABLE: Complex formats (0% engagement but kept for experimentation)
   common_mistake: {
     english_vocab_builder: generateCommonMistakePrompt,
+    ssc_shots: generateSSCCommonMistakePrompt, // CORRECTED: Mapped to the correct SSC-specific prompt
     default: generateCommonMistakePrompt
   },
   quick_fix: {
@@ -81,11 +83,13 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
   },
   usage_demo: {
     english_vocab_builder: generateUsageDemoPrompt,
+    ssc_shots: generateSSCUsageDemoPrompt, // CORRECTED: Mapped to the correct SSC-specific prompt
     default: generateUsageDemoPrompt
   },
   challenge: {
     brain_health_tips: generateChallengePrompt,
     eye_health_tips: generateChallengePrompt,
+    ssc_shots: generateSSCChallengePrompt, // CORRECTED: Mapped to the correct SSC-specific prompt
     default: generateChallengePrompt
   },
   // ENABLED: Quick Tips for health personas (384 avg views, 1.2K max views)
@@ -93,7 +97,7 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
     brain_health_tips: generateQuickTipPrompt,
     eye_health_tips: generateQuickTipPrompt,
     english_vocab_builder: generateQuickTipPrompt, // Test for other personas
-    ssc_shots: generateQuickTipPrompt,
+    ssc_shots: generateSSCQuickTipPrompt, // CORRECTED: Point ssc_shots to its own quick_tip prompt
     space_facts_quiz: generateQuickTipPrompt,
     default: generateQuickTipPrompt
   },
@@ -106,6 +110,15 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
     space_facts_quiz: generateAstronomyPrompt,
     default: generateEnglishPrompt // Default to proven MCQ
   }
+  /*
+   * NOTE: To use the unused `generateSimplifiedSSCPrompt`, you would need to add a new
+   * format to this routing table, for example:
+   *
+   * simplified_ssc: {
+   * ssc_shots: generateSimplifiedSSCPrompt,
+   * default: generateSimplifiedSSCPrompt
+   * }
+   */
 };
 
 /**
@@ -118,17 +131,17 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
  * Distributes different formats across personas and time for A/B testing
  */
 const FORMAT_ROTATION: Record<PersonaType, FormatType[]> = {
-  english_vocab_builder: ['mcq'], // Force MCQ only - proven 1.26% engagement 
-  brain_health_tips: ['mcq'], // Force MCQ only - needs optimization
-  eye_health_tips: ['mcq'], // Force MCQ only - needs optimization
-  ssc_shots: ['mcq'], // Force MCQ only - fix 0% engagement issue
-  space_facts_quiz: ['mcq'] // Force MCQ only - paused until format proven
+  english_vocab_builder: ['mcq', 'simplified_word', 'quick_fix', 'usage_demo'], // Restore variety - all formats supported
+  brain_health_tips: ['mcq', 'quick_tip', 'challenge'], // Health-specific formats
+  eye_health_tips: ['mcq', 'quick_tip', 'challenge'], // Health-specific formats
+  ssc_shots: ['mcq', 'quick_tip', 'common_mistake', 'usage_demo', 'challenge'], // SSC-specific formats (added challenge)
+  space_facts_quiz: ['mcq', 'quick_tip'] // Astronomy-specific formats
 };
 
 export function generateFormatPrompt(config: PromptConfig): string {
   let format = config.format as FormatType;
   const persona = config.persona as PersonaType;
-  
+
   // If no format specified, use rotation strategy for balanced testing
   if (!format) {
     const rotationFormats = FORMAT_ROTATION[persona] || ['mcq', 'simplified_word'];

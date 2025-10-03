@@ -1,3 +1,6 @@
+---
+alwaysApply: true
+---
 
 # Multi-Channel YouTube Shorts Generator
 
@@ -27,7 +30,7 @@ npm run dev
 
 Account credentials stored in database `accounts` table.
 
-**NOTE:** Current state includes full analytics system with video_analytics table.
+**NOTE:** This is commit d616ba0 state - uses account_id instead of channel_id, NextAuth.js instead of Better Auth.
 
 ## Architecture
 
@@ -85,17 +88,15 @@ app/
 
 ## Database Schema
 
-**Tables (Current State):**
-- `accounts` - Account credentials and configuration (OAuth, Cloudinary)
+**Tables (Commit d616ba0):**
 - `quiz_jobs` - Content generation pipeline tracking (uses account_id)
 - `uploaded_videos` - YouTube upload records
-- `video_analytics` - Performance tracking (views, engagement, timing, etc.)
 
-**Current Implementation:**
-- Uses `account_id` for account identification
-- Full analytics system with performance tracking
-- Video analytics collected but currently empty (0 rows)
-- Complete 4-table schema for comprehensive tracking
+**Key Changes from Modern Version:**
+- Uses `account_id` instead of `channel_id` 
+- No Better Auth tables (uses NextAuth.js)
+- No `accounts`, `user_channels`, or `video_analytics` tables
+- Simple 2-table structure for this commit
 
 ## Active Accounts
 

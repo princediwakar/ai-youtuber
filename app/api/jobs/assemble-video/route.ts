@@ -136,33 +136,60 @@ export async function POST(request: NextRequest) {
  * Runs asynchronously without blocking the API response.
  */
 async function processVideoAssemblyWithRetry(accountId: string | undefined) {
+  // Global timeout for entire video assembly process (4 minutes max)
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error('Video assembly process exceeded 4 minute limit'));
+    }, 240000);
+  });
+
   try {
     console.log(`🔄 Background video assembly started for account: ${accountId || 'all'}`);
     
-    // Auto-retry failed jobs with valid data (moved to background)
-    await autoRetryFailedJobs();
-    
-    // Get jobs; prefer SQL-side filtering by account to avoid LIMIT mismatches
-    const jobs = await getPendingJobs(3, config.ASSEMBLY_CONCURRENCY, undefined, accountId);
-    
-    if (jobs.length === 0) {
-      const message = accountId ? 
-        `No jobs pending video assembly for account ${accountId}` :
-        'No jobs pending video assembly';
-      console.log(message);
-      return { success: false, message };
-    }
+    const assemblyPromise = (async () => {
+      // Auto-retry failed jobs with valid data (moved to background)
+      await autoRetryFailedJobs();
+      
+      // Get jobs; prefer SQL-side filtering by account to avoid LIMIT mismatches
+      const jobs = await getPendingJobs(3, config.ASSEMBLY_CONCURRENCY, undefined, accountId);
+      
+      if (jobs.length === 0) {
+        const message = accountId ? 
+          `No jobs pending video assembly for account ${accountId}` :
+          'No jobs pending video assembly';
+        console.log(message);
+        return { success: false, message };
+      }
 
-    console.log(`Found ${jobs.length} jobs for video assembly. Processing...`);
+      console.log(`Found ${jobs.length} jobs for video assembly. Processing...`);
 
-    // Process video assembly
-    const result = await processVideoAssemblyInBackground(jobs);
-    
-    console.log(`✅ Video assembly completed for account: ${accountId || 'all'}`);
-    return result;
+      // Process video assembly
+      const result = await processVideoAssemblyInBackground(jobs);
+      
+      console.log(`✅ Video assembly completed for account: ${accountId || 'all'}`);
+      return result;
+    })();
+
+    return await Promise.race([assemblyPromise, timeoutPromise]);
 
   } catch (error) {
     console.error(`❌ Video assembly failed for ${accountId}:`, error);
+    
+    // If it's a timeout error, mark pending jobs as failed
+    if (error instanceof Error && error.message.includes('exceeded 4 minute limit')) {
+      try {
+        const jobs = await getPendingJobs(3, config.ASSEMBLY_CONCURRENCY, undefined, accountId);
+        for (const job of jobs) {
+          await updateJob(job.id, {
+            status: 'failed',
+            error_message: 'Video assembly timed out due to Vercel execution limit'
+          });
+        }
+      } catch (updateError) {
+        console.error('Failed to update timed-out jobs:', updateError);
+      }
+    }
+    
     throw error;
   }
 }
@@ -277,6 +304,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   // Create individual video clips first, then concat them
   const clipPaths: string[] = [];
   
+  // Process frames sequentially to reduce memory usage in serverless environment
   for (let i = 0; i < framePaths.length; i++) {
     const framePath = framePaths[i];
     const duration = durations[i] || 4;
@@ -288,9 +316,10 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
       '-t', String(duration),
       '-c:v', 'libx264',
       '-preset', 'ultrafast',
-      '-crf', '28',
+      '-crf', '30',  // Higher CRF for smaller file size and faster processing
       '-pix_fmt', 'yuv420p',
       '-vf', 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black',
+      '-threads', '2',  // Limit threads for serverless environment
       '-y', clipPath
     ];
     
@@ -298,11 +327,11 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
       const process = spawn(ffmpegPath, clipArgs, { cwd: tempDir });
       let stderr = '';
       
-      // 15 second timeout per frame
+      // 20 second timeout per frame - balanced for serverless limits
       const timeoutId = setTimeout(() => {
         process.kill('SIGKILL');
-        reject(new Error(`Frame ${i} processing timed out after 15 seconds`));
-      }, 15000);
+        reject(new Error(`Frame ${i} processing timed out after 20 seconds`));
+      }, 20000);
       
       process.stderr?.on('data', (d) => { stderr += d.toString(); });
       process.on('close', (code) => {
@@ -362,11 +391,11 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     let stderr = '';
     let stdout = '';
     
-    // Set a 60-second timeout for the final assembly
+    // Set a 30-second timeout for the final assembly to prevent Vercel timeout
     const timeoutId = setTimeout(() => {
       ffmpegProcess.kill('SIGKILL');
-      reject(new Error('FFmpeg final assembly timed out after 60 seconds'));
-    }, 60000);
+      reject(new Error('FFmpeg final assembly timed out after 30 seconds'));
+    }, 30000);
     
     ffmpegProcess.stdout?.on('data', (d) => { stdout += d.toString(); });
     ffmpegProcess.stderr?.on('data', (d) => { stderr += d.toString(); });

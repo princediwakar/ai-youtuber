@@ -19,6 +19,7 @@ import {
   cleanupJobFrames
 } from '@/lib/cloudinary';
 import { getAccountConfig } from '@/lib/accounts';
+import { drawBackground, drawHeader, drawFooter } from './visuals/drawingUtils';
 
 // Centralized font registration
 try {
@@ -99,7 +100,6 @@ export async function createFramesForJob(job: QuizJob): Promise<string[]> {
 // Render fallback frame for errors
 function renderFallbackFrame(canvas: Canvas, job: QuizJob, theme: Theme, errorMessage: string): void {
   const ctx = canvas.getContext('2d');
-  const { drawBackground, drawHeader, drawFooter } = require('./visuals/drawingUtils');
   
   drawBackground(ctx, canvas.width, canvas.height, theme);
   drawHeader(ctx, canvas.width, theme, job);
@@ -115,7 +115,7 @@ function renderFallbackFrame(canvas: Canvas, job: QuizJob, theme: Theme, errorMe
 }
 
 function selectThemeForPersona(persona: string): { theme: Theme; themeName: string } {
-  const themeNames = PersonaThemeMap[persona] || PersonaThemeMap.default;
+  const themeNames = (PersonaThemeMap as Record<string, string[]>)[persona] || PersonaThemeMap.default;
   const randomThemeName = themeNames[Math.floor(Math.random() * themeNames.length)];
   return {
     theme: themes[randomThemeName],
@@ -162,16 +162,45 @@ function calculateFrameDuration(questionData: any, frameNumber: number, layoutTy
 async function uploadFrames(jobId: string, themeName: string, canvases: Canvas[], accountId: string, persona: string, layoutType: string): Promise<string[]> {
   const publicIds = generateFramePublicIds(jobId, themeName, accountId, canvases.length, persona, layoutType);
   try {
-    const uploadPromises = canvases.map((canvas, index) => {
+    const uploadPromises = canvases.map(async (canvas, index) => {
       const buffer = canvas.toBuffer('image/png');
-      return uploadImageToCloudinary(buffer, accountId, {
-        folder: config.CLOUDINARY_FRAMES_FOLDER,
-        public_id: publicIds[index],
-      });
+      try {
+        return await uploadImageToCloudinary(buffer, accountId, {
+          folder: config.CLOUDINARY_FRAMES_FOLDER,
+          public_id: publicIds[index],
+        });
+      } catch (error) {
+        console.error(`[Job ${jobId}] Failed to upload frame ${index + 1}:`, error);
+        throw error;
+      }
     });
-    const results = await Promise.all(uploadPromises);
-    console.log(`[Job ${jobId}] ✅ All ${canvases.length} frames uploaded to ${accountId} Cloudinary account.`);
-    return results.map(r => r.secure_url);
+    
+    const results = await Promise.allSettled(uploadPromises);
+    const successfulUploads = results
+      .map((result, index) => ({
+        result,
+        index,
+        publicId: publicIds[index]
+      }))
+      .filter(({ result }) => result.status === 'fulfilled')
+      .map(({ result }) => (result as PromiseFulfilledResult<any>).value.secure_url);
+    
+    const failedUploads = results.filter(result => result.status === 'rejected');
+    
+    if (failedUploads.length > 0) {
+      console.warn(`[Job ${jobId}] ${failedUploads.length}/${canvases.length} frame uploads failed for ${accountId}`);
+      failedUploads.forEach((failure, index) => {
+        console.error(`Frame ${index + 1} upload error:`, (failure as PromiseRejectedResult).reason);
+      });
+    }
+    
+    if (successfulUploads.length === 0) {
+      await cleanupJobFrames(publicIds, accountId);
+      throw new Error(`All frame uploads failed for account ${accountId}`);
+    }
+    
+    console.log(`[Job ${jobId}] ✅ ${successfulUploads.length}/${canvases.length} frames uploaded to ${accountId} Cloudinary account.`);
+    return successfulUploads;
   } catch (error) {
     console.error(`[Job ${jobId}] ❌ Cloudinary upload failed for account ${accountId}. Cleaning up...`, error);
     await cleanupJobFrames(publicIds, accountId);

@@ -51,31 +51,58 @@ export async function POST(request: NextRequest) {
  * Runs asynchronously without blocking the API response.
  */
 async function processFrameCreationWithRetry(accountId: string | undefined) {
+  // Global timeout for entire frame creation process (4 minutes max)
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error('Frame creation process exceeded 4 minute limit'));
+    }, 240000);
+  });
+
   try {
     console.log(`🔄 Background frame creation started for account: ${accountId || 'all'}`);
 
-    // Auto-retry failed jobs with valid data (moved to background)
-    await autoRetryFailedJobs();
-    
-    // Get jobs; prefer SQL-side filtering by account to avoid LIMIT mismatches
-    const jobs = await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY, undefined, accountId);
+    const creationPromise = (async () => {
+      // Auto-retry failed jobs with valid data (moved to background)
+      await autoRetryFailedJobs();
       
-    if (jobs.length === 0) {
-      const message = accountId ? 
-        `No jobs pending frame creation for account ${accountId}.` :
-        'No jobs pending frame creation.';
-      console.log(message);
-      return { success: false, message };
-    }
+      // Get jobs; prefer SQL-side filtering by account to avoid LIMIT mismatches
+      const jobs = await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY, undefined, accountId);
+        
+      if (jobs.length === 0) {
+        const message = accountId ? 
+          `No jobs pending frame creation for account ${accountId}.` :
+          'No jobs pending frame creation.';
+        console.log(message);
+        return { success: false, message };
+      }
 
-    console.log(`Found ${jobs.length} jobs for frame creation. Processing...`);
+      console.log(`Found ${jobs.length} jobs for frame creation. Processing...`);
 
-    // Process frame creation
-    const result = await processFrameCreationInBackground(jobs);
-    return result;
+      // Process frame creation
+      const result = await processFrameCreationInBackground(jobs);
+      return result;
+    })();
+
+    return await Promise.race([creationPromise, timeoutPromise]);
 
   } catch (error) {
     console.error(`❌ Frame creation failed for ${accountId}:`, error);
+    
+    // If it's a timeout error, mark pending jobs as failed
+    if (error instanceof Error && error.message.includes('exceeded 4 minute limit')) {
+      try {
+        const jobs = await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY, undefined, accountId);
+        for (const job of jobs) {
+          await updateJob(job.id, {
+            status: 'failed',
+            error_message: 'Frame creation timed out due to Vercel execution limit'
+          });
+        }
+      } catch (updateError) {
+        console.error('Failed to update timed-out jobs:', updateError);
+      }
+    }
+    
     throw error;
   }
 }
