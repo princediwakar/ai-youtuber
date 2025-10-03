@@ -1,11 +1,13 @@
 /**
  * Multi-Account YouTube Content Generation & Upload Schedule
  *
- * English Shots Strategy: 8 daily uploads with 3 generation batches (daily vocab building)
- * Health Shots Strategy: 6 daily uploads with 2 generation batches (wellness content)
- * SSC Shots Strategy: 6 daily uploads with 3 generation batches (exam preparation)
+ * OPTIMIZED FOR ENGAGEMENT (Oct 3, 2025)
  *
- * Each generation batch creates 3 quizzes. Optimized for quality over quantity.
+ * Strategy:
+ * 1. Reduced upload frequency (4-5 videos/day) to increase per-video impact.
+ * 2. Anchored schedule around the proven 8 PM (20:00) prime-time slot.
+ * 3. Introduced distinct weekday vs. weekend patterns to match user behavior.
+ * 4. Spaced out uploads to create a predictable "pulse" throughout the day.
  */
 
 interface HourlySchedule {
@@ -20,178 +22,136 @@ interface AccountSchedules {
   upload: DailySchedule;
 }
 
-/**
- * English Shots Account Schedules
- * Focus: Global English learners across time zones
- */
-const englishGenerationPattern: HourlySchedule = {
-  6: ['english_vocab_builder'],   // Morning generation for daily uploads
-  13: ['english_vocab_builder'],  // Afternoon generation for daily uploads
-  14: ['english_vocab_builder'],   // Morning generation for daily uploads
-  18: ['english_vocab_builder'],   // Evening generation for daily uploads
+// --- Generation patterns can remain largely the same ---
+const englishGenerationPattern: HourlySchedule = { 6: ['english_vocab_builder'], 13: ['english_vocab_builder'], 18: ['english_vocab_builder'] };
+const healthGenerationPattern: HourlySchedule = { 5: ['brain_health_tips', 'eye_health_tips'], 14: ['brain_health_tips', 'eye_health_tips'] };
+const sscGenerationPattern: HourlySchedule = { 5: ['ssc_shots'], 13: ['ssc_shots'], 18: ['ssc_shots'] };
+const astronomyGenerationPattern: HourlySchedule = { 6: ['space_facts_quiz'], 13: ['space_facts_quiz'], 18: ['space_facts_quiz'] };
+
+// ===================================================================
+// 1. English Shots (Global Learners, Indian Prime-Time Focus)
+// STRATEGY: 5 uploads/day. Double down on the 8 PM winner. Add a lunch slot for global reach.
+// ===================================================================
+const englishWeekdayUpload: HourlySchedule = {
+  8: ['english_vocab_builder'],   // Stronger, consolidated morning slot
+  13: ['english_vocab_builder'],  // Lunch break / European morning slot
+  17: ['english_vocab_builder'],  // After work/school slot
+  20: ['english_vocab_builder', 'english_vocab_builder'], // **DATA-DRIVEN PEAK: Double upload in the best-performing hour**
+};
+const englishWeekendUpload: HourlySchedule = {
+  9: ['english_vocab_builder'],   // Later weekend morning start
+  14: ['english_vocab_builder'],  // Weekend afternoon leisure time
+  18: ['english_vocab_builder'],  // Early evening
+  20: ['english_vocab_builder', 'english_vocab_builder'], // **PEAK: Maintain the double upload**
 };
 
-const englishUploadPattern: HourlySchedule = {
-7: ['english_vocab_builder'],  // Keep (good morning slot)                                                                                           │ │
-9: ['english_vocab_builder'],  // Keep (good morning slot)                                                                                           │ │
-16: ['english_vocab_builder'], // NEW - Analytics show 0.91% engagement                                                                              │ │
-17: ['english_vocab_builder'], // Keep (after work)                                                                                                  │ │
-19: ['english_vocab_builder'], // Keep - Analytics show 1.9% engagement                                                                              │ │
-20: ['english_vocab_builder', 'english_vocab_builder'], // NEW - Analytics show 6.23% engagement (BEST)                                                                       │ │
-21: ['english_vocab_builder'], // Keep (prime time)
+// ===================================================================
+// 2. Health Shots (Wellness Moments)
+// STRATEGY: 4 uploads/day. Thematic timing: motivation in AM, relaxation in PM.
+// ===================================================================
+const healthWeekdayUpload: HourlySchedule = {
+  7: ['brain_health_tips'],     // Morning motivation / mind-setter
+  13: ['eye_health_tips'],       // Mid-day screen break reminder
+  19: ['brain_health_tips'],     // Evening wind-down
+  21: ['eye_health_tips'],       // Pre-sleep digital detox tip
+};
+const healthWeekendUpload: HourlySchedule = {
+  8: ['brain_health_tips'],     // Weekend wellness start
+  14: ['eye_health_tips'],       // Afternoon self-care
+  19: ['brain_health_tips'],     // Sunday/Saturday relaxation
+  21: ['eye_health_tips', 'brain_health_tips'], // More content during weekend prime time
 };
 
-/**
- * Health Shots Account Schedules  
- * Focus: Health-conscious audiences during key wellness moments
- * Strategy: 3 daily uploads for optimal engagement without oversaturation
- */
-const healthGenerationPattern: HourlySchedule = {
-  5: ['brain_health_tips'],      // Early morning generation for daily wellness content
-  6: ['eye_health_tips'],        // Early morning generation for daily wellness content
-  13: ['eye_health_tips'],       // Afternoon generation for daily wellness content
-  14: ['brain_health_tips'],     // Afternoon generation for daily wellness content
+// ===================================================================
+// 3. SSC Shots (Dedicated Study Times)
+// STRATEGY: 4 uploads/day. Spread out to act as study session primers, not a distraction.
+// ===================================================================
+const sscWeekdayUpload: HourlySchedule = {
+  8: ['ssc_shots'],             // Morning current affairs / warm-up
+  16: ['ssc_shots'],            // Post-class / start of evening study block
+  19: ['ssc_shots'],            // Prime study session
+  21: ['ssc_shots'],            // Late-night revision topic
+};
+const sscWeekendUpload: HourlySchedule = {
+  10: ['ssc_shots'],            // Weekend mock test / topic deep dive
+  15: ['ssc_shots'],            // Afternoon study block
+  19: ['ssc_shots'],            // Prime study session
+  21: ['ssc_shots'],            // Final revision for the day
 };
 
-const healthUploadPattern: HourlySchedule = {
-  7:  ['brain_health_tips'],  // Morning wellness routine
-  9: ['eye_health_tips'],    // Afternoon health break
-  16: ['eye_health_tips'],    // Afternoon health break
-  19: ['brain_health_tips'],  // Evening health awareness
-  20: ['eye_health_tips', 'brain_health_tips'],  // Evening health awareness
-  21: ['brain_health_tips'],  // Evening health awareness
+// ===================================================================
+// 4. Astronomy Shots (Curiosity & Wonder)
+// STRATEGY: 4 uploads/day. Thematic timing to inspire wonder.
+// ===================================================================
+const astronomyWeekdayUpload: HourlySchedule = {
+  9: ['space_facts_quiz'],      // Late morning "did you know"
+  16: ['space_facts_quiz'],      // Afternoon mental break
+  20: ['space_facts_quiz'],      // Prime-time discovery
+  22: ['space_facts_quiz'],      // Late-night "look at the sky" thematic post
+};
+const astronomyWeekendUpload: HourlySchedule = {
+  10: ['space_facts_quiz'],     // Weekend morning curiosity
+  15: ['space_facts_quiz'],     // Afternoon "explore the universe"
+  20: ['space_facts_quiz'],     // **PEAK: Anchor on prime time**
+  22: ['space_facts_quiz', 'space_facts_quiz'], // Double upload for late-night weekend browsing
 };
 
-/**
- * SSC Shots Account Schedules
- * Focus: SSC exam aspirants during optimal study times
- * Strategy: 6 daily uploads targeting serious exam preparation audience
- */
-const sscGenerationPattern: HourlySchedule = {
-  5: ['ssc_shots'],   // Early morning generation
-  13: ['ssc_shots'],  // Afternoon generation
-  14: ['ssc_shots'],  // Post-lunch generation  
-  20: ['ssc_shots'],  // Evening generation
-};
-
-const sscUploadPattern: HourlySchedule = {
-  8: ['ssc_shots'],   // Early morning study time
-  9: ['ssc_shots'],   // Morning study session
-  16: ['ssc_shots'],  // Evening study start
-  18: ['ssc_shots'],  // Night study session
-  19: ['ssc_shots'],  // Night study session
-  20: ['ssc_shots'],  // Evening study start
-  21: ['ssc_shots'],  // Evening study start
-};
-
-/**
- * Astronomy Shots Account Schedules
- * Focus: Space enthusiasts and curious learners during peak engagement times
- * Strategy: 6 daily uploads targeting wonder and curiosity-driven audience
- */
-const astronomyGenerationPattern: HourlySchedule = {
-  6: ['space_facts_quiz'],   // Morning generation for daily space content
-  13: ['space_facts_quiz'],  // Afternoon generation
-  14: ['space_facts_quiz'],  // Afternoon generation  
-  20: ['space_facts_quiz'],  // Evening generation
-};
-
-const astronomyUploadPattern: HourlySchedule = {
-  7: ['space_facts_quiz'],   // Morning curiosity peak
-  9: ['space_facts_quiz'],  // Late morning discovery time
-  16: ['space_facts_quiz'],  // Afternoon wonder break
-  18: ['space_facts_quiz'],  // Evening learning time
-  20: ['space_facts_quiz'],  // Prime time space facts
-  21: ['space_facts_quiz'],  // Night sky contemplation
-};
-
-// Account-specific schedules
+// ===================================================================
+// Final Assembled Schedules
+// ===================================================================
 const ACCOUNT_SCHEDULES: Record<string, AccountSchedules> = {
   english_shots: {
-    generation: {
-      0: englishGenerationPattern, // Sunday
-      1: englishGenerationPattern, // Monday
-      2: englishGenerationPattern, // Tuesday
-      3: englishGenerationPattern, // Wednesday
-      4: englishGenerationPattern, // Thursday
-      5: englishGenerationPattern, // Friday
-      6: englishGenerationPattern, // Saturday
-    },
+    generation: { 0: englishGenerationPattern, 1: englishGenerationPattern, 2: englishGenerationPattern, 3: englishGenerationPattern, 4: englishGenerationPattern, 5: englishGenerationPattern, 6: englishGenerationPattern },
     upload: {
-      0: englishUploadPattern, // Sunday
-      1: englishUploadPattern, // Monday
-      2: englishUploadPattern, // Tuesday
-      3: englishUploadPattern, // Wednesday
-      4: englishUploadPattern, // Thursday
-      5: englishUploadPattern, // Friday
-      6: englishUploadPattern, // Saturday
+      0: englishWeekendUpload, // Sunday
+      1: englishWeekdayUpload,
+      2: englishWeekdayUpload,
+      3: englishWeekdayUpload,
+      4: englishWeekdayUpload,
+      5: englishWeekdayUpload,
+      6: englishWeekendUpload, // Saturday
     }
   },
-
   health_shots: {
-    generation: {
-      0: healthGenerationPattern, // Sunday
-      1: healthGenerationPattern, // Monday
-      2: healthGenerationPattern, // Tuesday
-      3: healthGenerationPattern, // Wednesday
-      4: healthGenerationPattern, // Thursday
-      5: healthGenerationPattern, // Friday
-      6: healthGenerationPattern, // Saturday
-    },
+    generation: { 0: healthGenerationPattern, 1: healthGenerationPattern, 2: healthGenerationPattern, 3: healthGenerationPattern, 4: healthGenerationPattern, 5: healthGenerationPattern, 6: healthGenerationPattern },
     upload: {
-      0: healthUploadPattern, // Sunday
-      1: healthUploadPattern, // Monday
-      2: healthUploadPattern, // Tuesday
-      3: healthUploadPattern, // Wednesday
-      4: healthUploadPattern, // Thursday
-      5: healthUploadPattern, // Friday
-      6: healthUploadPattern, // Saturday
+      0: healthWeekendUpload, // Sunday
+      1: healthWeekdayUpload,
+      2: healthWeekdayUpload,
+      3: healthWeekdayUpload,
+      4: healthWeekdayUpload,
+      5: healthWeekdayUpload,
+      6: healthWeekendUpload, // Saturday
     }
   },
-
   ssc_shots: {
-    generation: {
-      0: sscGenerationPattern, // Sunday
-      1: sscGenerationPattern, // Monday
-      2: sscGenerationPattern, // Tuesday
-      3: sscGenerationPattern, // Wednesday
-      4: sscGenerationPattern, // Thursday
-      5: sscGenerationPattern, // Friday
-      6: sscGenerationPattern, // Saturday
-    },
+    generation: { 0: sscGenerationPattern, 1: sscGenerationPattern, 2: sscGenerationPattern, 3: sscGenerationPattern, 4: sscGenerationPattern, 5: sscGenerationPattern, 6: sscGenerationPattern },
     upload: {
-      0: sscUploadPattern, // Sunday
-      1: sscUploadPattern, // Monday
-      2: sscUploadPattern, // Tuesday
-      3: sscUploadPattern, // Wednesday
-      4: sscUploadPattern, // Thursday
-      5: sscUploadPattern, // Friday
-      6: sscUploadPattern, // Saturday
+      0: sscWeekendUpload, // Sunday
+      1: sscWeekdayUpload,
+      2: sscWeekdayUpload,
+      3: sscWeekdayUpload,
+      4: sscWeekdayUpload,
+      5: sscWeekdayUpload,
+      6: sscWeekendUpload, // Saturday
     }
   },
-
   astronomy_shots: {
-    generation: {
-      0: astronomyGenerationPattern, // Sunday
-      1: astronomyGenerationPattern, // Monday
-      2: astronomyGenerationPattern, // Tuesday
-      3: astronomyGenerationPattern, // Wednesday
-      4: astronomyGenerationPattern, // Thursday
-      5: astronomyGenerationPattern, // Friday
-      6: astronomyGenerationPattern, // Saturday
-    },
+    generation: { 0: astronomyGenerationPattern, 1: astronomyGenerationPattern, 2: astronomyGenerationPattern, 3: astronomyGenerationPattern, 4: astronomyGenerationPattern, 5: astronomyGenerationPattern, 6: astronomyGenerationPattern },
     upload: {
-      0: astronomyUploadPattern, // Sunday
-      1: astronomyUploadPattern, // Monday
-      2: astronomyUploadPattern, // Tuesday
-      3: astronomyUploadPattern, // Wednesday
-      4: astronomyUploadPattern, // Thursday
-      5: astronomyUploadPattern, // Friday
-      6: astronomyUploadPattern, // Saturday
+      0: astronomyWeekendUpload, // Sunday
+      1: astronomyWeekdayUpload,
+      2: astronomyWeekdayUpload,
+      3: astronomyWeekdayUpload,
+      4: astronomyWeekdayUpload,
+      5: astronomyWeekdayUpload,
+      6: astronomyWeekendUpload, // Saturday
     }
   }
 };
 
+
+// The rest of your functions (getGenerationSchedule, getUploadSchedule, etc.) remain unchanged.
 /**
  * Get generation schedule for a specific account
  */
