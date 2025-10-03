@@ -1,3 +1,4 @@
+// lib/generation/personas/astronomy/prompts.ts
 /**
  * Astronomy space facts prompt templates
  * All astronomy-specific content generation prompts

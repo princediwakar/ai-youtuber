@@ -1,4 +1,3 @@
-// lib/generation/core/generationService.ts
 import OpenAI from 'openai';
 import { createQuizJob, query } from '@/lib/database';
 import { MasterPersonas } from '@/lib/personas';
@@ -28,19 +27,19 @@ const HIGH_ENGAGEMENT_HOOK_PATTERNS = [
 function analyzeHookEffectiveness(content: any): { hookPattern: string; estimatedEffectiveness: 'high' | 'medium' | 'low' } {
   const hookText = content.hook || content.question || '';
   const lowerHook = hookText.toLowerCase();
-  
+
   // Check against high-performing patterns
   for (const pattern of HIGH_ENGAGEMENT_HOOK_PATTERNS) {
     if (lowerHook.includes(pattern)) {
       return { hookPattern: pattern, estimatedEffectiveness: 'high' };
     }
   }
-  
+
   // Simple heuristics for medium/low effectiveness
   if (lowerHook.includes('did you know') || lowerHook.includes('which word')) {
     return { hookPattern: 'standard_question', estimatedEffectiveness: 'medium' };
   }
-  
+
   return { hookPattern: 'generic', estimatedEffectiveness: 'low' };
 }
 
@@ -56,15 +55,15 @@ async function checkForDuplicateContent(contentHash: string, accountId: string, 
   try {
     // Check for content with the same hash in the last 24 hours for this account/persona
     const result = await query(`
-      SELECT id 
-      FROM quiz_jobs 
-      WHERE account_id = $1 
-        AND persona = $2 
+      SELECT id
+      FROM quiz_jobs
+      WHERE account_id = $1
+        AND persona = $2
         AND data->'variation_markers'->>'content_hash' = $3
         AND created_at > NOW() - INTERVAL '24 hours'
       LIMIT 1
     `, [accountId, persona, contentHash]);
-    
+
     return result.rows.length > 0;
   } catch (error) {
     console.warn('Failed to check for duplicate content:', error);
@@ -79,19 +78,6 @@ export interface GenerationJobConfig extends JobConfig {
   previousLayouts?: LayoutType[];
   targetEngagement?: 'educational' | 'entertaining' | 'interactive' | 'practical';
 }
-
-/**
- * ANALYTICS-DRIVEN: Force MCQ layout only
- * Analytics show MCQ = 1.26% engagement, all other formats = 0% engagement
- */
-const PERSONA_LAYOUT_MAP: Record<string, LayoutType[]> = {
-  'english_vocab_builder': ['mcq'], // ANALYTICS: Best performing format (1.26% engagement)
-  'brain_health_tips': ['mcq'],     // ANALYTICS: Only format showing any engagement
-  'eye_health_tips': ['mcq'],       // ANALYTICS: All other formats failed
-  'ssc_shots': ['mcq'],             // ANALYTICS: Force proven format
-  'space_facts_quiz': ['mcq'],      // ANALYTICS: MCQ only approach
-};
-
 /**
  * ANALYTICS-DRIVEN: Always return MCQ layout
  * Data shows it's the only format that drives engagement
@@ -113,7 +99,7 @@ function getLayoutDistributionForPersona(persona: string): LayoutWeight[] {
       { layout: 'usage_demo', weight: 10 }      // 10% usage examples
     ];
   }
-  
+
   // Health content - mix of tips and quizzes matching prompt router
   if (persona === 'brain_health_tips' || persona === 'eye_health_tips') {
     return [
@@ -122,17 +108,18 @@ function getLayoutDistributionForPersona(persona: string): LayoutWeight[] {
       { layout: 'challenge', weight: 15 }      // 15% challenges
     ];
   }
-  
+
   // SSC exam content - variety matching prompt router
   if (persona === 'ssc_shots') {
     return [
-      { layout: 'mcq', weight: 55 },           // 55% MCQ (exam focus)
-      { layout: 'quick_tip', weight: 20 },     // 20% study tips
-      { layout: 'common_mistake', weight: 15 }, // 15% common mistakes
-      { layout: 'usage_demo', weight: 10 }     // 10% usage demos
+      { layout: 'mcq', weight: 50 },            // 50% MCQ (exam focus)
+      { layout: 'quick_tip', weight: 15 },      // 15% study tips
+      { layout: 'common_mistake', weight: 15 },  // 15% common mistakes
+      { layout: 'usage_demo', weight: 10 },      // 10% usage demos
+      { layout: 'challenge', weight: 10 }       // 10% challenges
     ];
   }
-  
+
   // Astronomy/space content - limited variety matching prompt router
   if (persona === 'space_facts_quiz') {
     return [
@@ -140,7 +127,7 @@ function getLayoutDistributionForPersona(persona: string): LayoutWeight[] {
       { layout: 'quick_tip', weight: 20 }      // 20% space facts
     ];
   }
-  
+
   // Default distribution for any other personas
   return [
     { layout: 'mcq', weight: 70 },           // 70% MCQ (safest bet)
@@ -151,7 +138,7 @@ function getLayoutDistributionForPersona(persona: string): LayoutWeight[] {
 function selectWeightedRandomLayout(weights: LayoutWeight[]): LayoutType {
   const totalWeight = weights.reduce((sum, item) => sum + item.weight, 0);
   const random = Math.random() * totalWeight;
-  
+
   let currentWeight = 0;
   for (const item of weights) {
     currentWeight += item.weight;
@@ -159,7 +146,7 @@ function selectWeightedRandomLayout(weights: LayoutWeight[]): LayoutType {
       return item.layout;
     }
   }
-  
+
   // Fallback to MCQ if something goes wrong
   return 'mcq';
 }
@@ -170,15 +157,15 @@ function selectLayoutForPersona(persona: string, preferredLayout?: LayoutType): 
     console.log(`✅ Using requested layout: ${preferredLayout} for ${persona}`);
     return preferredLayout;
   }
-  
+
   // Get persona-specific layout distribution
   const layoutWeights = getLayoutDistributionForPersona(persona);
   const selectedLayout = selectWeightedRandomLayout(layoutWeights);
-  
+
   const weightInfo = layoutWeights.find(w => w.layout === selectedLayout)?.weight || 0;
   console.log(`✅ Randomly selected ${selectedLayout} layout for ${persona} (${weightInfo}% weight)`);
   console.log(`🔄 Layout will be passed as preferredLayout to promptGenerator`);
-  
+
   return selectedLayout;
 }
 
@@ -212,19 +199,19 @@ export async function generateAndStoreContent(
       topic: jobConfig.topic,
       preferredFormat: jobConfig.preferredFormat
     });
-    
+
     // Get account configuration using the provided accountId
     const account = await getAccountConfig(jobConfig.accountId);
-    
+
     // Get analytics insights for this persona (with proper timeout handling)
     let analyticsInsights: any | undefined;
     try {
       // Add 10-second timeout for analytics queries
       const analyticsPromise = analyticsService.analyzePerformanceWithAI(jobConfig.accountId, jobConfig.persona);
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Analytics query timeout')), 10000)
       );
-      
+
       const analyticsResult = await Promise.race([analyticsPromise, timeoutPromise]) as any;
       analyticsInsights = analyticsResult.aiInsights;
       console.log(`[Analytics] Loaded insights for ${jobConfig.persona}`);
@@ -239,12 +226,12 @@ export async function generateAndStoreContent(
     const istOffset = 5.5 * 60 * 60 * 1000; // IST = UTC + 5:30
     const istTime = new Date(now.getTime() + istOffset);
     const uploadHour = istTime.getHours();
-    
+
     // Select appropriate layout for this persona
     // If preferredFormat is specified, use it as preferredLayout
     const preferredLayout = jobConfig.preferredLayout || jobConfig.preferredFormat as LayoutType;
     const selectedLayout: LayoutType = selectLayoutForPersona(jobConfig.persona, preferredLayout);
-    
+
     // Create enhanced job config with layout and analytics information
     const enhancedJobConfig: GenerationJobConfig = {
       ...jobConfig,
@@ -252,7 +239,7 @@ export async function generateAndStoreContent(
       analyticsInsights,
       uploadHour,
     };
-    
+
     // Generate prompt and get variation markers
     const promptResult = await generatePrompt(enhancedJobConfig);
     const { timeMarker, tokenMarker } = promptResult.markers;
@@ -281,20 +268,20 @@ export async function generateAndStoreContent(
     }
 
     const contentData = validationResult.data;
-    
+
     // Check for duplicate content
     const contentHash = generateContentHash(contentData);
     const isDuplicate = await checkForDuplicateContent(contentHash, jobConfig.accountId, jobConfig.persona);
-    
+
     if (isDuplicate) {
       console.warn(`⚠️ Duplicate content detected (hash: ${contentHash}) for ${jobConfig.persona} - ${jobConfig.topic}. Regenerating...`);
-      
+
       // Try one more time with different variation markers
       const retryPromptResult = await generatePrompt({
         ...jobConfig
         // generatePrompt will create new markers internally for variation
       });
-      
+
       const retryResponse = await deepseekClient.chat.completions.create({
         model: "deepseek-chat",
         messages: [{ role: "user", content: retryPromptResult.prompt }],
@@ -325,7 +312,7 @@ export async function generateAndStoreContent(
     // ANALYTICS: Track hook effectiveness for optimization
     const hookAnalysis = analyzeHookEffectiveness(contentData);
     console.log(`🎯 Hook analysis for ${jobConfig.persona}: ${hookAnalysis.hookPattern} (${hookAnalysis.estimatedEffectiveness} effectiveness)`);
-    
+
     // Add hook analysis to content data for future reference
     const enhancedContentData = {
       ...contentData,
@@ -343,8 +330,8 @@ export async function generateAndStoreContent(
 
     const jobPayload = {
       persona: jobConfig.persona,
-      generation_date: jobConfig.generationDate instanceof Date 
-        ? jobConfig.generationDate.toISOString() 
+      generation_date: jobConfig.generationDate instanceof Date
+        ? jobConfig.generationDate.toISOString()
         : jobConfig.generationDate,
       topic: topicKey,
       topic_display_name: topicData?.displayName || topicKey,
@@ -352,7 +339,7 @@ export async function generateAndStoreContent(
       step: 2, // Next step is frame creation
       status: 'frames_pending',
       account_id: account.id,
-      
+
       // Layout tracking fields
       format_type: selectedLayout, // Keep for compatibility
       frame_sequence: frameSequence,
@@ -361,7 +348,7 @@ export async function generateAndStoreContent(
         detectedAtGeneration: true,
         generatedAt: Date.now()
       },
-      
+
       data: {
         content: enhancedContentData,
         layoutType: selectedLayout, // Store layout type for compatibility
@@ -385,12 +372,12 @@ export async function generateAndStoreContent(
     const jobId = await createQuizJob(jobPayload);
 
     console.log(`[Job ${jobId}] ✅ Created ${account.name} ${selectedLayout} content for persona "${jobConfig.persona}" [${timeMarker}-${tokenMarker}]`);
-    
-    return { 
-      id: jobId, 
+
+    return {
+      id: jobId,
       accountId: account.id,
       layoutType: selectedLayout,
-      variationMarkers: { timeMarker, tokenMarker } 
+      variationMarkers: { timeMarker, tokenMarker }
     };
 
   } catch (error) {

@@ -98,7 +98,7 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
     eye_health_tips: generateQuickTipPrompt,
     english_vocab_builder: generateQuickTipPrompt, // Test for other personas
     ssc_shots: generateSSCQuickTipPrompt, // CORRECTED: Point ssc_shots to its own quick_tip prompt
-    space_facts_quiz: generateQuickTipPrompt,
+    space_facts_quiz: generateAstronomyPrompt,    
     default: generateQuickTipPrompt
   },
   // PRIMARY: MCQ format (1.26% engagement - PROVEN PERFORMER)
