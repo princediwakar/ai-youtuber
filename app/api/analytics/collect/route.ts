@@ -1,5 +1,8 @@
+// app/api/analytics/collect/route.ts
+
 import { NextResponse } from 'next/server';
-import { analyticsInsightsService as analyticsService } from '@/lib/analytics/insightsService';
+// FIX: Import from the collectionService, which contains the 'collectAnalytics' method
+import { analyticsCollectionService as analyticsService } from '@/lib/analytics/collectionService';
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
@@ -17,7 +20,7 @@ export async function POST(request: Request) {
     console.log('[Analytics] Starting scheduled analytics collection...');
     
     const startTime = Date.now();
-    const result = await analyticsService.collectAnalytics();
+    const result = await analyticsService.collectAnalytics(); // This will now work correctly
     const duration = Date.now() - startTime;
     
     const response = {
@@ -63,7 +66,7 @@ export async function GET(request: Request) {
 
     console.log('[Analytics] Manual analytics collection triggered...');
     
-    const result = await analyticsService.collectAnalytics();
+    const result = await analyticsService.collectAnalytics(); // This will also work correctly now
     
     return NextResponse.json({
       success: true,
