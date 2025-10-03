@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { simpleAnalyticsService } from '@/lib/simpleAnalyticsService';
+import { analyticsService } from '@/lib/analyticsService';
 
 // This export ensures that Next.js treats this route as a dynamic API endpoint,
 // preventing it from caching responses and always fetching the latest data.
@@ -7,29 +7,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Get overall analytics summary and detailed breakdowns
-    const [allChannelsSummary, channelBreakdown, personaBreakdown] = await Promise.all([
-      simpleAnalyticsService.getAnalyticsSummary(),
-      simpleAnalyticsService.getChannelBreakdown(),
-      simpleAnalyticsService.getPersonaBreakdown()
-    ]);
-
-    // Determine best performing channel based on video count (since no engagement data yet)
-    let bestChannel = 'No Data';
-    if (channelBreakdown.channels.length > 0) {
-      const topChannel = channelBreakdown.channels.reduce((best, current) => 
-        current.totalVideos > best.totalVideos ? current : best
-      );
-      bestChannel = topChannel.totalVideos > 0 ? topChannel.channelName : 'No Data';
-    }
+    // Get overall analytics summary
+    const allChannelsSummary = await analyticsService.getAnalyticsSummary();
 
     const stats = {
       videosPublished: allChannelsSummary.totalVideos,
       totalViews: allChannelsSummary.totalViews,
       avgEngagement: allChannelsSummary.avgEngagementRate,
-      bestChannel,
-      channels: channelBreakdown.channels,
-      personas: personaBreakdown.personas
+      bestChannel: 'English Shots' // Default since we don't have channel breakdown
     };
 
     return NextResponse.json({ success: true, stats });

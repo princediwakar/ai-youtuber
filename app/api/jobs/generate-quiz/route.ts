@@ -35,14 +35,15 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting generation for account: ${accountId}${preferredFormat ? ` with format: ${preferredFormat}` : ''}`);
 
-    // FIXED: Process synchronously instead of fire-and-forget
-    const result = await processGenerationWithValidation(accountId, preferredFormat);
+    // Process asynchronously to prevent timeout
+    processGenerationWithValidation(accountId, preferredFormat).catch(error => {
+      console.error('Background generation failed:', error);
+    });
 
     return NextResponse.json({ 
       success: true, 
       accountId,
-      result,
-      message: 'Generation completed'
+      message: 'Generation started in background'
     });
 
   } catch (error) {
