@@ -26,6 +26,7 @@ interface AccountSchedules {
  */
 const englishGenerationPattern: HourlySchedule = {
   6: ['english_vocab_builder'],   // Morning generation for daily uploads
+  13: ['english_vocab_builder'],  // Afternoon generation for daily uploads
   14: ['english_vocab_builder'],   // Morning generation for daily uploads
   18: ['english_vocab_builder'],   // Evening generation for daily uploads
 };
@@ -48,6 +49,8 @@ const englishUploadPattern: HourlySchedule = {
 const healthGenerationPattern: HourlySchedule = {
   5: ['brain_health_tips'],      // Early morning generation for daily wellness content
   6: ['eye_health_tips'],        // Early morning generation for daily wellness content
+  13: ['eye_health_tips'],       // Afternoon generation for daily wellness content
+  14: ['brain_health_tips'],     // Afternoon generation for daily wellness content
 };
 
 const healthUploadPattern: HourlySchedule = {
@@ -66,6 +69,7 @@ const healthUploadPattern: HourlySchedule = {
  */
 const sscGenerationPattern: HourlySchedule = {
   5: ['ssc_shots'],   // Early morning generation
+  13: ['ssc_shots'],  // Afternoon generation
   14: ['ssc_shots'],  // Post-lunch generation  
   20: ['ssc_shots'],  // Evening generation
 };
@@ -87,6 +91,7 @@ const sscUploadPattern: HourlySchedule = {
  */
 const astronomyGenerationPattern: HourlySchedule = {
   6: ['space_facts_quiz'],   // Morning generation for daily space content
+  13: ['space_facts_quiz'],  // Afternoon generation
   14: ['space_facts_quiz'],  // Afternoon generation  
   20: ['space_facts_quiz'],  // Evening generation
 };

@@ -81,7 +81,7 @@ function getEnglishTopicGuidelines(topic: string): TopicGuideline | undefined {
 
 /**
  * Generates simplified word format prompt for single-frame videos
- * REIMPLEMENTED: Based on MCQ format logic for better content generation
+ * ENHANCED: Added MCQ-style variability and topic-specific guidelines
  */
 export function generateSimplifiedWordPrompt(config: PromptConfig): string {
   const { topicData, topic, markers, timingContext, analyticsInsights } = config;
@@ -92,33 +92,80 @@ export function generateSimplifiedWordPrompt(config: PromptConfig): string {
   const timingPrefix = timingContext ? `${timingContext.timeOfDay.toUpperCase()} LEARNING` : 'VIRAL LEARNING';
   const audienceContext = timingContext?.audience || primaryAudience;
   
+  // Add variability patterns inspired by MCQ prompts
+  const variabilityPatterns = [
+    {
+      approach: 'confidence_building',
+      focus: 'Master vocabulary that makes you sound instantly more professional',
+      criteria: 'Choose words that separate confident speakers from hesitant ones',
+      engagement: 'Use this word in your next conversation to sound fluent'
+    },
+    {
+      approach: 'mistake_avoidance', 
+      focus: 'Learn words that 90% of people mispronounce or misuse',
+      criteria: 'Target common vocabulary errors that embarrass learners',
+      engagement: 'Stop making this vocabulary mistake that everyone notices'
+    },
+    {
+      approach: 'upgrade_language',
+      focus: 'Replace basic words with sophisticated alternatives',
+      criteria: 'Find elevated vocabulary that transforms communication',
+      engagement: 'Upgrade your vocabulary and sound more educated'
+    },
+    {
+      approach: 'contextual_precision',
+      focus: 'Master words that show deep English understanding',
+      criteria: 'Choose vocabulary that demonstrates advanced fluency',
+      engagement: 'Use precise vocabulary that impresses native speakers'
+    }
+  ];
+  
+  // Select random pattern for variability
+  const selectedPattern = variabilityPatterns[Math.floor(Math.random() * variabilityPatterns.length)];
+  
+  // Add topic-specific word categories for more variety
+  const wordCategories = {
+    'eng_pronunciation_fails': ['commonly mispronounced words', 'tricky pronunciation patterns', 'silent letter words'],
+    'eng_vocab_word_meaning': ['misused words', 'confused word pairs', 'formal vs casual vocabulary'],
+    'eng_vocab_synonyms': ['nuanced synonyms', 'near-similar words', 'register-specific alternatives'],
+    'eng_grammar_hacks': ['grammar-improving vocabulary', 'structure-changing words', 'clarity-enhancing terms'],
+    'eng_common_mistakes': ['commonly confused words', 'false friends', 'similar-sounding pairs']
+  };
+  
+  const categoryList = wordCategories[topic] || ['professional vocabulary', 'academic terms', 'advanced expressions'];
+  const selectedCategory = categoryList[Math.floor(Math.random() * categoryList.length)];
+  
   if (topicData) {
     return `You are a viral English education expert creating addictive vocabulary content for YouTube Shorts.
 
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential English vocabulary mastery'}
 
 ${timingPrefix} STRATEGY:
-• HOOK: Generate contextual hooks based on the specific vocabulary being taught (15-25 chars, reference actual word/concept)
+• APPROACH: ${selectedPattern.approach.replace('_', ' ').toUpperCase()} - ${selectedPattern.focus}
 • PSYCHOLOGY: Use social proof (90% statistics) + embarrassment avoidance + high self-efficacy (you can quickly fix this)
 • SCENARIOS: Apply to ${guidelines?.scenarios?.join(', ') || 'professional and academic communication'}
-• ENGAGEMENT: ${guidelines?.engagement || 'Create immediate vocabulary upgrade opportunities'}
+• ENGAGEMENT: ${selectedPattern.engagement}
 • PATTERN: Social proof statistic + "Are you making this mistake?" + quick confidence fix
 • TIMING: Perfect for ${timingContext?.timeOfDay || 'daily'} learning sessions
+• CATEGORY FOCUS: Prioritize ${selectedCategory} within this topic
 
 Generate vocabulary content that targets ${audienceContext} who want to sound more fluent and professional:
 
-CONTENT APPROACH:
-• Lead with confidence-building ("Master this and sound fluent!")
-• Present vocabulary that elevates communication skills
-• Include practical, immediate application opportunities
-• Create "aha!" moments that boost learning motivation
-
-WORD SELECTION CRITERIA:
-• PRECISION: Choose words that directly address the topic focus: "${guidelines?.focus}"
+ENHANCED WORD SELECTION:
+• PRECISION: ${selectedPattern.criteria}
 • RELEVANCE: Focus on vocabulary that ${audienceContext} encounter in real situations
 • DIFFICULTY: Challenging enough to teach but achievable for motivated learners
 • IMPACT: Provide vocabulary that immediately improves communication
 • SCENARIOS: Perfect for ${guidelines?.scenarios?.join(', ') || 'professional contexts'}
+• CATEGORY: Specifically target ${selectedCategory} to add topic depth
+• VARIABILITY: Avoid common/basic words - choose distinctive vocabulary that stands out
+
+CONTENT APPROACH VARIATION:
+• Lead with ${selectedPattern.focus.toLowerCase()}
+• Present vocabulary that elevates communication skills
+• Include practical, immediate application opportunities
+• Create "aha!" moments that boost learning motivation
+• Focus on ${selectedCategory} to provide topic-specific value
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -136,14 +183,21 @@ IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no a
   } else {
     return `You are an expert English educator creating viral vocabulary content for YouTube Shorts.
 
+ENHANCED GENERATION APPROACH: ${selectedPattern.approach.replace('_', ' ').toUpperCase()}
+• FOCUS: ${selectedPattern.focus}
+• CRITERIA: ${selectedPattern.criteria}
+• ENGAGEMENT: ${selectedPattern.engagement}
+
 Generate vocabulary content for ${primaryAudience} on "${topic}" that challenges while building confidence.
 
-REQUIREMENTS:
-• WORD FOCUS: Choose vocabulary that directly addresses the topic "${topic}"
+ENHANCED REQUIREMENTS:
+• WORD FOCUS: Choose vocabulary that directly addresses the topic "${topic}" with ${selectedCategory} emphasis
 • PRACTICAL: Focus on words used in professional and academic contexts
 • ENGAGEMENT: Create immediate "vocabulary upgrade" value
 • DEFINITION: Provide clear explanation that elevates communication (under 100 characters)
 • USAGE: Include practical example that shows professional application (under 120 characters)
+• VARIABILITY: Avoid repetitive word choices - select distinctive, memorable vocabulary
+• CATEGORY: Target ${selectedCategory} specifically within this topic area
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {

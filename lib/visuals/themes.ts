@@ -110,17 +110,6 @@ export const themes: Record<string, Theme> = {
 
   // --- 🚀 PREMIUM VIDEO-OPTIMIZED THEMES ---
 
-  // 5. Neon Cyber 💫 - High contrast for social media
-  NeonCyber: {
-    name: 'NeonCyber',
-    fontFamily: 'Poppins',
-    page: { background: ['#0a0a0a', '#1a1a2e'] },
-    header: { background: 'rgba(255, 255, 255, 0.1)', text: '#00ffff' },
-    text: { primary: '#ffffff', secondary: 'rgba(255, 255, 255, 0.7)', onAccent: '#000000' },
-    button: { background: ['#ff006e', '#8338ec'], text: '#ffffff', shadow: 'rgba(255, 0, 110, 0.3)' },
-    feedback: { correct: ['#00ffff', '#0080ff'] },
-  },
-
   // 6. Sunset Vibes 🌅 - Warm and engaging
   SunsetVibes: {
     name: 'SunsetVibes',

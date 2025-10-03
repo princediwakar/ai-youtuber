@@ -9,8 +9,6 @@ export const PersonaThemeMap: Record<string, string[]> = {
 
   // English vocabulary - premium themes optimized for video engagement
   english_vocab_builder: [
-    'ElectricPurple',   // Bold and attention-grabbing ⚡
-    'NeonCyber',        // High contrast for social media 💫
     'GoldenHour',       // Premium, luxurious feel 🌟
     'SunsetVibes',      // Warm and engaging 🌅
     'ArcticGlow',       // Clean, modern, crisp ❄️
@@ -30,8 +28,6 @@ export const PersonaThemeMap: Record<string, string[]> = {
   
   // Eye health - high-contrast themes optimized for visual content
   eye_health_tips: [
-    'ElectricPurple',   // Bold contrast for eye health ⚡
-    'NeonCyber',        // High visibility 💫
     'ArcticGlow',       // Clean, eye-friendly ❄️
     'GoldenHour',       // Luxurious health appeal 🌟
     'SunsetVibes',      // Warm, approachable 🌅
@@ -40,24 +36,20 @@ export const PersonaThemeMap: Record<string, string[]> = {
   
   // SSC exam preparation - authoritative yet engaging themes for education
   ssc_shots: [
-    'ElectricPurple',   // Bold authority ⚡
     'GoldenHour',       // Premium education feel 🌟
     'ArcticGlow',       // Clean, focused study ❄️
-    'NeonCyber',        // Modern exam prep 💫
     'MintyFresh',       // Clean academic look
     'CanyonSunset'      // Warm institutional feel
   ],
 
   // Astronomy content - cosmic themes optimized for space wonder
   space_facts_quiz: [
-    'NeonCyber',        // Perfect for space content 💫
     'CosmicDawn',       // Cosmic gradients for space
-    'ElectricPurple',   // Universe mystery ⚡
     'EnchantedForest',  // Dark space backdrop
     'ArcticGlow',       // Stellar clarity ❄️
     'GoldenHour'        // Solar system gold 🌟
   ],
   
   // Default set optimized for maximum video engagement
-  default: ['ElectricPurple', 'NeonCyber', 'GoldenHour'],
+  default: ['GoldenHour'],
 };
