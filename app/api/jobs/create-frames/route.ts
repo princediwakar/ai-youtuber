@@ -1,17 +1,18 @@
 //app/api/jobs/create-frames/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getPendingJobs, updateJob, autoRetryFailedJobs } from '@/lib/database';
 import { createFramesForJob } from '@/lib/frameService';
-import { config } from '@/lib/config';
-import { QuizJob } from '@/lib/types';
+import { getOldestPendingJob, updateJob, autoRetryFailedJobs } from '@/lib/database';
+import { getAccountConfig } from '@/lib/accounts';
 import { initializeErrorHandlers } from '@/lib/errorHandlers';
 
 // Initialize global error handlers
 initializeErrorHandlers();
 
-export const runtime = 'nodejs';
-export const maxDuration = 300;
-
+/**
+ * --- REFACTORED FOR SERVERLESS RELIABILITY ---
+ * This endpoint now fetches and processes only ONE job at a time synchronously.
+ * This prevents resource exhaustion and premature termination by the Vercel runtime.
+ */
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -19,144 +20,61 @@ export async function POST(request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // Parse request body to get accountId (optional)
     let accountId: string | undefined;
     try {
       const body = await request.json();
       accountId = body.accountId;
     } catch {
-      // No body or invalid JSON - process all accounts
+      // No body, process for any account
     }
 
-    console.log(`🚀 Starting frame creation for account: ${accountId || 'all'}`);
+    console.log(`🚀 Starting single frame creation job for account: ${accountId || 'all'}`);
 
-    // Process asynchronously to prevent timeout
-    processFrameCreationWithRetry(accountId).catch(error => {
-      console.error('Background frame creation failed:', error);
-    });
-
-    return NextResponse.json({ 
-      success: true, 
-      accountId: accountId || 'all',
-      message: 'Frame creation started in background'
-    });
-  } catch (error) {
-    console.error('Frame creation batch failed:', error);
-    return NextResponse.json({ success: false, error: 'Frame creation batch failed' }, { status: 500 });
-  }
-}
-
-/**
- * Background processing function that includes retry logic and frame creation.
- * Runs asynchronously without blocking the API response.
- */
-async function processFrameCreationWithRetry(accountId: string | undefined) {
-  // Global timeout for entire frame creation process (4 minutes max)
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new Error('Frame creation process exceeded 4 minute limit'));
-    }, 240000);
-  });
-
-  try {
-    console.log(`🔄 Background frame creation started for account: ${accountId || 'all'}`);
-
-    const creationPromise = (async () => {
-      // Auto-retry failed jobs with valid data (moved to background)
-      await autoRetryFailedJobs();
+    // 1. Auto-retry previously failed jobs (quick check)
+    await autoRetryFailedJobs();
       
-      // Get jobs; prefer SQL-side filtering by account to avoid LIMIT mismatches
-      const jobs = await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY, undefined, accountId);
-        
-      if (jobs.length === 0) {
-        const message = accountId ? 
-          `No jobs pending frame creation for account ${accountId}.` :
-          'No jobs pending frame creation.';
-        console.log(message);
-        return { success: false, message };
-      }
-
-      console.log(`Found ${jobs.length} jobs for frame creation. Processing...`);
-
-      // Process frame creation
-      const result = await processFrameCreationInBackground(jobs);
-      return result;
-    })();
-
-    return await Promise.race([creationPromise, timeoutPromise]);
-
-  } catch (error) {
-    console.error(`❌ Frame creation failed for ${accountId}:`, error);
+    // 2. Fetch the single oldest job pending frame creation (Step 2)
+    const job = await getOldestPendingJob(2, accountId);
     
-    // If it's a timeout error, mark pending jobs as failed
-    if (error instanceof Error && error.message.includes('exceeded 4 minute limit')) {
-      try {
-        const jobs = await getPendingJobs(2, config.CREATE_FRAMES_CONCURRENCY, undefined, accountId);
-        for (const job of jobs) {
-          await updateJob(job.id, {
-            status: 'failed',
-            error_message: 'Frame creation timed out due to Vercel execution limit'
-          });
-        }
-      } catch (updateError) {
-        console.error('Failed to update timed-out jobs:', updateError);
-      }
+    if (!job) {
+      const message = `No jobs pending frame creation for account: ${accountId || 'all'}.`;
+      console.log(message);
+      return NextResponse.json({ success: true, message });
     }
-    
-    throw error;
-  }
-}
 
-/**
- * Background processing function for frame creation.
- * Runs asynchronously without blocking the API response.
- */
-async function processFrameCreationInBackground(jobs: QuizJob[]) {
-  try {
-    console.log(`🔄 Background frame creation started for ${jobs.length} jobs`);
+    console.log(`[Frame Creation] Found job ${job.id}. Starting process...`);
 
-    const processPromises = jobs.map((job: QuizJob) => processJob(job));
-    const results = await Promise.allSettled(processPromises);
-    
-    const summary = results.map((result, index) => {
-      const jobId = jobs[index].id;
-      if (result.status === 'fulfilled' && result.value) {
-        return { jobId, status: 'success' };
-      } else {
-        return { jobId, status: 'failed', reason: result.status === 'rejected' ? String(result.reason) : 'Unknown error' };
-      }
-    });
+    // 3. Process the single job within a robust try/catch block
+    try {
+      const frameUrls = await createFramesForJob(job);
 
-    const successCount = summary.filter(s => s.status === 'success').length;
-    console.log(`✅ Frame creation completed: ${successCount}/${jobs.length} successful`);
-    
-    return { 
-      success: true, 
-      processed: jobs.length, 
-      successful: successCount,
-      summary 
-    };
+      await updateJob(job.id, {
+        step: 3,
+        status: 'assembly_pending',
+        data: { ...job.data, frameUrls },
+      });
+
+      console.log(`[Frame Creation] Successfully created ${frameUrls.length} frames for job ${job.id}.`);
+      return NextResponse.json({ success: true, processedJobId: job.id, frameCount: frameUrls.length });
+
+    } catch (error) {
+       // CRITICAL: If anything fails, mark the job as 'failed' to prevent it from getting stuck.
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[Frame Creation] CRITICAL ERROR processing job ${job.id}:`, error);
+      await updateJob(job.id, {
+        status: 'failed',
+        error_message: `Frame creation failed: ${errorMessage.substring(0, 500)}`
+      });
+      return NextResponse.json({ success: false, error: errorMessage, failedJobId: job.id }, { status: 500 });
+    }
 
   } catch (error) {
-    console.error('❌ Frame creation failed:', error);
-    throw error;
-  }
-}
-
-// 💡 FIX: The return type is now Promise<string | null> to match the UUID type of job.id.
-async function processJob(job: QuizJob): Promise<string | null> {
-  try {
-    console.log(`[Job ${job.id}] Starting frame creation...`);
-    await createFramesForJob(job);
-    console.log(`[Job ${job.id}] ✅ Frame creation successful.`);
-    return job.id;
-  } catch (error) {
+    console.error('❌ Frame creation endpoint failed:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`[Job ${job.id}] ❌ Frame creation failed:`, errorMessage);
-    await updateJob(job.id, {
-      status: 'failed',
-      error_message: `Frame creation failed: ${errorMessage}`
-    });
-    return null;
+    return NextResponse.json({ success: false, error: 'Frame creation endpoint failed', details: errorMessage }, { status: 500 });
   }
 }
+
+export const runtime = 'nodejs';
+export const maxDuration = 300;
+
