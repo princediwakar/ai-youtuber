@@ -1,3 +1,4 @@
+// lib/accountService.ts
 import { query } from './database';
 import crypto from 'crypto';
 

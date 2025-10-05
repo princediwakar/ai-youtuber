@@ -1,3 +1,4 @@
+// lib/accounts.ts
 import { accountService, type Account } from './accountService';
 
 export interface AccountConfig {
