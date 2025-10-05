@@ -23,10 +23,10 @@ interface AccountSchedules {
 }
 
 // --- Generation patterns can remain largely the same ---
-const englishGenerationPattern: HourlySchedule = { 6: ['english_vocab_builder'], 13: ['english_vocab_builder'], 18: ['english_vocab_builder'] };
+const englishGenerationPattern: HourlySchedule = { 6: ['english_vocab_builder'], 16: ['english_vocab_builder'], 18: ['english_vocab_builder'] };
 const healthGenerationPattern: HourlySchedule = { 5: ['brain_health_tips', 'eye_health_tips'], 14: ['brain_health_tips', 'eye_health_tips'] };
-const sscGenerationPattern: HourlySchedule = { 5: ['ssc_shots'], 13: ['ssc_shots'], 18: ['ssc_shots'] };
-const astronomyGenerationPattern: HourlySchedule = { 6: ['space_facts_quiz'], 13: ['space_facts_quiz'], 18: ['space_facts_quiz'] };
+const sscGenerationPattern: HourlySchedule = { 5: ['ssc_shots'], 16: ['ssc_shots'], 18: ['ssc_shots'] };
+const astronomyGenerationPattern: HourlySchedule = { 6: ['space_facts_quiz'], 16: ['space_facts_quiz'], 18: ['space_facts_quiz'] };
 
 // ===================================================================
 // 1. English Shots (Global Learners, Indian Prime-Time Focus)
@@ -51,7 +51,7 @@ const englishWeekendUpload: HourlySchedule = {
 // ===================================================================
 const healthWeekdayUpload: HourlySchedule = {
   7: ['brain_health_tips'],     // Morning motivation / mind-setter
-  13: ['eye_health_tips'],       // Mid-day screen break reminder
+  16: ['eye_health_tips'],       // Mid-day screen break reminder
   19: ['brain_health_tips'],     // Evening wind-down
   21: ['eye_health_tips'],       // Pre-sleep digital detox tip
 };
