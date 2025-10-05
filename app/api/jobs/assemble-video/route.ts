@@ -330,8 +330,8 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
       // 20 second timeout per frame - balanced for serverless limits
       const timeoutId = setTimeout(() => {
         process.kill('SIGKILL');
-        reject(new Error(`Frame ${i} processing timed out after 20 seconds`));
-      }, 20000);
+        reject(new Error(`Frame ${i} processing timed out after 240 seconds`));
+      }, 240000);
       
       process.stderr?.on('data', (d) => { stderr += d.toString(); });
       process.on('close', (code) => {
