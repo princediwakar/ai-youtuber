@@ -159,7 +159,8 @@ class AnalyticsCollectionService {
         const job = jobData.rows[0];
         const uploadedAt = new Date(job.uploaded_at);
         
-        const istDate = new Date(uploadedAt.getTime());
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istDate = new Date(uploadedAt.getTime() + istOffset);
         
         const uploadHour = istDate.getHours();
         const uploadDayOfWeek = istDate.getDay(); // 0=Sunday, 6=Saturday
