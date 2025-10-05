@@ -107,7 +107,8 @@ async function runPipeline(accountId = 'english_shots') {
 }
 
 // Define available accounts
-const ACCOUNTS = ['english_shots', 'health_shots', 'ssc_shots', 'astronomy_shots'];
+// const ACCOUNTS = ['english_shots', 'health_shots', 'ssc_shots', 'astronomy_shots'];
+const ACCOUNTS = ['astronomy_shots'];
 
 // Allow account ID to be passed as command line argument, or randomize by default
 let accountId = process.argv[2];

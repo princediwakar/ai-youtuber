@@ -7,118 +7,99 @@ import { getAccountConfig } from '@/lib/accounts';
 
 const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-
 /**
- * Multi-account content generation endpoint for cron jobs.
- * Fire-and-forget implementation to avoid timeout issues.
- * Now supports accountId parameter to generate content for specific accounts.
- * Defaults to 'english_shots' for backward compatibility.
+ * --- REFACTORED FOR SERVERLESS RELIABILITY ---
+ * This endpoint now runs the generation process synchronously within the request.
+ * It no longer uses a "fire-and-forget" approach, ensuring that the serverless
+ * function stays alive until the job creation process is complete, preventing
+ * premature termination by the Vercel runtime.
  */
 export async function POST(request: NextRequest) {
+  let accountId = 'english_shots'; // Default for backward compatibility
   try {
     const authHeader = request.headers.get('Authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    // Parse request body to get accountId and format (optional)
-    let accountId = 'english_shots'; // Default for backward compatibility
     let preferredFormat: string | undefined;
     try {
       const body = await request.json();
       accountId = body.accountId || accountId;
-      preferredFormat = body.format; // Extract format parameter
+      preferredFormat = body.format;
     } catch {
       // No body or invalid JSON - use default
     }
 
-    console.log(`🚀 Starting generation for account: ${accountId}${preferredFormat ? ` with format: ${preferredFormat}` : ''}`);
+    console.log(`🚀 Starting synchronous generation for account: ${accountId}`);
 
-    // Process asynchronously to prevent timeout
-    processGenerationWithValidation(accountId, preferredFormat).catch(error => {
-      console.error('Background generation failed:', error);
-    });
+    // --- FIX: The main logic is now directly inside the handler and awaited ---
+    const result = await processGenerationWithValidation(accountId, preferredFormat);
 
+    console.log(`✅ Generation process finished for account: ${accountId}.`);
+    
     return NextResponse.json({ 
       success: true, 
       accountId,
-      message: 'Generation started in background'
+      message: 'Generation process completed.',
+      result: result
     });
 
   } catch (error) {
-    console.error('❌ Scheduled quiz generation failed:', error);
-    return NextResponse.json({ success: false, error: 'Scheduled generation failed' }, { status: 500 });
+    console.error(`❌ Generation failed for account ${accountId}:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ success: false, error: 'Generation failed', details: errorMessage }, { status: 500 });
   }
 }
 
 /**
  * Processing function that includes validation and generation.
- * Now runs synchronously to ensure completion in serverless environment.
  */
 async function processGenerationWithValidation(accountId: string, preferredFormat?: string) {
-  try {
-    console.log(`🔄 Processing started for account: ${accountId}`);
+    console.log(`🔄 Validating account and schedule for: ${accountId}`);
 
-    // Validate account exists (moved to background)
     let account;
     try {
       account = await getAccountConfig(accountId);
     } catch (error) {
       console.error(`❌ Invalid accountId: ${accountId}`, error);
+      // Re-throw to be caught by the main handler
       throw error;
     }
 
     let personasToGenerate: string[] = [];
 
-    // Check if we're in DEBUG_MODE
     if (process.env.DEBUG_MODE === 'true') {
-      // In DEBUG_MODE, randomly select one persona from this account's personas
       const availablePersonas: string[] = account.personas;
+      if (!availablePersonas || availablePersonas.length === 0) {
+        console.warn(`🐞 DEBUG_MODE: Account ${account.name} has no personas.`);
+        return { success: true, message: "No personas to generate for." };
+      }
       const randomPersona = getRandomElement(availablePersonas);
       personasToGenerate.push(randomPersona);
-      
       console.log(`🐞 DEBUG_MODE: Randomly selected persona for ${account.name}: ${randomPersona}`);
     } else {
-      // --- FIX: Correctly calculate the current time in IST ---
-      // 1. Get the current time in UTC from the server.
       const now = new Date();
-      
-      // 2. Create a new Date object representing the time in India.
-      // toLocaleString correctly converts the time to the specified timezone.
       const istDateString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
       const istTime = new Date(istDateString);
-
-      const dayOfWeek = istTime.getDay(); // 0 for Sunday, 1 for Monday, etc.
+      const dayOfWeek = istTime.getDay();
       const hourOfDay = istTime.getHours();
-      // --- END FIX ---
 
       personasToGenerate = getScheduledPersonasForGeneration(accountId, dayOfWeek, hourOfDay);
 
-      // 2. If no personas are scheduled for this hour, exit gracefully.
       if (personasToGenerate.length === 0) {
         const message = `No personas scheduled for ${account.name} generation at ${hourOfDay}:00 on day ${dayOfWeek} (IST).`;
         console.log(message);
-        return { success: false, message };
+        return { success: true, message };
       }
     }
 
     console.log(`🚀 Found scheduled personas for ${account.name}: ${personasToGenerate.join(', ')}`);
-
-    // Process generation
-    const result = await processGenerationInBackground(accountId, account, personasToGenerate, preferredFormat);
-    return result;
-
-  } catch (error) {
-    console.error(`❌ Validation/generation failed for ${accountId}:`, error);
-    console.error(`❌ Error stack for ${accountId}:`, error instanceof Error ? error.stack : 'No stack trace available');
-    console.error(`❌ Error details for ${accountId}:`, JSON.stringify(error, null, 2));
-    throw error;
-  }
+    return await processGenerationInBackground(accountId, account, personasToGenerate, preferredFormat);
 }
 
 /**
- * Processing function for content generation.
- * Runs synchronously to ensure completion.
+ * Internal processing function for content generation.
  */
 async function processGenerationInBackground(
   accountId: string, 
@@ -128,65 +109,43 @@ async function processGenerationInBackground(
 ) {
   let totalCreatedJobs = 0;
 
-  try {
-    console.log(`🔄 Processing started for ${account.name} with ${personasToGenerate.length} personas`);
+  console.log(`🔄 Starting content generation for ${personasToGenerate.length} persona(s) for ${account.name}`);
 
-    // 3. Loop through and generate content for each scheduled persona.
-    for (const personaKey of personasToGenerate) {
-      const personaConfig = MasterPersonas[personaKey];
-      if (!personaConfig) {
-        console.warn(`-- Persona "${personaKey}" found in ${account.name} schedule but not in personas config. Skipping.`);
-        continue;
-      }
-
-      console.log(`-- Starting ${account.name} generation batch for persona: "${personaConfig.displayName}"`);
-      const generationDate = new Date();
-      
-      // Shuffle subcategories to get a random, unique set of topics for the batch
-      const shuffledSubCategories = [...personaConfig.subCategories].sort(() => 0.5 - Math.random());
-      const topicsForBatch = shuffledSubCategories.slice(0, config.GENERATE_BATCH_SIZE);
-
-      const generationPromises = topicsForBatch.map((subCategory, index) => {
-          const jobConfig = {
-              persona: personaKey,
-              generationDate,
-              topic: subCategory.key,
-              accountId, // Include account information
-              preferredFormat, // Pass through the format parameter
-          };
-
-          console.log(`🔄 [DEBUG] Creating promise ${index} for topic: ${subCategory.key}`);
-          return generateAndStoreContent(jobConfig);
-      });
-
-      console.log(`🔄 [DEBUG] About to await ${generationPromises.length} promises for ${personaKey}`);
-      const results = await Promise.allSettled(generationPromises);
-      console.log(`🔄 [DEBUG] Promise.allSettled completed with ${results.length} results`);
-      
-      // DEBUG: Log promise results
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          console.log(`🔄 [DEBUG] Promise ${index} fulfilled with result:`, result.value);
-        } else {
-          console.log(`❌ [DEBUG] Promise ${index} rejected:`, result.reason);
-        }
-      });
-      
-      const createdCount = results.filter(r => r.status === 'fulfilled' && r.value).length;
-      totalCreatedJobs += createdCount;
-      console.log(`-- ${account.name} batch completed for ${personaConfig.displayName}. Created ${createdCount} jobs.`);
+  for (const personaKey of personasToGenerate) {
+    const personaConfig = MasterPersonas[personaKey];
+    if (!personaConfig) {
+      console.warn(`-- Persona "${personaKey}" not in MasterPersonas config. Skipping.`);
+      continue;
     }
 
-    console.log(`✅ Processing completed for ${account.name}. Total created: ${totalCreatedJobs} jobs.`);
-    return { success: true, jobsCreated: totalCreatedJobs, account: account.name };
+    console.log(`-- Starting batch for persona: "${personaConfig.displayName}"`);
+    const generationDate = new Date();
+    
+    const shuffledSubCategories = [...personaConfig.subCategories].sort(() => 0.5 - Math.random());
+    const topicsForBatch = shuffledSubCategories.slice(0, config.GENERATE_BATCH_SIZE);
 
-  } catch (error) {
-    console.error(`❌ Generation failed for ${account.name}:`, error);
-    console.error(`❌ Error stack for ${account.name}:`, error instanceof Error ? error.stack : 'No stack trace available');
-    console.error(`❌ Error details for ${account.name}:`, JSON.stringify(error, null, 2));
-    throw error;
+    const generationPromises = topicsForBatch.map(subCategory => {
+        const jobConfig = {
+            persona: personaKey,
+            generationDate,
+            topic: subCategory.key,
+            accountId,
+            preferredFormat,
+        };
+        return generateAndStoreContent(jobConfig);
+    });
+
+    const results = await Promise.allSettled(generationPromises);
+    
+    const createdCount = results.filter(r => r.status === 'fulfilled' && r.value).length;
+    totalCreatedJobs += createdCount;
+    console.log(`-- Batch completed for ${personaConfig.displayName}. Created ${createdCount} jobs.`);
   }
+
+  console.log(`✅ Content generation completed for ${account.name}. Total created: ${totalCreatedJobs} jobs.`);
+  return { success: true, jobsCreated: totalCreatedJobs, account: account.name };
 }
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
+
