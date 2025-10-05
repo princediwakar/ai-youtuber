@@ -47,7 +47,7 @@ const astronomyGenerationPattern: HourlySchedule =
   6: ['space_facts_quiz'],
   13: ['space_facts_quiz'],
   16: ['space_facts_quiz'],
-  23: ['space_facts_quiz']
+  21: ['space_facts_quiz']
 };
 
 // ===================================================================
@@ -115,7 +115,7 @@ const astronomyWeekendUpload: HourlySchedule = {
   10: ['space_facts_quiz'],     // Weekend morning curiosity
   15: ['space_facts_quiz'],     // Afternoon "explore the universe"
   20: ['space_facts_quiz'],     // **PEAK: Anchor on prime time**
-  22: ['space_facts_quiz'], // Double upload for late-night weekend browsing
+  23: ['space_facts_quiz'], // Double upload for late-night weekend browsing
 };
 
 // ===================================================================
