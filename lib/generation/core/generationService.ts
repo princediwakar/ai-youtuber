@@ -223,8 +223,8 @@ export async function generateAndStoreContent(
 
     // Determine upload timing for prompt optimization
     const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // IST = UTC + 5:30
-    const istTime = new Date(now.getTime() + istOffset);
+    // const istOffset = 5.5 * 60 * 60 * 1000; // IST = UTC + 5:30
+    const istTime = new Date(now.getTime());
     const uploadHour = istTime.getHours();
 
     // Select appropriate layout for this persona

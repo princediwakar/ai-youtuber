@@ -128,8 +128,8 @@ class AnalyticsCollectionService {
         const uploadedAt = new Date(job.uploaded_at);
         
         // Convert to IST (UTC + 5:30) for timing analysis
-        const istOffset = 5.5 * 60 * 60 * 1000;
-        const istDate = new Date(uploadedAt.getTime() + istOffset);
+        // const istOffset = 5.5 * 60 * 60 * 1000;
+        const istDate = new Date(uploadedAt.getTime());
         
         const uploadHour = istDate.getHours();
         const uploadDayOfWeek = istDate.getDay(); // 0=Sunday, 6=Saturday
