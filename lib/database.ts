@@ -1,28 +1,9 @@
 import { Pool, QueryResult } from 'pg';
-
-// Define the structure of your QuizJob object for type safety.
-// It's a good practice to have this in a central types file (e.g., lib/types.ts).
-export interface QuizJob {
-  id: string;
-  account_id: string;
-  persona: string;
-  topic: string;
-  topic_display_name?: string;
-  question_format: string;
-  generation_date: string;
-  status: string;
-  step: number;
-  data: any; // Or a more specific type for your job data
-  error_message?: string;
-  created_at: Date;
-  updated_at: Date;
-}
+import { QuizJob } from './types'; // --- Correctly imports the canonical QuizJob type
 
 /**
- * --- FIX ---
- * Added a specific type for the stats query result.
- * This ensures that properties like 'total', 'pending', etc., are correctly typed
- * and avoids the 'property does not exist on type unknown' error.
+ * A specific type for the stats query result.
+ * This ensures that properties like 'total', 'pending', etc., are correctly typed.
  */
 interface JobStats {
   total: string;
@@ -33,7 +14,6 @@ interface JobStats {
 
 
 /**
- * --- CRITICAL FIX ---
  * A single, persistent connection pool.
  * This pool is created once when the application starts and is reused for all
  * database queries. This is the correct pattern for Node.js and serverless
@@ -49,7 +29,6 @@ const pool = new Pool({
 });
 
 /**
- * --- CRITICAL FIX ---
  * A single, centralized query function that uses the connection pool.
  * Every other function in this file will use this helper. It automatically
  * handles acquiring a client from the pool, executing the query, and
@@ -102,9 +81,10 @@ export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> 
   const queryString = `
     INSERT INTO quiz_jobs (
       account_id, persona, topic, topic_display_name, 
-      question_format, generation_date, status, step, data
+      question_format, generation_date, status, step, data,
+      format_type, frame_sequence, format_metadata
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING id
   `;
   
@@ -117,15 +97,12 @@ export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> 
     jobData.generation_date,
     jobData.status,
     jobData.step,
-    JSON.stringify(jobData.data || {})
+    JSON.stringify(jobData.data || {}),
+    jobData.format_type,
+    JSON.stringify(jobData.frame_sequence || []),
+    JSON.stringify(jobData.format_metadata || {})
   ];
   
-  /**
-   * --- FIX ---
-   * Provided a specific type `{ id: string }` for the query result.
-   * This tells TypeScript that we expect each row to have an 'id' property,
-   * fixing the "Property 'id' does not exist on type 'unknown'" error.
-   */
   const result = await query<{ id: string }>(queryString, values);
   if (result.rows.length === 0) {
     throw new Error("Failed to create job, no ID returned.");
@@ -135,7 +112,7 @@ export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> 
 
 export async function getRecentJobs(limit: number = 20): Promise<QuizJob[]> {
   const queryString = `
-    SELECT id, persona, topic, topic_display_name, status, step, created_at, error_message, data
+    SELECT *
     FROM quiz_jobs
     ORDER BY created_at DESC
     LIMIT $1
@@ -149,7 +126,7 @@ export async function getRecentJobs(limit: number = 20): Promise<QuizJob[]> {
 
 export async function updateJob(
   jobId: string, 
-  updates: Partial<Pick<QuizJob, 'status' | 'step' | 'data' | 'error_message'>>
+  updates: Partial<Pick<QuizJob, 'status' | 'step' | 'data' | 'error_message' | 'format_metadata'>>
 ): Promise<void> {
   const setParts: string[] = [];
   const values: any[] = [];
@@ -157,9 +134,10 @@ export async function updateJob(
   
   for (const [key, value] of Object.entries(updates)) {
     if (value !== undefined) {
-      const dbKey = key === 'errorMessage' ? 'error_message' : key;
+      const dbKey = key === 'errorMessage' ? 'error_message' : 
+                    key === 'formatMetadata' ? 'format_metadata' : key;
       setParts.push(`${dbKey} = $${paramIndex++}`);
-      values.push(key === 'data' ? JSON.stringify(value) : value);
+      values.push(typeof value === 'object' ? JSON.stringify(value) : value);
     }
   }
   
@@ -181,7 +159,7 @@ export async function resetFailedJobToRetry(jobId: string): Promise<void> {
   let newStatus = 'frames_pending';
   let newStep = 2;
   
-  if (data.question) { newStep = 2; newStatus = 'frames_pending'; }
+  if (data.content) { newStep = 2; newStatus = 'frames_pending'; }
   if (data.frameUrls?.length > 0) { newStep = 3; newStatus = 'assembly_pending'; }
   if (data.videoUrl) { newStep = 4; newStatus = 'upload_pending'; }
   
@@ -204,7 +182,7 @@ export async function autoRetryFailedJobs(): Promise<number> {
   for (const job of failedJobsResult.rows) {
     const data = typeof job.data === 'string' ? JSON.parse(job.data) : job.data;
       
-    if ((job.step >= 2 && data.question) ||
+    if ((job.step >= 2 && data.content) ||
         (job.step >= 3 && data.frameUrls?.length > 0) ||
         (job.step >= 4 && data.videoUrl)) {
       await resetFailedJobToRetry(job.id);
@@ -224,8 +202,6 @@ export async function markJobCompleted(jobId: string, youtubeVideoId: string, me
   description?: string;
   tags?: string[];
 }): Promise<void> {
-  // For transactions, we must check out a single client from the pool to ensure
-  // all commands are executed on the same connection.
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -246,7 +222,6 @@ export async function markJobCompleted(jobId: string, youtubeVideoId: string, me
     console.error(`Transaction failed for job ${jobId}, rolled back.`, error);
     throw error;
   } finally {
-    // CRITICAL: Always release the client back to the pool.
     client.release();
   }
 }
@@ -266,11 +241,6 @@ export async function getJobStats(): Promise<{
     FROM quiz_jobs
   `;
   
-  /**
-   * --- FIX ---
-   * Used the `JobStats` interface to strongly type the query result.
-   * This fixes the errors for the 'total', 'pending', and 'failed' properties.
-   */
   const result = await query<JobStats>(queryString);
   
   const stats = result.rows[0];

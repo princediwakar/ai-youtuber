@@ -1,10 +1,32 @@
-// lib/refinementService.ts
 import { query } from './database';
 import type { AIAnalyticsInsights } from './analytics/types';
-// Import for AI-powered analysis
 import { analyticsInsightsService } from './analytics/insightsService';
-// FIX: Add import for the collection service to get basic data summaries
 import { analyticsCollectionService } from './analytics/collectionService';
+
+// --- FIX: Define interfaces for the expected shapes of database query results ---
+interface TopicPerformanceRow {
+  topic: string;
+  topic_display_name: string;
+  video_count: string;
+  avg_engagement_rate: string;
+  avg_views: string;
+  top_video: string | null;
+}
+
+interface PersonaOverallStatsRow {
+  total_videos: string;
+  avg_engagement_rate: string;
+  avg_views: string;
+}
+
+interface AccountRow {
+    id: string;
+    personas: string[];
+}
+
+interface PersonaCountRow {
+    persona_count: string;
+}
 
 
 export interface ContentInsight {
@@ -12,7 +34,7 @@ export interface ContentInsight {
   avgEngagementRate: number;
   avgViews: number;
   videoCount: number;
-  topPerformingExample?: string;
+  topPerformingExample?: string | null;
 }
 
 export interface PersonaInsights {
@@ -41,8 +63,8 @@ class RefinementService {
   /**
    * Analyze performance patterns by topic for a specific persona
    */
-  async analyzeTopicPerformance(persona: string): Promise<ContentInsight[]> {
-    const result = await query(`
+  public async analyzeTopicPerformance(persona: string): Promise<ContentInsight[]> {
+    const result = await query<TopicPerformanceRow>(`
       SELECT 
         qj.topic,
         qj.topic_display_name,
@@ -59,11 +81,11 @@ class RefinementService {
       ORDER BY avg_engagement_rate DESC, avg_views DESC
     `, [persona]);
 
-    return result.rows.map((row: any) => ({
+    return result.rows.map((row) => ({
       topic: row.topic_display_name || row.topic,
       avgEngagementRate: parseFloat(row.avg_engagement_rate || '0'),
-      avgViews: parseInt(row.avg_views || '0'),
-      videoCount: parseInt(row.video_count),
+      avgViews: parseInt(row.avg_views || '0', 10),
+      videoCount: parseInt(row.video_count, 10),
       topPerformingExample: row.top_video
     }));
   }
@@ -71,8 +93,8 @@ class RefinementService {
   /**
    * Generate insights and recommendations for a specific persona
    */
-  async generatePersonaInsights(persona: string, accountId: string, includeAI: boolean = true): Promise<PersonaInsights> {
-    const overallStats = await query(`
+  public async generatePersonaInsights(persona: string, accountId: string, includeAI: boolean = true): Promise<PersonaInsights> {
+    const overallStats = await query<PersonaOverallStatsRow>(`
       SELECT 
         COUNT(*) as total_videos,
         ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
@@ -84,16 +106,21 @@ class RefinementService {
     `, [persona, accountId]);
 
     const stats = overallStats.rows[0];
+    if (!stats) {
+        // Handle case where there's no data for the persona
+        return {
+            persona, accountId, totalVideos: 0, avgEngagementRate: 0, avgViews: 0,
+            topicInsights: [], recommendations: ['No video data found for this period.'],
+        };
+    }
+
     const topicInsights = await this.analyzeTopicPerformance(persona);
-
     const recommendations = this.generateRecommendations(topicInsights, parseFloat(stats.avg_engagement_rate || '0'));
-
     let aiInsights: AIAnalyticsInsights | undefined = undefined;
 
-    if (includeAI && parseInt(stats.total_videos) >= 5) {
+    if (includeAI && parseInt(stats.total_videos, 10) >= 5) {
       try {
         console.log(`[RefinementService] Generating AI insights for ${persona}`);
-        // This call correctly uses the insights service
         const aiAnalysis = await analyticsInsightsService.analyzePerformanceWithAI(accountId, persona);
         aiInsights = aiAnalysis.aiInsights;
         
@@ -107,16 +134,16 @@ class RefinementService {
         console.error(`[RefinementService] AI insights failed for ${persona}:`, error);
         recommendations.push('Note: AI analysis unavailable - using rule-based recommendations');
       }
-    } else if (includeAI && parseInt(stats.total_videos) < 5) {
+    } else if (includeAI && parseInt(stats.total_videos, 10) < 5) {
       recommendations.push('Note: Insufficient data for AI analysis (need 5+ videos)');
     }
 
     return {
       persona,
       accountId,
-      totalVideos: parseInt(stats.total_videos),
+      totalVideos: parseInt(stats.total_videos, 10),
       avgEngagementRate: parseFloat(stats.avg_engagement_rate || '0'),
-      avgViews: parseInt(stats.avg_views || '0'),
+      avgViews: parseInt(stats.avg_views || '0', 10),
       topicInsights,
       recommendations,
       aiInsights
@@ -167,10 +194,10 @@ class RefinementService {
   /**
    * Generate complete refinement report for all accounts
    */
-  async generateRefinementReport(): Promise<RefinementReport> {
+  public async generateRefinementReport(): Promise<RefinementReport> {
     console.log('[RefinementService] Generating content refinement report...');
 
-    const accountsResult = await query(`
+    const accountsResult = await query<AccountRow>(`
       SELECT id, personas FROM accounts WHERE status = 'active'
     `);
 
@@ -241,7 +268,7 @@ class RefinementService {
   /**
    * Apply insights to update content generation prompts
    */
-  async applyContentRefinements(report: RefinementReport): Promise<{ updated: number; recommendations: string[] }> {
+  public async applyContentRefinements(report: RefinementReport): Promise<{ updated: number; recommendations: string[] }> {
     console.log('[RefinementService] Applying content refinements...');
     
     let updatedCount = 0;
@@ -274,7 +301,7 @@ class RefinementService {
   /**
    * Full refinement workflow
    */
-  async performContentRefinement(): Promise<{
+  public async performContentRefinement(): Promise<{
     success: boolean;
     report: RefinementReport;
     applied: { updated: number; recommendations: string[] };
@@ -302,17 +329,16 @@ class RefinementService {
   /**
    * Get refinement summary for API/dashboard use
    */
-  async getRefinementSummary(): Promise<{
+  public async getRefinementSummary(): Promise<{
     lastAnalysis: Date | null;
     totalPersonas: number;
     avgEngagementRate: number;
     topRecommendations: string[];
   }> {
     try {
-      // FIX: Call getAnalyticsSummary on the collection service
       const result = await analyticsCollectionService.getAnalyticsSummary();
       
-      const personasResult = await query(`
+      const personasResult = await query<PersonaCountRow>(`
         SELECT COUNT(DISTINCT persona) as persona_count
         FROM quiz_jobs qj
         JOIN video_analytics va ON qj.id = va.job_id
@@ -321,7 +347,7 @@ class RefinementService {
 
       return {
         lastAnalysis: new Date(),
-        totalPersonas: parseInt(personasResult.rows[0]?.persona_count || '0'),
+        totalPersonas: parseInt(personasResult.rows[0]?.persona_count || '0', 10),
         avgEngagementRate: result.avgEngagementRate,
         topRecommendations: [
           'Focus on high-engagement topics for increased reach',

@@ -1,15 +1,46 @@
-// lib/analytics/collectionService.ts
 import { google } from 'googleapis';
 import { getOAuth2Client } from '../googleAuth';
 import { query } from '../database';
 import { VideoAnalytics, VideoToCollect } from './types';
+
+// --- FIX: Define interfaces for the expected shapes of database query results ---
+interface VideoForAnalyticsRow {
+  video_id: string;
+  job_id: string;
+  account_id: string;
+  uploaded_at: string;
+}
+
+interface JobAndVideoData {
+  persona: string;
+  question_format: string;
+  topic_display_name: string;
+  data: any;
+  uploaded_at: string;
+  title: string;
+}
+
+interface AnalyticsSummaryRow {
+  total_videos: string;
+  total_views: string;
+  avg_engagement_rate: string;
+}
+
+interface TopVideoRow {
+  video_id: string;
+  title: string;
+  views: string;
+  engagement_rate: string;
+  collected_at: string;
+}
+
 
 class AnalyticsCollectionService {
   /**
    * Get videos that need analytics collection (uploaded 24+ hours ago, not yet analyzed)
    */
   async getVideosForAnalytics(): Promise<VideoToCollect[]> {
-    const result = await query(`
+    const result = await query<VideoForAnalyticsRow>(`
       SELECT 
         uv.youtube_video_id as video_id,
         uv.job_id,
@@ -25,7 +56,7 @@ class AnalyticsCollectionService {
       LIMIT 50
     `);
 
-    return result.rows.map((row: any) => ({
+    return result.rows.map((row) => ({
       videoId: row.video_id,
       jobId: row.job_id,
       accountId: row.account_id,
@@ -71,10 +102,10 @@ class AnalyticsCollectionService {
           if (!video || !item.statistics) continue;
 
           const stats = item.statistics;
-          const views = parseInt(stats.viewCount || '0');
-          const likes = parseInt(stats.likeCount || '0');
-          const comments = parseInt(stats.commentCount || '0');
-          const dislikes = parseInt(stats.dislikeCount || '0');
+          const views = parseInt(stats.viewCount || '0', 10);
+          const likes = parseInt(stats.likeCount || '0', 10);
+          const comments = parseInt(stats.commentCount || '0', 10);
+          const dislikes = parseInt(stats.dislikeCount || '0', 10);
 
           const engagementRate = views > 0 ? ((likes + comments) / views) * 100 : 0;
           const likeRatio = views > 0 ? (likes / views) * 100 : 0;
@@ -110,7 +141,8 @@ class AnalyticsCollectionService {
 
     for (const data of analytics) {
       try {
-        const jobData = await query(`
+        // --- FIX: Provide the expected row type to the generic query function ---
+        const jobData = await query<JobAndVideoData>(`
           SELECT 
             qj.persona, qj.question_format, qj.topic_display_name, qj.data,
             uv.uploaded_at, uv.title
@@ -127,8 +159,6 @@ class AnalyticsCollectionService {
         const job = jobData.rows[0];
         const uploadedAt = new Date(job.uploaded_at);
         
-        // Convert to IST (UTC + 5:30) for timing analysis
-        // const istOffset = 5.5 * 60 * 60 * 1000;
         const istDate = new Date(uploadedAt.getTime());
         
         const uploadHour = istDate.getHours();
@@ -224,7 +254,7 @@ class AnalyticsCollectionService {
     const accountFilter = accountId ? 'AND va.account_id = $1' : '';
     const params = accountId ? [accountId] : [];
 
-    const summaryResult = await query(`
+    const summaryResult = await query<AnalyticsSummaryRow>(`
       SELECT 
         COUNT(*) as total_videos,
         COALESCE(SUM(views), 0) as total_views,
@@ -233,7 +263,7 @@ class AnalyticsCollectionService {
       WHERE 1=1 ${accountFilter}
     `, params);
 
-    const topVideosResult = await query(`
+    const topVideosResult = await query<TopVideoRow>(`
       SELECT 
         va.video_id, uv.title, va.views, va.engagement_rate, va.collected_at
       FROM video_analytics va
@@ -246,13 +276,13 @@ class AnalyticsCollectionService {
     const summary = summaryResult.rows[0];
     
     return {
-      totalVideos: parseInt(summary.total_videos),
-      totalViews: parseInt(summary.total_views),
+      totalVideos: parseInt(summary.total_videos, 10),
+      totalViews: parseInt(summary.total_views, 10),
       avgEngagementRate: parseFloat(summary.avg_engagement_rate),
-      topPerformingVideos: topVideosResult.rows.map((row: any) => ({
+      topPerformingVideos: topVideosResult.rows.map((row) => ({
         videoId: row.video_id,
         title: row.title,
-        views: parseInt(row.views),
+        views: parseInt(row.views, 10),
         engagementRate: parseFloat(row.engagement_rate),
         collectedAt: new Date(row.collected_at)
       }))

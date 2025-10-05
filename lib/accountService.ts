@@ -1,4 +1,3 @@
-// lib/accountService.ts
 import { query } from './database';
 import crypto from 'crypto';
 
@@ -130,7 +129,8 @@ class AccountService {
     }
 
     try {
-      const result = await query(
+      // --- FIX: Provide the expected row type to the generic query function ---
+      const result = await query<EncryptedAccountRow>(
         'SELECT * FROM accounts WHERE id = $1 AND status = $2',
         [accountId, 'active']
       );
@@ -150,12 +150,13 @@ class AccountService {
 
   async getAllAccounts(): Promise<Account[]> {
     try {
-      const result = await query(
+      // --- FIX: Provide the expected row type to the generic query function ---
+      const result = await query<EncryptedAccountRow>(
         'SELECT * FROM accounts WHERE status = $1 ORDER BY created_at',
         ['active']
       );
 
-      return result.rows.map((row: any) => this.mapRowToAccount(row));
+      return result.rows.map((row) => this.mapRowToAccount(row));
     } catch (error) {
       console.error('Error fetching all accounts:', error);
       throw new Error('Failed to fetch accounts');
@@ -164,7 +165,8 @@ class AccountService {
 
   async createAccount(accountData: Omit<Account, 'createdAt' | 'updatedAt'>): Promise<Account> {
     try {
-      const result = await query(`
+      // --- FIX: Provide the expected row type to the generic query function ---
+      const result = await query<EncryptedAccountRow>(`
         INSERT INTO accounts (
           id, name, status,
           google_client_id_encrypted, google_client_secret_encrypted, refresh_token_encrypted,
@@ -237,7 +239,8 @@ class AccountService {
             values.push(JSON.stringify(value));
             break;
           default:
-            setClause.push(`${key} = $${paramIndex++}`);
+            const dbKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+            setClause.push(`${dbKey} = $${paramIndex++}`);
             values.push(value);
         }
       }
@@ -250,7 +253,8 @@ class AccountService {
     values.push(accountId);
     
     try {
-      const result = await query(`
+      // --- FIX: Provide the expected row type to the generic query function ---
+      const result = await query<EncryptedAccountRow>(`
         UPDATE accounts 
         SET ${setClause.join(', ')}, updated_at = NOW()
         WHERE id = $${paramIndex}
@@ -292,7 +296,8 @@ class AccountService {
 
   async getAccountForPersona(persona: string): Promise<Account | null> {
     try {
-      const result = await query(`
+      // --- FIX: Provide the expected row type to the generic query function ---
+      const result = await query<EncryptedAccountRow>(`
         SELECT * FROM accounts 
         WHERE status = 'active' 
         AND personas @> $1

@@ -3,9 +3,6 @@
  * This ensures data consistency from generation to database storage.
  */
 
-// --- MODIFICATION START ---
-// Updated interfaces to support both English quiz and Health content formats.
-
 // English quiz content structure
 export interface Question {
   question?: string; // Optional, as assertion/reason questions don't use this
@@ -108,7 +105,6 @@ export interface Question {
 
 // Union type for all content types (now just Question since health content uses the same format)
 export type ContentData = Question;
-// --- MODIFICATION END ---
 
 
 // Represents a node in the persona hierarchy.
@@ -156,8 +152,6 @@ export interface QuizJob {
   created_at: string;
   updated_at: string;
 }
-
-
 
 // Represents a successfully uploaded video record.
 export interface UploadedVideo {
