@@ -155,9 +155,5 @@ The project uses Model Context Protocol (MCP) for enhanced development capabilit
 
 
 
-<!-- 
-│   curl -X POST http://localhost:3000/api/jobs/generate-quiz \                                                                   │
-│     -H "Authorization: Bearer tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c=" \                                                   │
-│     -H "Content-Type: application/json" \                                                                                       │
-│     -d '{"accountId": "english_shots", "forceFormat": "simplified_word"}'
- -->
+
+curl -X POST https://aiyoutuber.vercel.app/api/jobs/generate-quiz -H "Authorization: Bearer tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c=" -H "Content-Type: application/json"  -d '{"accountId": "english_shots"}'

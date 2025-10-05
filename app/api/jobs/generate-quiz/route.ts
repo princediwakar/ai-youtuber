@@ -83,7 +83,8 @@ async function processGenerationWithValidation(accountId: string, preferredForma
       // 1. Check the account-specific schedule to see what needs to be generated right now.
       const now = new Date();
       // Convert to IST (UTC + 5:30)
-      const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+      // const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+      const istTime = new Date(now.getTime());
       const dayOfWeek = istTime.getDay(); // 0 for Sunday, 1 for Monday, etc.
       const hourOfDay = istTime.getHours();
       personasToGenerate = getScheduledPersonasForGeneration(accountId, dayOfWeek, hourOfDay);
