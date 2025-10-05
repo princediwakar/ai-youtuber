@@ -114,7 +114,7 @@ const astronomyWeekendUpload: HourlySchedule = {
   10: ['space_facts_quiz'],     // Weekend morning curiosity
   15: ['space_facts_quiz'],     // Afternoon "explore the universe"
   20: ['space_facts_quiz'],     // **PEAK: Anchor on prime time**
-  22: ['space_facts_quiz', 'space_facts_quiz'], // Double upload for late-night weekend browsing
+  22: ['space_facts_quiz'], // Double upload for late-night weekend browsing
 };
 
 // ===================================================================
