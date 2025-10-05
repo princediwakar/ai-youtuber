@@ -25,7 +25,11 @@ const pool = new Pool({
   // Sensible defaults for a serverless environment:
   max: 10, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 20000, // Fail if a connection cannot be established within 20 seconds
+  // --- FIX: Increased connection timeout for Neon Free Tier ---
+  // The Neon Free Tier suspends databases after inactivity. This longer timeout
+  // gives the database enough time to "wake up" when a new connection is
+  // requested from a serverless function.
+  connectionTimeoutMillis: 30000, // 30 seconds
 });
 
 /**
@@ -78,8 +82,6 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
 }
 
 export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> {
-  // --- FIX: Removed format_type, frame_sequence, and format_metadata from the query ---
-  // This aligns the query with the actual database schema provided.
   const queryString = `
     INSERT INTO quiz_jobs (
       account_id, persona, topic, topic_display_name, 
@@ -89,7 +91,6 @@ export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> 
     RETURNING id
   `;
   
-  // --- FIX: Removed the extra parameters for the missing columns ---
   const values = [
     jobData.account_id,
     jobData.persona,
@@ -133,7 +134,6 @@ export async function updateJob(
   
   for (const [key, value] of Object.entries(updates)) {
     if (value !== undefined) {
-      // --- FIX: Prevent trying to update format_metadata which does not exist ---
       if (key === 'format_metadata') continue;
         
       const dbKey = key === 'errorMessage' ? 'error_message' : key;
