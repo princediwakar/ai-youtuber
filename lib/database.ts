@@ -78,16 +78,18 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
 }
 
 export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> {
+  // --- FIX: Removed format_type, frame_sequence, and format_metadata from the query ---
+  // This aligns the query with the actual database schema provided.
   const queryString = `
     INSERT INTO quiz_jobs (
       account_id, persona, topic, topic_display_name, 
-      question_format, generation_date, status, step, data,
-      format_type, frame_sequence, format_metadata
+      question_format, generation_date, status, step, data
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING id
   `;
   
+  // --- FIX: Removed the extra parameters for the missing columns ---
   const values = [
     jobData.account_id,
     jobData.persona,
@@ -98,9 +100,6 @@ export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> 
     jobData.status,
     jobData.step,
     JSON.stringify(jobData.data || {}),
-    jobData.format_type,
-    JSON.stringify(jobData.frame_sequence || []),
-    JSON.stringify(jobData.format_metadata || {})
   ];
   
   const result = await query<{ id: string }>(queryString, values);
@@ -134,8 +133,10 @@ export async function updateJob(
   
   for (const [key, value] of Object.entries(updates)) {
     if (value !== undefined) {
-      const dbKey = key === 'errorMessage' ? 'error_message' : 
-                    key === 'formatMetadata' ? 'format_metadata' : key;
+      // --- FIX: Prevent trying to update format_metadata which does not exist ---
+      if (key === 'format_metadata') continue;
+        
+      const dbKey = key === 'errorMessage' ? 'error_message' : key;
       setParts.push(`${dbKey} = $${paramIndex++}`);
       values.push(typeof value === 'object' ? JSON.stringify(value) : value);
     }
