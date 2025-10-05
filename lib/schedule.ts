@@ -47,7 +47,7 @@ const astronomyGenerationPattern: HourlySchedule =
   6: ['space_facts_quiz'],
   13: ['space_facts_quiz'],
   16: ['space_facts_quiz'],
-  22: ['space_facts_quiz']
+  23: ['space_facts_quiz']
 };
 
 // ===================================================================
