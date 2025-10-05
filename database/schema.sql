@@ -1,3 +1,4 @@
+-- database/schema.sql
 -- Database schema for commit d616ba0ac1639adac6d98bd8b435dfe041008179
 -- Multi-Channel YouTube Shorts Generator (Analytics System Implementation)
 -- Date: September 12, 2025

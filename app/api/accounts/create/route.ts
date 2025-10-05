@@ -1,9 +1,10 @@
+// app/api/accounts/create/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/database';
 import crypto from 'crypto';
 
 // Encryption key - in production, use a proper key management system
-const ENCRYPTION_KEY = process.env.NEXTAUTH_SECRET || 'fallback-key-for-dev';
+const ENCRYPTION_KEY = process.env.NEXTAUTH_SECRET;
 
 function encrypt(text: string): string {
   const algorithm = 'aes-256-ctr';
