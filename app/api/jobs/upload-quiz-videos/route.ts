@@ -89,7 +89,9 @@ async function processCompleteUploadFlow(accountId: string | undefined) {
         
         // Check schedule for specific account
         const now = new Date();
-        const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+        const istDateString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+        const istTime = new Date(istDateString);
+
         const hourOfDay = istTime.getHours();
 
         if (config.DEBUG_MODE) {

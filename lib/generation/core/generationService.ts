@@ -223,9 +223,11 @@ export async function generateAndStoreContent(
     }
 
     // Determine upload timing for prompt optimization
+    // Check schedule for specific account
     const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // IST = UTC + 5:30
-    const istTime = new Date(now.getTime() + istOffset);
+    const istDateString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    const istTime = new Date(istDateString);
+
     const uploadHour = istTime.getHours();
 
     // Select appropriate layout for this persona
