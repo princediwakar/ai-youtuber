@@ -164,3 +164,32 @@ export interface UploadedVideo {
   view_count: number;
   uploaded_at: Date;
 }
+
+
+
+export interface ChannelStats {
+  accountId: string;
+  channelName: string;
+  totalVideos: number;
+  totalViews: number;
+  avgEngagementRate: number;
+  lastUpload: string | null;
+  status: 'active' | 'inactive';
+}
+
+export interface PersonaStats {
+  personaName: string;
+  accountId: string;
+  totalVideos: number;
+  avgEngagementRate: number;
+  lastVideo: string | null;
+}
+
+export interface AnalyticsStats {
+  videosPublished: number;
+  totalViews: number;
+  avgEngagement: number;
+  bestChannel: string;
+  channels: ChannelStats[];
+  personas: PersonaStats[];
+}

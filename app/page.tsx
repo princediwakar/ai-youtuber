@@ -1,34 +1,10 @@
+// app/page.tsx
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Database, Youtube, CheckCircle, Video, X } from 'lucide-react';
+import { AnalyticsStats, ChannelStats, PersonaStats } from '@/lib/types';
 
-interface ChannelStats {
-  accountId: string;
-  channelName: string;
-  totalVideos: number;
-  totalViews: number;
-  avgEngagementRate: number;
-  lastUpload: string | null;
-  status: 'active' | 'inactive';
-}
-
-interface PersonaStats {
-  personaName: string;
-  accountId: string;
-  totalVideos: number;
-  avgEngagementRate: number;
-  lastVideo: string | null;
-}
-
-interface AnalyticsStats {
-  videosPublished: number;
-  totalViews: number;
-  avgEngagement: number;
-  bestChannel: string;
-  channels: ChannelStats[];
-  personas: PersonaStats[];
-}
 
 
 const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) => {

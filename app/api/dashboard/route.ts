@@ -11,11 +11,17 @@ export async function GET() {
     // Get overall analytics summary
     const allChannelsSummary = await analyticsService.getAnalyticsSummary();
 
+    // Get channel and persona breakdowns
+    const channels = await analyticsService.getChannelStats();
+    const personas = await analyticsService.getPersonaStats();
+
     const stats = {
       videosPublished: allChannelsSummary.totalVideos,
       totalViews: allChannelsSummary.totalViews,
       avgEngagement: allChannelsSummary.avgEngagementRate,
-      bestChannel: 'English Shots' // Default since we don't have channel breakdown
+      bestChannel: channels[0]?.channelName || 'No Data',
+      channels,
+      personas
     };
 
     return NextResponse.json({ success: true, stats });
@@ -27,7 +33,14 @@ export async function GET() {
       { 
         success: false, 
         error: errorMessage,
-        stats: { videosPublished: 0, totalViews: 0, avgEngagement: 0, bestChannel: 'No Data' }
+        stats: { 
+          videosPublished: 0, 
+          totalViews: 0, 
+          avgEngagement: 0, 
+          bestChannel: 'No Data',
+          channels: [],
+          personas: []
+        }
       },
       { status: 500 }
     );

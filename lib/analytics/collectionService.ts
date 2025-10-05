@@ -1,7 +1,9 @@
+// lib/analytics/collectionService.ts
 import { google } from 'googleapis';
 import { getOAuth2Client } from '../googleAuth';
 import { query } from '../database';
 import { VideoAnalytics, VideoToCollect } from './types';
+import { ChannelStats, PersonaStats } from '../types';
 
 // --- FIX: Define interfaces for the expected shapes of database query results ---
 interface VideoForAnalyticsRow {
@@ -32,6 +34,25 @@ interface TopVideoRow {
   views: string;
   engagement_rate: string;
   collected_at: string;
+}
+
+// New interfaces for channel and persona stats
+interface ChannelStatsRow {
+  account_id: string;
+  channel_name: string;
+  total_videos: string;
+  total_views: string;
+  avg_engagement_rate: string;
+  last_upload: string | null;
+  status: string;
+}
+
+interface PersonaStatsRow {
+  persona_name: string;
+  account_id: string;
+  total_videos: string;
+  avg_engagement_rate: string;
+  last_video: string | null;
 }
 
 
@@ -288,6 +309,70 @@ class AnalyticsCollectionService {
         collectedAt: new Date(row.collected_at)
       }))
     };
+  }
+
+  /**
+   * Get channel stats for all accounts
+   */
+  async getChannelStats(): Promise<ChannelStats[]> {
+    const result = await query<ChannelStatsRow>(`
+      SELECT 
+        a.id as account_id,
+        a.name as channel_name,
+        COALESCE(COUNT(DISTINCT va.id), 0) as total_videos,
+        COALESCE(SUM(va.views), 0) as total_views,
+        COALESCE(ROUND(AVG(va.engagement_rate), 2), 0) as avg_engagement_rate,
+        MAX(uv.uploaded_at) as last_upload,
+        CASE 
+          WHEN MAX(uv.uploaded_at) >= NOW() - INTERVAL '30 days' OR COUNT(DISTINCT va.id) > 0 
+          THEN 'active' 
+          ELSE 'inactive' 
+        END as status
+      FROM accounts a
+      LEFT JOIN quiz_jobs qj ON a.id = qj.account_id
+      LEFT JOIN uploaded_videos uv ON qj.id = uv.job_id
+      LEFT JOIN video_analytics va ON uv.youtube_video_id = va.video_id
+      GROUP BY a.id, a.name
+      ORDER BY total_views DESC
+    `);
+
+    return result.rows.map((row) => ({
+      accountId: row.account_id,
+      channelName: row.channel_name,
+      totalVideos: parseInt(row.total_videos, 10),
+      totalViews: parseInt(row.total_views, 10),
+      avgEngagementRate: parseFloat(row.avg_engagement_rate),
+      lastUpload: row.last_upload,
+      status: row.status as 'active' | 'inactive'
+    }));
+  }
+
+  /**
+   * Get persona stats across accounts
+   */
+  async getPersonaStats(): Promise<PersonaStats[]> {
+    const result = await query<PersonaStatsRow>(`
+      SELECT 
+        qj.persona as persona_name,
+        qj.account_id,
+        COALESCE(COUNT(DISTINCT va.id), 0) as total_videos,
+        COALESCE(ROUND(AVG(va.engagement_rate), 2), 0) as avg_engagement_rate,
+        MAX(uv.uploaded_at) as last_video
+      FROM quiz_jobs qj
+      LEFT JOIN uploaded_videos uv ON qj.id = uv.job_id
+      LEFT JOIN video_analytics va ON uv.youtube_video_id = va.video_id
+      WHERE qj.persona IS NOT NULL
+      GROUP BY qj.persona, qj.account_id
+      ORDER BY total_videos DESC
+    `);
+
+    return result.rows.map((row) => ({
+      personaName: row.persona_name,
+      accountId: row.account_id,
+      totalVideos: parseInt(row.total_videos, 10),
+      avgEngagementRate: parseFloat(row.avg_engagement_rate),
+      lastVideo: row.last_video
+    }));
   }
   
   // Helper methods for extracting contextual data
