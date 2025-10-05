@@ -1,3 +1,4 @@
+// lib/generation/core/generationService.ts
 import OpenAI from 'openai';
 import { createQuizJob, query } from '@/lib/database';
 import { MasterPersonas } from '@/lib/personas';

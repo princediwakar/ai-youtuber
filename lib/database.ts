@@ -22,11 +22,12 @@ interface JobStats {
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  // Sensible defaults for a serverless environment:
+  
+  // --- Updated pool settings for a serverless environment (Vercel + Neon) ---
   max: 10, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  // Increased connection timeout for Neon Free Tier
-  connectionTimeoutMillis: 30000, // 30 seconds
+  connectionTimeoutMillis: 30000, 
+  idleTimeoutMillis: 15000,
+  allowExitOnIdle: true,
 });
 
 /**
@@ -46,40 +47,9 @@ export async function query<T>(text: string, params?: any[]): Promise<QueryResul
 }
 
 /**
- * Gets a single, oldest pending job for a given step.
- * This is more efficient for processing jobs one-by-one in a serverless function.
- */
-export async function getOldestPendingJob(step: number, accountId?: string): Promise<QuizJob | null> {
-    let queryString = `
-    SELECT * FROM quiz_jobs 
-    WHERE step = $1 AND status LIKE '%pending%'
-  `;
-  const values: any[] = [step];
-  let paramIndex = 2;
-
-  if (accountId) {
-    queryString += ` AND account_id = $${paramIndex++}`;
-    values.push(accountId);
-  }
-  
-  queryString += ` ORDER BY created_at ASC LIMIT 1`;
-
-  const result = await query<QuizJob>(queryString, values);
-  if (result.rows.length === 0) {
-      return null;
-  }
-
-  const row = result.rows[0];
-  // Ensure the 'data' column is parsed from JSON if it's a string
-  return {
-    ...row,
-    data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
-  };
-}
-
-
-/**
- * Filters pending jobs by step, personas, and/or accountId.
+ * --- RESTORED FUNCTION ---
+ * Filters and fetches a batch of pending jobs.
+ * This function is still used by parts of the pipeline like the create-frames job.
  */
 export async function getPendingJobs(step: number, limit: number = 10, personas?: string[], accountId?: string): Promise<QuizJob[]> {
   let queryString = `
@@ -111,6 +81,42 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
   }));
 }
 
+
+/**
+ * Fetches the single oldest pending job for a given step.
+ * This is a more robust pattern for serverless functions than fetching a large batch.
+ */
+export async function getOldestPendingJob(step: number, accountId?: string): Promise<QuizJob | null> {
+  let queryString = `
+    SELECT * FROM quiz_jobs 
+    WHERE step = $1 AND (
+      status LIKE '%pending%' OR 
+      (status = 'failed' AND step > 1)
+    )
+  `;
+  const values: any[] = [step];
+  let paramIndex = 2;
+
+  if (accountId) {
+    queryString += ` AND account_id = $${paramIndex++}`;
+    values.push(accountId);
+  }
+  
+  queryString += ` ORDER BY created_at ASC LIMIT 1`;
+
+  const result = await query<QuizJob>(queryString, values);
+  if (result.rows.length === 0) {
+    return null;
+  }
+  
+  const job = result.rows[0];
+  return {
+    ...job,
+    data: typeof job.data === 'string' ? JSON.parse(job.data) : job.data,
+  };
+}
+
+
 export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> {
   const queryString = `
     INSERT INTO quiz_jobs (
@@ -140,20 +146,6 @@ export async function createQuizJob(jobData: Partial<QuizJob>): Promise<string> 
   return result.rows[0].id;
 }
 
-export async function getRecentJobs(limit: number = 20): Promise<QuizJob[]> {
-  const queryString = `
-    SELECT *
-    FROM quiz_jobs
-    ORDER BY created_at DESC
-    LIMIT $1
-  `;
-  const result = await query<QuizJob>(queryString, [limit]);
-   return result.rows.map(row => ({
-    ...row,
-    data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
-  }));
-}
-
 export async function updateJob(
   jobId: string, 
   updates: Partial<Pick<QuizJob, 'status' | 'step' | 'data' | 'error_message'>>
@@ -178,7 +170,28 @@ export async function updateJob(
   await query(queryString, values);
 }
 
-export async function resetFailedJobToRetry(jobId: string): Promise<void> {
+export async function autoRetryFailedJobs(): Promise<number> {
+  const failedJobsResult = await query<QuizJob>(`
+    SELECT id, step, data FROM quiz_jobs 
+    WHERE status = 'failed' AND step > 1
+    ORDER BY created_at ASC
+    LIMIT 10
+  `);
+  
+  let resetCount = 0;
+  for (const job of failedJobsResult.rows) {
+      await resetFailedJobToRetry(job.id);
+      resetCount++;
+  }
+    
+  if (resetCount > 0) {
+    console.log(`🔄 Auto-retried ${resetCount} failed jobs with valid data`);
+  }
+    
+  return resetCount;
+}
+
+async function resetFailedJobToRetry(jobId: string): Promise<void> {
   const jobResult = await query<QuizJob>('SELECT * FROM quiz_jobs WHERE id = $1', [jobId]);
   if (jobResult.rows.length === 0) return;
   
@@ -198,32 +211,6 @@ export async function resetFailedJobToRetry(jobId: string): Promise<void> {
   );
   
   console.log(`Reset failed job ${jobId} to ${newStatus} (step ${newStep})`);
-}
-
-export async function autoRetryFailedJobs(): Promise<number> {
-  const failedJobsResult = await query<QuizJob>(`
-    SELECT id, step, data FROM quiz_jobs 
-    WHERE status = 'failed' AND step > 1
-    ORDER BY created_at ASC
-  `);
-  
-  let resetCount = 0;
-  for (const job of failedJobsResult.rows) {
-    const data = typeof job.data === 'string' ? JSON.parse(job.data) : job.data;
-      
-    if ((job.step >= 2 && data.content) ||
-        (job.step >= 3 && data.frameUrls?.length > 0) ||
-        (job.step >= 4 && data.videoUrl)) {
-      await resetFailedJobToRetry(job.id);
-      resetCount++;
-    }
-  }
-    
-  if (resetCount > 0) {
-    console.log(`🔄 Auto-retried ${resetCount} failed jobs with valid data`);
-  }
-    
-  return resetCount;
 }
 
 export async function markJobCompleted(jobId: string, youtubeVideoId: string, metadata: {
@@ -253,31 +240,5 @@ export async function markJobCompleted(jobId: string, youtubeVideoId: string, me
   } finally {
     client.release();
   }
-}
-
-export async function getJobStats(): Promise<{
-  total: number;
-  pending: number;
-  completed: number;
-  failed: number;
-}> {
-  const queryString = `
-    SELECT 
-      COUNT(*) AS total,
-      COUNT(*) FILTER (WHERE status LIKE '%pending%') AS pending,
-      COUNT(*) FILTER (WHERE status = 'completed') AS completed,
-      COUNT(*) FILTER (WHERE status = 'failed') AS failed
-    FROM quiz_jobs
-  `;
-  
-  const result = await query<JobStats>(queryString);
-  
-  const stats = result.rows[0];
-  return {
-    total: parseInt(stats.total || '0', 10),
-    pending: parseInt(stats.pending || '0', 10),
-    completed: parseInt(stats.completed || '0', 10),
-    failed: parseInt(stats.failed || '0', 10)
-  };
 }
 

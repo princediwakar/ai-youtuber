@@ -1,4 +1,3 @@
-// app/api/jobs/generate-quiz/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { MasterPersonas } from '@/lib/personas';
 import { generateAndStoreContent } from '@/lib/generation/core/generationService';
@@ -80,17 +79,24 @@ async function processGenerationWithValidation(accountId: string, preferredForma
       
       console.log(`🐞 DEBUG_MODE: Randomly selected persona for ${account.name}: ${randomPersona}`);
     } else {
-      // 1. Check the account-specific schedule to see what needs to be generated right now.
+      // --- FIX: Correctly calculate the current time in IST ---
+      // 1. Get the current time in UTC from the server.
       const now = new Date();
-      // Convert to IST (UTC + 5:30)
-      const istTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+      
+      // 2. Create a new Date object representing the time in India.
+      // toLocaleString correctly converts the time to the specified timezone.
+      const istDateString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+      const istTime = new Date(istDateString);
+
       const dayOfWeek = istTime.getDay(); // 0 for Sunday, 1 for Monday, etc.
       const hourOfDay = istTime.getHours();
+      // --- END FIX ---
+
       personasToGenerate = getScheduledPersonasForGeneration(accountId, dayOfWeek, hourOfDay);
 
       // 2. If no personas are scheduled for this hour, exit gracefully.
       if (personasToGenerate.length === 0) {
-        const message = `No personas scheduled for ${account.name} generation at ${hourOfDay}:00 on day ${dayOfWeek}.`;
+        const message = `No personas scheduled for ${account.name} generation at ${hourOfDay}:00 on day ${dayOfWeek} (IST).`;
         console.log(message);
         return { success: false, message };
       }
