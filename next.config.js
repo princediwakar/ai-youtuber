@@ -1,7 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['googleapis', 'canvas', 'fluent-ffmpeg', 'pg', '@ffmpeg-installer/ffmpeg']
+    serverComponentsExternalPackages: [
+      'googleapis', 
+      'canvas', 
+      'fluent-ffmpeg', 
+      'pg', 
+      '@ffmpeg-installer/ffmpeg'
+    ]
   }
 }
 

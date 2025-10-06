@@ -1,4 +1,5 @@
 // Simple layout selector based on content structure
+// lib/visuals/layouts/layoutSelector.ts
 import { Canvas } from 'canvas';
 import { QuizJob } from '@/lib/types';
 import { Theme } from '@/lib/visuals/themes';

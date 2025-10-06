@@ -1,3 +1,4 @@
+// lib/database.ts
 import { Pool, QueryResult } from 'pg';
 import { QuizJob } from './types'; // --- Correctly imports the canonical QuizJob type
 

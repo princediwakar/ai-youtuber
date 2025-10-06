@@ -15,6 +15,7 @@ const getRandomElement = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.
  * premature termination by the Vercel runtime.
  */
 export async function POST(request: NextRequest) {
+  const requestStartTime = Date.now(); // <<< START: Overall request timer
   let accountId = 'english_shots'; // Default for backward compatibility
   try {
     const authHeader = request.headers.get('Authorization');
@@ -33,10 +34,13 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting synchronous generation for account: ${accountId}`);
 
-    // --- FIX: The main logic is now directly inside the handler and awaited ---
+    const validationStartTime = Date.now(); // <<< START: Validation and scheduling timer
     const result = await processGenerationWithValidation(accountId, preferredFormat);
+    const validationDuration = (Date.now() - validationStartTime) / 1000; // <<< END: Validation and scheduling timer
 
-    console.log(`✅ Generation process finished for account: ${accountId}.`);
+    const requestDuration = (Date.now() - requestStartTime) / 1000; // <<< END: Overall request timer
+    
+    console.log(`✅ Generation process finished for account: ${accountId}. Validation/Scheduling Time: ${validationDuration.toFixed(2)}s. Total Request Time: ${requestDuration.toFixed(2)}s.`);
     
     return NextResponse.json({ 
       success: true, 
@@ -46,7 +50,8 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error(`❌ Generation failed for account ${accountId}:`, error);
+    const requestDuration = (Date.now() - requestStartTime) / 1000; // Capture time on failure
+    console.error(`❌ Generation failed for account ${accountId} (Time: ${requestDuration.toFixed(2)}s):`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ success: false, error: 'Generation failed', details: errorMessage }, { status: 500 });
   }
@@ -100,6 +105,7 @@ async function processGenerationWithValidation(accountId: string, preferredForma
 
 /**
  * Internal processing function for content generation.
+ * OPTIMIZED: Runs all persona batches concurrently using Promise.all.
  */
 async function processGenerationInBackground(
   accountId: string, 
@@ -107,15 +113,18 @@ async function processGenerationInBackground(
   personasToGenerate: string[],
   preferredFormat?: string
 ) {
-  let totalCreatedJobs = 0;
+  const generationStartTime = Date.now(); // <<< START: Content generation timer
+  
+  console.log(`🔄 Starting concurrent content generation for ${personasToGenerate.length} persona(s) for ${account.name}`);
 
-  console.log(`🔄 Starting content generation for ${personasToGenerate.length} persona(s) for ${account.name}`);
-
-  for (const personaKey of personasToGenerate) {
+  // Create an array of promises, where each promise handles the full batch for one persona.
+  const personaPromises = personasToGenerate.map(async (personaKey) => {
+    const personaStartTime = Date.now(); // <<< START: Single persona timer
     const personaConfig = MasterPersonas[personaKey];
+    
     if (!personaConfig) {
       console.warn(`-- Persona "${personaKey}" not in MasterPersonas config. Skipping.`);
-      continue;
+      return { persona: personaKey, createdCount: 0 };
     }
 
     console.log(`-- Starting batch for persona: "${personaConfig.displayName}"`);
@@ -124,6 +133,7 @@ async function processGenerationInBackground(
     const shuffledSubCategories = [...personaConfig.subCategories].sort(() => 0.5 - Math.random());
     const topicsForBatch = shuffledSubCategories.slice(0, config.GENERATE_BATCH_SIZE);
 
+    // Run topic generation concurrently within this persona's batch
     const generationPromises = topicsForBatch.map(subCategory => {
         const jobConfig = {
             persona: personaKey,
@@ -138,14 +148,23 @@ async function processGenerationInBackground(
     const results = await Promise.allSettled(generationPromises);
     
     const createdCount = results.filter(r => r.status === 'fulfilled' && r.value).length;
-    totalCreatedJobs += createdCount;
-    console.log(`-- Batch completed for ${personaConfig.displayName}. Created ${createdCount} jobs.`);
-  }
+    
+    const personaDuration = (Date.now() - personaStartTime) / 1000; // <<< END: Single persona timer
+    console.log(`-- Batch completed for ${personaConfig.displayName}. Created ${createdCount} jobs. Duration: ${personaDuration.toFixed(2)}s.`);
+    
+    return { persona: personaKey, createdCount };
+  });
 
-  console.log(`✅ Content generation completed for ${account.name}. Total created: ${totalCreatedJobs} jobs.`);
+  // Await ALL persona batches concurrently
+  const allResults = await Promise.all(personaPromises);
+  
+  const totalCreatedJobs = allResults.reduce((sum, result) => sum + result.createdCount, 0);
+
+  const generationDuration = (Date.now() - generationStartTime) / 1000; // <<< END: Content generation timer
+  console.log(`✅ Content generation completed for ${account.name}. Total created: ${totalCreatedJobs} jobs. Total Generation Time: ${generationDuration.toFixed(2)}s.`);
+  
   return { success: true, jobsCreated: totalCreatedJobs, account: account.name };
 }
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
-

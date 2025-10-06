@@ -13,7 +13,7 @@ import { PersonaConfig } from './types';
 export const MasterPersonas: PersonaConfig = {
   // English Learning Content - Optimized for 15-20s Videos
   english_vocab_builder: {
-    displayName: '@VocabularyShotsDaily',
+    displayName: '@EnglishShotsDaily',
     subCategories: [
       // --- High-Engagement Quick Wins ---
       { key: 'eng_pronunciation_fails', displayName: '90% Say This WRONG 🗣️' },
@@ -86,7 +86,7 @@ export const MasterPersonas: PersonaConfig = {
 
   // Astronomy Content - Space Facts and Mind-Blowing Quiz Content
   space_facts_quiz: {
-    displayName: '@AstronomyShotsDaily',
+    displayName: '@SpaceTriviaDaily',
     subCategories: [
       // Mind-Blowing Scale Comparisons (Perfect for 15-20s)
       { key: 'space_scale_comparisons', displayName: 'Mind-Blowing Space Scale 🌌' },
