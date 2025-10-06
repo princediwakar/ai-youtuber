@@ -1,6 +1,5 @@
-// app/api/jobs/assemble-video/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getOldestPendingJob, updateJob, autoRetryFailedJobs } from '@/lib/database';
+import { getOldestPendingJob, updateJob } from '@/lib/database';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
@@ -13,7 +12,7 @@ import {
 import { QuizJob } from '@/lib/types';
 import { config } from '@/lib/config';
 
-// Helper function to find the absolute path to the FFmpeg binary.
+// Helper functions for video assembly
 function getFFmpegPath(): string {
   const { existsSync } = require('fs');
   let ffmpegPath = '';
@@ -23,125 +22,116 @@ function getFFmpegPath(): string {
     ffmpegPath = ffmpegInstaller.path;
 
     if (typeof ffmpegPath === 'string' && existsSync(ffmpegPath)) {
-      console.log(`✅ FFmpeg binary found via @ffmpeg-installer/ffmpeg at: ${ffmpegPath}`);
+      console.log(`✅ FFmpeg binary found via @ffmpeg-installer/ffmpeg: ${ffmpegPath}`);
       return ffmpegPath;
     }
   } catch (error) {
-    console.error('❌ Failed to load @ffmpeg-installer/ffmpeg:', error instanceof Error ? error.message : String(error));
+    console.error('❌ CRITICAL: Failed to load @ffmpeg-installer/ffmpeg:', error instanceof Error ? error.message : String(error));
   }
 
-  // CRITICAL FIX: If the absolute path is not found, we throw a clear error.
-  const errMsg = 'FFmpeg binary not found. This is often fixed by configuring @ffmpeg-installer/ffmpeg as an external package in next.config.js.';
-  console.error(`❌ CRITICAL FAILURE: ${errMsg}`);
+  const errMsg = 'FFmpeg binary not found or inaccessible. Check deployment bundling/limits.';
+  console.error(`❌ ${errMsg}`);
   throw new Error(errMsg);
 }
-
-// Helper to check and log disk usage in the writable /tmp directory.
-async function logDiskUsage(label: string = 'Current'): Promise<void> {
-  const { exec } = require('child_process');
-  const util = require('util');
-  const execPromise = util.promisify(exec);
-  
-  try {
-    const { stdout } = await execPromise('du -sh /tmp');
-    console.log(`💾 [DISK CHECK - ${label}] /tmp usage: ${stdout.trim()}. (Vercel limit is ~500MB)`);
-  } catch (e) {
-    console.warn(`💾 [DISK CHECK - ${label}] Could not execute 'du', skipping disk check. Error: ${e.message}`);
-  }
-}
-
 
 const AUDIO_FILES = ['1.mp3', '2.mp3', '3.mp3'];
 
 function getRandomAudioFile(): string {
   const randomIndex = Math.floor(Math.random() * AUDIO_FILES.length);
   const selectedAudio = AUDIO_FILES[randomIndex];
+  // Use path.join to correctly resolve the path regardless of OS
   const audioPath = path.join(process.cwd(), 'public', 'audio', selectedAudio);
+  
+  // NOTE: This require must be inside the function to be safe in module environments
   if (!require('fs').existsSync(audioPath)) {
-    console.warn(`Audio file not found at ${audioPath}`);
+    console.warn('Audio file not found at ${audioPath}');
     return ""; // Return empty string if not found
   }
   return audioPath;
 }
 
-// FIX: Ensure immediate termination if DEBUG_MODE is false, preventing any file system calls.
+// Ensure this check is always run *first* before file system interaction
 async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: string, persona?: string) {
-  // CRITICAL: Return immediately if not in debug mode.
-  if (!config.DEBUG_MODE) return; 
-  
+  if (!config.DEBUG_MODE) return;
   try {
-    // Use tmpdir() to ensure the directory is writable in serverless environments
-    const debugDir = path.join(tmpdir(), 'generated-videos'); 
-    
-    // The mkdir call is the one that failed previously when targeting a read-only path.
-    // Now it targets /tmp and is protected by the check above.
+    // CRITICAL FIX: Use /tmp, as the function's root directory (/var/task) is read-only.
+    const debugDir = path.join(tmpdir(), 'generated-videos-debug');
     await fs.mkdir(debugDir, { recursive: true });
-    
     const fileName = `video-${persona || 'unk'}-${themeName || 'unk'}-${jobId}.mp4`;
     const destinationPath = path.join(debugDir, fileName);
     await fs.writeFile(destinationPath, new Uint8Array(videoBuffer));
     console.log(`[DEBUG] Video for job ${jobId} saved to: ${destinationPath}`);
   } catch (error) {
-    // If saving fails even on /tmp, log the error
     console.error(`[DEBUG] Failed to save debug video for job ${jobId}:`, error);
   }
 }
 
 function getFrameDuration(questionData: any, frameNumber: number, layoutType?: string): number {
-    // This is a simplified duration logic. 
+    // This is a simplified duration logic. You can expand this with your original,
+    // more detailed switch statement if needed.
     return 4;
 }
 
+/**
+ * Executes the entire assembly and upload process. This function is designed
+ * to run in the background (unawaited) or synchronously.
+ */
+async function processJob(job: QuizJob): Promise<{ processedJobId: string, videoUrl: string, videoSize: number }> {
+  const tempDir = path.join(tmpdir(), `quiz-video-${job.id}-${Date.now()}`);
+  const startTime = Date.now();
 
-// --- ASYNC EXECUTION HELPER ---
-// This function runs the long process and handles errors, detached from the main response.
-async function executeLongJob(job: QuizJob, tempDir: string) {
-    const startTime = Date.now();
+  try {
+    console.log(`[Job ${job.id}] Assembling video...`);
     
-    try {
-        console.log(`[Job ${job.id}] ASYNC STARTING processJob...`);
-        
-        // 1. Mark job as in-progress immediately
-        await updateJob(job.id, { status: 'assembly_in_progress' });
-        
-        const frameUrls = job.data.frameUrls;
-        if (!frameUrls || frameUrls.length === 0) {
-            throw new Error('No frame URLs found in job data');
-        }
+    // --- FIX: Removed updateJob(status: 'assembly_in_progress') to avoid stuck jobs ---
+    // The job status is updated only upon success or failure.
 
-        await fs.mkdir(tempDir, { recursive: true });
-        getFFmpegPath(); // Check path one more time
-        
-        const { videoUrl, videoSize, audioFile } = await assembleVideoWithConcat(frameUrls, job, tempDir);
-        
-        // 2. Update job status on success
-        await updateJob(job.id, {
-            step: 4,
-            status: 'upload_pending',
-            data: { ...job.data, videoUrl, videoSize, audioFile }
-        });
-        
-        const duration = (Date.now() - startTime) / 1000;
-        console.log(`[Job ${job.id}] ASYNC SUCCESS. Video assembly complete. Duration: ${duration.toFixed(2)}s`);
-
-    } catch (error) {
-        // 3. Mark job as failed on error
-        const duration = (Date.now() - startTime) / 1000;
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[Job ${job.id}] ASYNC FAILURE (Time: ${duration.toFixed(2)}s):`, error);
-        await updateJob(job.id, {
-            status: 'failed',
-            error_message: `Video assembly failed (Async): ${errorMessage.substring(0, 500)}`
-        });
-    } finally {
-        // 4. Always clean up
-        await fs.rm(tempDir, { recursive: true, force: true }).catch(e => console.warn(`Failed to cleanup temp dir ${tempDir}:`, e));
+    const frameUrls = job.data.frameUrls;
+    if (!frameUrls || frameUrls.length === 0) {
+      throw new Error('No frame URLs found in job data');
     }
+
+    await fs.mkdir(tempDir, { recursive: true });
+    
+    // Core assembly work (LLM, FFmpeg, Cloudinary Upload)
+    const { videoUrl, videoSize, audioFile, duration } = await assembleVideoWithConcat(frameUrls, job, tempDir);
+    
+    await updateJob(job.id, {
+      step: 4,
+      status: 'upload_pending',
+      data: { ...job.data, videoUrl, videoSize, audioFile, assembleDuration: duration }
+    });
+    
+    console.log(`[Job ${job.id}] ✅ Video assembly successful. Duration: ${duration.toFixed(2)}s`);
+
+    return { processedJobId: job.id, videoUrl, videoSize };
+
+  } catch (error) {
+    // This catch block is critical. It marks the job as failed.
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const duration = (Date.now() - startTime) / 1000;
+    console.error(`[Video Assembly] CRITICAL ERROR processing job ${job.id} (Time: ${duration.toFixed(2)}s):`, error);
+    
+    await updateJob(job.id, {
+      status: 'failed',
+      error_message: `Video assembly failed: ${errorMessage.substring(0, 500)}`
+    });
+
+    // Re-throw the error to ensure the async response handling logs it.
+    throw error;
+  } finally {
+    // Cleanup the temporary directory regardless of success or failure
+    await fs.rm(tempDir, { recursive: true, force: true }).catch(e => console.warn(`Failed to cleanup temp dir ${tempDir}:`, e));
+  }
 }
 
 
+/**
+ * The main entry point for the API route.
+ * It fetches the job and then delegates the long-running work to an unawaited function.
+ */
 export async function POST(request: NextRequest) {
-  const requestStartTime = Date.now(); // Start timer for the whole function
+  const requestStartTime = Date.now();
   try {
     const authHeader = request.headers.get('Authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -157,65 +147,62 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`🚀 Starting ASYNC video assembly check for account: ${accountId || 'all'}`);
-    
-    // We intentionally removed autoRetryFailedJobs to optimize speed
-
+      
+    // 1. Fetch the single oldest job pending assembly (Step 3)
+    const jobFetchStartTime = Date.now();
     const job = await getOldestPendingJob(3, accountId);
+    const jobFetchDuration = (Date.now() - jobFetchStartTime) / 1000;
     
     if (!job) {
-      const message = `No jobs pending video assembly for account: ${accountId || 'all'}.`;
+      const message = `No jobs pending video assembly for account: ${accountId || 'all'}. (Job Fetch: ${jobFetchDuration.toFixed(2)}s)`;
       console.log(message);
-      
-      const requestDuration = (Date.now() - requestStartTime) / 1000;
-      console.log(`[Endpoint] Finished check in: ${requestDuration.toFixed(2)}s`);
       return NextResponse.json({ success: true, message });
     }
 
+    // 2. Delegate the heavy lifting to an unawaited promise
     console.log(`[Video Assembly] Found job ${job.id}. Starting ASYNC process...`);
-    
-    const tempDir = path.join(tmpdir(), `quiz-video-${job.id}-${Date.now()}`);
-    
-    // --- CRITICAL ASYNC IMPLEMENTATION ---
-    // 1. Do NOT await the long-running job.
-    // 2. Detach the promise execution from the request lifecycle.
-    executeLongJob(job, tempDir); 
-    // The long-running job will now proceed in the background.
-    // --- END ASYNC IMPLEMENTATION ---
 
-    const requestDuration = (Date.now() - requestStartTime) / 1000;
-    console.log(`[Video Assembly] ASYNC response sent for job ${job.id}. Response time: ${requestDuration.toFixed(2)}s.`);
-    
-    // 3. Return a successful, immediate response to the cron service.
+    // --- CRITICAL ASYNC EXECUTION ---
+    // The promise is NOT awaited. It runs in the background.
+    // The .catch() ensures any failure is logged and the DB status is updated.
+    processJob(job).catch((error) => {
+        // Since processJob already updates the database status to 'failed',
+        // we just log the final error here.
+        console.error(`[Video Assembly] ASYNC JOB FAILED in background for job ${job.id}:`, error);
+    });
+
+    // 3. Respond immediately to the HTTP request
+    const responseDuration = (Date.now() - requestStartTime) / 1000;
+    console.log(`[Video Assembly] ASYNC response sent for job ${job.id}. Response time: ${responseDuration.toFixed(2)}s.`);
+
     return NextResponse.json({ 
       success: true, 
-      message: `Job ${job.id} started assembly asynchronously.`, 
+      message: `Job ${job.id} started ASYNC processing. Check logs for completion.`,
       processedJobId: job.id 
     });
 
   } catch (error) {
-    const requestDuration = (Date.now() - requestStartTime) / 1000;
+    const responseDuration = (Date.now() - requestStartTime) / 1000;
+    console.error(`❌ Video assembly endpoint failed (Total time: ${responseDuration.toFixed(2)}s):`, error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`❌ Video assembly endpoint failed (Time: ${requestDuration.toFixed(2)}s):`, error);
     return NextResponse.json({ success: false, error: 'Video assembly endpoint failed', details: errorMessage }, { status: 500 });
   }
 }
 
-async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number, audioFile: string | null}> {
-  const overallStart = Date.now(); 
-
+async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number, audioFile: string | null, duration: number}> {
+  const startTime = Date.now();
   const ffmpegPath = getFFmpegPath();
   
-  // 1. Download frames concurrently (already optimal)
-  const framePaths = await Promise.all(
-    frameUrls.map(async (url, index) => {
-      const frameStart = Date.now();
-      const frameBuffer = await downloadImageFromCloudinary(url);
-      const framePath = path.join(tempDir, `frame-${String(index + 1).padStart(3, '0')}.png`);
-      await fs.writeFile(framePath, new Uint8Array(frameBuffer));
-      console.log(`[Job ${job.id}] Downloaded frame ${index + 1} in ${(Date.now() - frameStart) / 1000}s`);
-      return framePath;
-    })
-  );
+  // 1. Download Frames Concurrently
+  const frameDownloadPromises = frameUrls.map(async (url, index) => {
+    const downloadStart = Date.now();
+    const frameBuffer = await downloadImageFromCloudinary(url);
+    const framePath = path.join(tempDir, `frame-${String(index + 1).padStart(3, '0')}.png`);
+    await fs.writeFile(framePath, new Uint8Array(frameBuffer));
+    console.log(`[Job ${job.id}] Downloaded frame ${index + 1} in ${((Date.now() - downloadStart) / 1000).toFixed(3)}s`);
+    return framePath;
+  });
+  const framePaths = await Promise.all(frameDownloadPromises);
 
   const durations = Array.from({ length: framePaths.length }, (_, index) => {
     return getFrameDuration(job.data.content || {}, index + 1, job.data.layoutType) || 4;
@@ -224,57 +211,56 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   const outputVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
   const audioPath = getRandomAudioFile();
   const audioFileName = audioPath ? path.basename(audioPath) : null;
-  
-  // 2. OPTIMIZATION: Run clip generation concurrently
-  const clipCreationPromises = framePaths.map((framePath, i) => {
-      const duration = durations[i] || 4;
-      const clipPath = path.join(tempDir, `clip-${i}.mp4`);
+  const clipPaths: string[] = [];
 
-      const clipArgs = [
-          '-loop', '1', '-i', framePath, '-t', String(duration), 
-          '-c:v', 'libx264',
-          // AGGRESSIVE SPEED OPTIMIZATION: Use 'veryfast' preset to aggressively prioritize speed.
-          '-preset', 'veryfast', 
-          '-crf', '30', 
-          '-pix_fmt', 'yuv420p',
-          // REMOVED COMPLEX FILTER for speed: scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black
-          '-y', clipPath
-      ];
-
-      return new Promise<string>((resolve, reject) => {
-          const frameStart = Date.now();
-          const process = spawn(ffmpegPath, clipArgs, { cwd: tempDir });
-          let stderr = '';
-          const timeoutId = setTimeout(() => {
-              process.kill('SIGKILL');
-              reject(new Error(`Frame ${i} processing timed out after 30 seconds`));
-          }, 30000); 
-
-          process.stderr?.on('data', (d) => { stderr += d.toString(); });
-          process.on('close', (code) => {
-              clearTimeout(timeoutId);
-              if (code === 0) {
-                console.log(`[Job ${job.id}] Frame ${i} clip finished in ${(Date.now() - frameStart) / 1000}s.`);
-                resolve(clipPath); 
-              }
-              else reject(new Error(`Frame ${i} failed with code ${code}. Stderr: ${stderr.slice(-300)}`));
-          });
-          process.on('error', (err) => {
-              clearTimeout(timeoutId);
-              reject(new Error(`FFmpeg spawn error for clip ${i}: ${err.message}. Path used: ${ffmpegPath}`));
-          });
+  // 2. Generate Clips Concurrently
+  const clipCreationPromises = framePaths.map(async (framePath, i) => {
+    const clipStart = Date.now();
+    const duration = durations[i] || 4;
+    const clipPath = path.join(tempDir, `clip-${i}.mp4`);
+    
+    const clipArgs = [
+      '-loop', '1', '-i', framePath, '-t', String(duration), '-c:v', 'libx264',
+      '-preset', 'veryfast', // Aggressive speed optimization
+      '-crf', '30', '-pix_fmt', 'yuv420p',
+      '-vf', 'scale=1080:1920:force_original_aspect_ratio=increase', // Simplified filter
+      '-y', clipPath
+    ];
+    
+    await new Promise<void>((resolve, reject) => {
+      // Use execPath for reliable execution environment
+      const process = spawn(ffmpegPath, clipArgs, { cwd: tempDir });
+      let stderr = '';
+      const timeoutId = setTimeout(() => {
+        process.kill('SIGKILL');
+        reject(new Error(`Frame ${i} processing timed out after 30 seconds`));
+      }, 30000); // Increased timeout to 30s
+      
+      process.stderr?.on('data', (d) => { stderr += d.toString(); });
+      process.on('close', (code) => {
+        clearTimeout(timeoutId);
+        if (code === 0) resolve();
+        else reject(new Error(`Frame ${i} failed with code ${code}: ${stderr.slice(-300)}`));
       });
+      process.on('error', (err) => {
+        clearTimeout(timeoutId);
+        reject(err);
+      });
+    });
+    
+    console.log(`[Job ${job.id}] Frame ${i} clip finished in ${((Date.now() - clipStart) / 1000).toFixed(3)}s.`);
+    return clipPath;
   });
 
-  // Wait for ALL clips to be created.
-  const clipPaths = await Promise.all(clipCreationPromises);
+  // Wait for all clips to finish
+  await Promise.all(clipCreationPromises);
 
-  // 3. Final Concatenation
+  // 3. Concatenate Clips
+  const finalAssemblyStart = Date.now();
   const concatContent = clipPaths.map(p => `file '${path.basename(p)}'`).join('\n');
   const concatFilePath = path.join(tempDir, 'concat.txt');
   await fs.writeFile(concatFilePath, concatContent);
 
-  const finalStart = Date.now();
   const ffmpegArgs = audioPath ? [
       '-f', 'concat', '-safe', '0', '-i', concatFilePath, '-i', audioPath,
       '-c:v', 'copy', '-c:a', 'aac', '-filter:a', 'volume=0.3', '-shortest', '-y', outputVideoPath
@@ -288,46 +274,44 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     const timeoutId = setTimeout(() => {
       ffmpegProcess.kill('SIGKILL');
       reject(new Error('FFmpeg final assembly timed out after 20 seconds'));
-    }, 20000);
+    }, 20000); // Increased timeout to 20s
     
     ffmpegProcess.stderr?.on('data', (d) => { stderr += d.toString(); });
     ffmpegProcess.on('close', (code) => {
       clearTimeout(timeoutId);
-      if (code === 0) {
-        console.log(`[Job ${job.id}] Final assembly finished in ${(Date.now() - finalStart) / 1000}s.`);
-        resolve();
-      }
+      if (code === 0) resolve();
       else reject(new Error(`FFmpeg exited with code ${code}. Stderr: ${stderr.slice(-500)}`));
     });
     ffmpegProcess.on('error', (err) => {
       clearTimeout(timeoutId);
-      reject(new Error(`FFmpeg spawn error for final assembly: ${err.message}. Path used: ${ffmpegPath}`));
+      reject(err);
     });
   });
+  console.log(`[Job ${job.id}] Final assembly finished in ${((Date.now() - finalAssemblyStart) / 1000).toFixed(3)}s.`);
 
+
+  // 4. Upload to Cloudinary
+  const uploadStart = Date.now();
   const videoBuffer = await fs.readFile(outputVideoPath);
   await saveDebugVideo(videoBuffer, job.id, job.data.themeName, job.persona);
   
   if (!job.account_id) throw new Error(`Job ${job.id} is missing account_id`);
   
   const publicId = generateVideoPublicId(job.id, job.account_id, job.persona, job.data.themeName);
-  
-  // --- Time the upload operation ---
-  const uploadStart = Date.now();
   const result = await uploadVideoToCloudinary(videoBuffer, job.account_id, {
     folder: config.CLOUDINARY_VIDEOS_FOLDER,
     public_id: publicId,
     resource_type: 'video',
   });
-  console.log(`[Job ${job.id}] Cloudinary upload finished in ${(Date.now() - uploadStart) / 1000}s.`);
-  // --- End upload timing ---
+  console.log(`[Job ${job.id}] Cloudinary upload finished in ${((Date.now() - uploadStart) / 1000).toFixed(3)}s.`);
 
-  const overallDuration = (Date.now() - overallStart) / 1000; 
-  console.log(`[Job ${job.id}] Total assembleVideoWithConcat duration: ${overallDuration.toFixed(2)}s.`); 
-
-  return { videoUrl: result.secure_url, videoSize: videoBuffer.length, audioFile: audioFileName };
+  return { 
+    videoUrl: result.secure_url, 
+    videoSize: videoBuffer.length, 
+    audioFile: audioFileName,
+    duration: (Date.now() - startTime) / 1000
+  };
 }
-
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
