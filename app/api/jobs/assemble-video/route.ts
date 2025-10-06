@@ -232,11 +232,14 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
   const ffmpegPath = getFFmpegPath();
   
   // 1. Download Frames Concurrently
+  console.log(`[Job ${job.id}] 1. Starting concurrent frame download...`);
   const durations: number[] = [];
   const framePaths = await Promise.all(frameUrls.map(async (url, index) => {
     const downloadStart = Date.now();
+    // CRITICAL: Ensure Cloudinary I/O is fast and reliable.
     const frameBuffer = await downloadImageFromCloudinary(url);
     const framePath = path.join(tempDir, `frame-${String(index + 1).padStart(3, '0')}.png`);
+    // CRITICAL: Ensure file system write is reliable.
     await fs.writeFile(framePath, new Uint8Array(frameBuffer));
     
     // Calculate and store duration after successful download
@@ -250,6 +253,8 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
   const outputVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
   const audioPath = getRandomAudioFile();
   const audioFileName = audioPath ? path.basename(audioPath) : null;
+  console.log(`[Job ${job.id}] Frame downloads complete. Total frames: ${framePaths.length}. Audio file: ${audioFileName || 'None'}`);
+
 
   // 2. Generate Concat File for Single Pass
   const concatContent = framePaths.map((p, i) => 
@@ -258,9 +263,10 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
   
   const concatFilePath = path.join(tempDir, 'concat.txt');
   await fs.writeFile(concatFilePath, concatContent);
+  console.log(`[Job ${job.id}] 2. Concat file created: ${path.basename(concatFilePath)}`);
+
 
   // 3. Execute Single FFmpeg Command (Video & Audio)
-  // FIX: Corrected typo from Date.ISONStart to Date.now()
   const finalAssemblyStart = Date.now(); 
   
   // 3a. Input Arguments (must come first)
@@ -306,6 +312,8 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
     '-y', outputVideoPath // Output file
   ];
 
+  console.log(`[Job ${job.id}] 3. Starting FFmpeg command...`);
+
   await new Promise<void>((resolve, reject) => {
     const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, { cwd: tempDir });
     let stderr = '';
@@ -342,7 +350,7 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
     public_id: publicId,
     resource_type: 'video',
   });
-  console.log(`[Job ${job.id}] Cloudinary upload finished in ${((Date.now() - uploadStart) / 1000).toFixed(3)}s.`);
+  console.log(`[Job ${job.id}] 4. Cloudinary upload finished in ${((Date.now() - uploadStart) / 1000).toFixed(3)}s. Video URL: ${result.secure_url}`);
 
   return { 
     videoUrl: result.secure_url, 
