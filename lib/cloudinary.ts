@@ -1,3 +1,5 @@
+// lib/cloudinary.ts
+
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { getAccountConfig } from './accounts';
 
@@ -109,12 +111,41 @@ export async function uploadImageToCloudinary(
 
 /**
  * Download an image from Cloudinary URL (account-agnostic)
+ * FIX: Rewritten to use getReader() to avoid async iterator conflicts and 
+ * handles the chunk types explicitly to resolve the Buffer/Uint8Array conflict.
  */
 export async function downloadImageFromCloudinary(url: string): Promise<Buffer> {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to download image: ${response.statusText}`);
   }
+  
+  if (response.body) {
+    // CRITICAL: Use getReader() to explicitly handle the stream iteration, 
+    // avoiding the Symbol.asyncIterator type conflict.
+    const reader = response.body.getReader();
+    const chunks: Buffer[] = [];
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        break;
+      }
+      
+      // CRITICAL: Ensure the chunk (value) is treated as a Buffer. 
+      // This is necessary because in some TS configurations, Uint8Array isn't 
+      // fully compatible with Buffer, even though Buffer is a Uint8Array.
+      // Casting the value to Uint8Array and wrapping in Buffer.from() 
+      // ensures it satisfies the Node.js Buffer type requirement for Buffer.concat.
+      chunks.push(Buffer.from(value as Uint8Array)); 
+    }
+    
+    // Buffer.concat safely combines the array of Buffers
+    return Buffer.concat(chunks);
+  }
+
+  // Fallback if response.body is null
   const arrayBuffer = await response.arrayBuffer();
   return Buffer.from(arrayBuffer);
 }
