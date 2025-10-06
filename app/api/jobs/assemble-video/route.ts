@@ -67,9 +67,25 @@ async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: st
 }
 
 function getFrameDuration(questionData: any, frameNumber: number, layoutType?: string): number {
-    // This is a simplified duration logic. You can expand this with your original,
-    // more detailed switch statement if needed.
-    return 4;
+    // This function must contain your original complex logic to determine 
+    // the duration of each video frame based on its content and position.
+    
+    // Placeholder logic - replace with your detailed switch/if statements
+    switch (frameNumber) {
+        case 1: // Hook Frame
+            return 2; 
+        case 2: // Question Frame
+            // Dynamic duration based on question text length or layoutType
+            return (questionData?.question?.length > 100 ? 10 : 4);
+        case 3: // Answer Frame
+            return 5;
+        case 4: // Explanation Frame
+            return 6;
+        case 5: // CTA Frame
+            return 3;
+        default:
+            return 4; // Default safety fallback
+    }
 }
 
 /**
