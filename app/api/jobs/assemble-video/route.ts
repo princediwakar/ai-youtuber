@@ -260,6 +260,9 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
       // Use the timeout wrapper for robust network I/O
       const frameBuffer = await downloadWithTimeout(url); 
       
+      // NEW LOG: Executed after download but before file write
+      console.log(`[Job ${job.id}] Download complete for frame ${frameNumber}. Buffer size: ${frameBuffer.length} bytes.`); 
+
       const framePath = path.join(tempDir, `frame-${String(frameNumber).padStart(3, '0')}.png`);
       await fs.writeFile(framePath, new Uint8Array(frameBuffer));
       
