@@ -33,7 +33,7 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx"
-, "scripts/populate-accounts.ts"  ],
+, "scripts/populate-accounts.js", "scripts/seedAccounts.ts"  ],
   "exclude": [
     "node_modules"
   ]
