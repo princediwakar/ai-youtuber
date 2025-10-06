@@ -6,13 +6,6 @@ import { QuizJob } from './types'; // --- Correctly imports the canonical QuizJo
  * A specific type for the stats query result.
  * This ensures that properties like 'total', 'pending', etc., are correctly typed.
  */
-interface JobStats {
-  total: string;
-  pending: string;
-  completed: string;
-  failed: string;
-}
-
 
 /**
  * A single, persistent connection pool.
@@ -47,10 +40,63 @@ export async function query<T>(text: string, params?: any[]): Promise<QueryResul
   }
 }
 
+// --- NEW FASTEST FUNCTION (No Ordering) ---
+
+/**
+ * Fetches ONE available job for a given step, prioritizing speed over age.
+ * This is the fastest possible lookup for a single worker.
+ */
+async function getOnePendingJob(step: number, accountId?: string): Promise<QuizJob | null> {
+  // Determine the correct pending status string based on the step
+  let pendingStatus;
+  switch (step) {
+    case 1: pendingStatus = 'generation_pending'; break;
+    case 2: pendingStatus = 'frames_pending'; break;
+    case 3: pendingStatus = 'assembly_pending'; break;
+    case 4: pendingStatus = 'upload_pending'; break;
+    default: pendingStatus = 'pending';
+  }
+
+  let queryString = `
+    SELECT * FROM quiz_jobs 
+    WHERE step = $1 AND (
+      status = $2 OR 
+      (status = 'failed' AND step > 1)
+    )
+  `;
+  const values: any[] = [step, pendingStatus];
+  let paramIndex = 3;
+
+  if (accountId) {
+    queryString += ` AND account_id = $${paramIndex++}`;
+    values.push(accountId);
+  }
+  
+  // CRITICAL OPTIMIZATION: Remove ORDER BY entirely for maximum speed.
+  queryString += ` LIMIT 1`; 
+
+  const result = await query<QuizJob>(queryString, values);
+  if (result.rows.length === 0) {
+    return null;
+  }
+  
+  const job = result.rows[0];
+  return {
+    ...job,
+    data: typeof job.data === 'string' ? JSON.parse(job.data) : job.data,
+  };
+}
+
+// --- UPDATED getOldestPendingJob to use the faster logic ---
+export async function getOldestPendingJob(step: number, accountId?: string): Promise<QuizJob | null> {
+    return getOnePendingJob(step, accountId);
+}
+
+
 /**
  * --- RESTORED FUNCTION ---
  * Filters and fetches a batch of pending jobs.
- * This function is still used by parts of the pipeline like the create-frames job.
+ * This function retains ORDER BY for fairness but is slower than the single fetch.
  */
 export async function getPendingJobs(step: number, limit: number = 10, personas?: string[], accountId?: string): Promise<QuizJob[]> {
   let queryString = `
@@ -82,7 +128,8 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
     values.push(accountId);
   }
   
-  queryString += ` ORDER BY created_at ASC LIMIT $${paramIndex++}`;
+  // RETAINING ORDER BY for fairness when fetching a batch
+  queryString += ` ORDER BY created_at ASC LIMIT $${paramIndex++}`; 
   values.push(limit);
 
   const result = await query<QuizJob>(queryString, values);
@@ -90,51 +137,6 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
     ...row,
     data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data,
   }));
-}
-
-
-/**
- * Fetches the single oldest pending job for a given step.
- * This is a more robust pattern for serverless functions than fetching a large batch.
- */
-export async function getOldestPendingJob(step: number, accountId?: string): Promise<QuizJob | null> {
-  // Determine the correct pending status string based on the step
-  let pendingStatus;
-  switch (step) {
-    case 1: pendingStatus = 'generation_pending'; break;
-    case 2: pendingStatus = 'frames_pending'; break;
-    case 3: pendingStatus = 'assembly_pending'; break;
-    case 4: pendingStatus = 'upload_pending'; break;
-    default: pendingStatus = 'pending';
-  }
-
-  let queryString = `
-    SELECT * FROM quiz_jobs 
-    WHERE step = $1 AND (
-      status = $2 OR 
-      (status = 'failed' AND step > 1)
-    )
-  `;
-  const values: any[] = [step, pendingStatus];
-  let paramIndex = 3;
-
-  if (accountId) {
-    queryString += ` AND account_id = $${paramIndex++}`;
-    values.push(accountId);
-  }
-  
-  queryString += ` ORDER BY created_at ASC LIMIT 1`;
-
-  const result = await query<QuizJob>(queryString, values);
-  if (result.rows.length === 0) {
-    return null;
-  }
-  
-  const job = result.rows[0];
-  return {
-    ...job,
-    data: typeof job.data === 'string' ? JSON.parse(job.data) : job.data,
-  };
 }
 
 

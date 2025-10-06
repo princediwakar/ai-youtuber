@@ -58,25 +58,25 @@ async function runPipeline(accountId = 'english_shots') {
   console.log(`🚀 Starting Multi-Account Educational Quiz Pipeline for ${accountId}...\n`);
 
   try {
-    // // Step 1: Generate Quiz with account ID
-    // console.log(`📝 Step 1: Generating quiz questions for ${accountId}...`);
-    // const step1 = await makeRequest('/api/jobs/generate-quiz', 'POST', { accountId });
-    // console.log(`Status: ${step1.status}`);
-    // console.log(`Response: ${JSON.stringify(step1.data, null, 2)}\n`);
+    // Step 1: Generate Quiz with account ID
+    console.log(`📝 Step 1: Generating quiz questions for ${accountId}...`);
+    const step1 = await makeRequest('/api/jobs/generate-quiz', 'POST', { accountId });
+    console.log(`Status: ${step1.status}`);
+    console.log(`Response: ${JSON.stringify(step1.data, null, 2)}\n`);
 
-    // if (step1.status !== 200) {
-    //   throw new Error(`Step 1 failed with status ${step1.status}`);
-    // }
+    if (step1.status !== 200) {
+      throw new Error(`Step 1 failed with status ${step1.status}`);
+    }
 
-    // // Step 2: Create Frames with account ID
-    // console.log(`🎨 Step 2: Creating video frames for ${accountId}...`);
-    // const step2 = await makeRequest('/api/jobs/create-frames', 'POST', { accountId });
-    // console.log(`Status: ${step2.status}`);
-    // console.log(`Response: ${JSON.stringify(step2.data, null, 2)}\n`);
+    // Step 2: Create Frames with account ID
+    console.log(`🎨 Step 2: Creating video frames for ${accountId}...`);
+    const step2 = await makeRequest('/api/jobs/create-frames', 'POST', { accountId });
+    console.log(`Status: ${step2.status}`);
+    console.log(`Response: ${JSON.stringify(step2.data, null, 2)}\n`);
 
-    // if (step2.status !== 200) {
-    //   throw new Error(`Step 2 failed with status ${step2.status}`);
-    // }
+    if (step2.status !== 200) {
+      throw new Error(`Step 2 failed with status ${step2.status}`);
+    }
 
     // Step 3: Assemble Video with account ID
     console.log(`🎬 Step 3: Assembling video for ${accountId}...`);
@@ -107,8 +107,8 @@ async function runPipeline(accountId = 'english_shots') {
 }
 
 // Define available accounts
-const ACCOUNTS = ['english_shots'];
-// const ACCOUNTS = ['english_shots', 'health_shots', 'ssc_shots', 'astronomy_shots'];
+// const ACCOUNTS = ['english_shots'];
+const ACCOUNTS = ['english_shots', 'health_shots', 'ssc_shots', 'astronomy_shots'];
 
 // Allow account ID to be passed as command line argument, or randomize by default
 let accountId = process.argv[2];

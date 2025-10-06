@@ -1,22 +1,4 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// app/api/jobs/assemble-video/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 // --- FIX: Import getOldestPendingJob instead of getPendingJobs ---
 import { getOldestPendingJob, updateJob, autoRetryFailedJobs } from '@/lib/database';

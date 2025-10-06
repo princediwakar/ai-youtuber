@@ -1,8 +1,8 @@
 // lib/cloudinary.ts
 
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
-import { getAccountConfig } from './accounts';
-// Note: No stream imports needed for the arrayBuffer approach
+import { getAccountConfig, AccountConfig } from './accounts'; // Assuming AccountConfig is exported from ./accounts
+import { AccountConfig as ImportedAccountConfig } from './accounts'; // Use a specific import name if needed
 
 export interface CloudinaryUploadResult {
   public_id: string;
@@ -13,12 +13,27 @@ export interface CloudinaryUploadResult {
   resource_type: string;
 }
 
+// CRITICAL OPTIMIZATION: In-memory cache for account configurations
+const accountConfigCache: { [accountId: string]: ImportedAccountConfig } = {};
+
 /**
- * Get configured Cloudinary instance for a specific account
+ * Get configured Cloudinary instance for a specific account.
+ * OPTIMIZATION: Uses in-memory caching to prevent multiple database lookups 
+ * within a single serverless function invocation.
  */
 async function getCloudinaryForAccount(accountId: string) {
-  const accountConfig = await getAccountConfig(accountId);
+  // 1. Check cache first
+  if (accountConfigCache[accountId]) {
+    // console.log(`[Cloudinary] Using cached config for ${accountId}`);
+  } else {
+    // 2. Fetch from database/external source if not cached
+    const accountConfig = await getAccountConfig(accountId);
+    accountConfigCache[accountId] = accountConfig;
+    // console.log(`[Cloudinary] Fetched and cached config for ${accountId}`);
+  }
   
+  const accountConfig = accountConfigCache[accountId];
+
   const cfg = {
     cloud_name: accountConfig.cloudinaryCloudName,
     api_key: accountConfig.cloudinaryApiKey,
@@ -26,7 +41,6 @@ async function getCloudinaryForAccount(accountId: string) {
   } as const;
 
   // Ensure the global cloudinary client is configured for this account
-  // Cloudinary SDK expects global configuration rather than per-call credentials
   cloudinary.config(cfg);
 
   return {
@@ -112,8 +126,6 @@ export async function uploadImageToCloudinary(
 
 /**
  * Download an image from Cloudinary URL (account-agnostic)
- * FIX: Reverting to the arrayBuffer method for maximum runtime stability, 
- * relying on the 2048MB memory limit to handle the buffer size.
  */
 export async function downloadImageFromCloudinary(url: string): Promise<Buffer> {
   const response = await fetch(url);
