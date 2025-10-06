@@ -1,3 +1,4 @@
+// app/api/jobs/assemble-video/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getOldestPendingJob, updateJob, autoRetryFailedJobs } from '@/lib/database';
 import { promises as fs } from 'fs';
@@ -63,16 +64,25 @@ function getRandomAudioFile(): string {
   return audioPath;
 }
 
+// FIX: Ensure immediate termination if DEBUG_MODE is false, preventing any file system calls.
 async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: string, persona?: string) {
-  if (!config.DEBUG_MODE) return;
+  // CRITICAL: Return immediately if not in debug mode.
+  if (!config.DEBUG_MODE) return; 
+  
   try {
-    const debugDir = path.join(process.cwd(), 'generated-videos');
+    // Use tmpdir() to ensure the directory is writable in serverless environments
+    const debugDir = path.join(tmpdir(), 'generated-videos'); 
+    
+    // The mkdir call is the one that failed previously when targeting a read-only path.
+    // Now it targets /tmp and is protected by the check above.
     await fs.mkdir(debugDir, { recursive: true });
+    
     const fileName = `video-${persona || 'unk'}-${themeName || 'unk'}-${jobId}.mp4`;
     const destinationPath = path.join(debugDir, fileName);
     await fs.writeFile(destinationPath, new Uint8Array(videoBuffer));
     console.log(`[DEBUG] Video for job ${jobId} saved to: ${destinationPath}`);
   } catch (error) {
+    // If saving fails even on /tmp, log the error
     console.error(`[DEBUG] Failed to save debug video for job ${jobId}:`, error);
   }
 }
@@ -148,8 +158,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting ASYNC video assembly check for account: ${accountId || 'all'}`);
     
-    // We keep autoRetryFailedJobs here, as it's a quick DB check and doesn't interrupt the async job.
-    // However, for maximum speed, we keep it commented out.
+    // We intentionally removed autoRetryFailedJobs to optimize speed
 
     const job = await getOldestPendingJob(3, accountId);
     
@@ -228,8 +237,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
           '-preset', 'veryfast', 
           '-crf', '30', 
           '-pix_fmt', 'yuv420p',
-          // REMOVED COMPLEX FILTER: The scaling/padding filter is removed for maximum speed.
-          // The frames must be 1080x1920 already.
+          // REMOVED COMPLEX FILTER for speed: scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black
           '-y', clipPath
       ];
 
