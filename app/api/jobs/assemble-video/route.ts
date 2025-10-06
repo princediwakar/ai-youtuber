@@ -67,26 +67,48 @@ async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: st
 }
 
 function getFrameDuration(questionData: any, frameNumber: number, layoutType?: string): number {
-    // This function must contain your original complex logic to determine 
-    // the duration of each video frame based on its content and position.
-    
-    // Placeholder logic - replace with your detailed switch/if statements
-    switch (frameNumber) {
-        case 1: // Hook Frame
-            return 2; 
-        case 2: // Question Frame
-            // Dynamic duration based on question text length or layoutType
-            return (questionData?.question?.length > 100 ? 10 : 4);
-        case 3: // Answer Frame
-            return 5;
-        case 4: // Explanation Frame
-            return 6;
-        case 5: // CTA Frame
-            return 3;
-        default:
-            return 4; // Default safety fallback
+  if (!questionData || typeof questionData !== 'object') {
+    return 5; // Safe fallback for invalid data - increased from 4
+  }
+  
+  // SIMPLIFIED FORMATS: Single frame gets full video duration
+  if (layoutType === 'simplified_word') {
+    if (frameNumber === 1) {
+      return 15; // 15 seconds for the single comprehensive frame
     }
+    return 0; // No other frames should exist
+  }
+  
+  const MIN_DURATION = 1.5; // Minimum time to register visual content
+  
+  switch (frameNumber) {
+    case 1: // First Frame (Hook Frame - should be short and punchy)
+      // Hook frames should be brief and attention-grabbing, max 1.5s
+      return MIN_DURATION; // 1.5s for hooks
+      
+      
+    case 2: // Second Frame (varies by format)
+      // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
+      
+      return 3;
+      
+    case 3: // Third Frame (if exists)
+      // MCQ: explanation, Common Mistake: practice, Usage Demo: practice, Challenge: reveal
+        return 2;
+      
+    case 4: // Fourth Frame (if exists - Challenge: cta)
+        return 2;
+      
+    case 5: // Fifth Frame (if exists - rare, but possible for future formats)
+      return 2; // Standard duration for additional frames - increased from 3
+      
+    default:
+      return 2; // Fallback - increased from 4
+  }
 }
+// --- MODIFICATION END ---
+
+// --- MODIFICATION END ---
 
 /**
  * Executes the entire assembly and upload process. This function is designed
