@@ -56,12 +56,22 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
   let queryString = `
     SELECT * FROM quiz_jobs 
     WHERE step = $1 AND (
-      status LIKE '%pending%' OR 
+      status = $2 OR 
       (status = 'failed' AND step > 1)
     )
   `;
-  const values: any[] = [step];
-  let paramIndex = 2;
+  // Determine the correct pending status string based on the step
+  let pendingStatus;
+  switch (step) {
+    case 1: pendingStatus = 'generation_pending'; break;
+    case 2: pendingStatus = 'frames_pending'; break;
+    case 3: pendingStatus = 'assembly_pending'; break;
+    case 4: pendingStatus = 'upload_pending'; break;
+    default: pendingStatus = 'pending';
+  }
+
+  const values: any[] = [step, pendingStatus];
+  let paramIndex = 3; // Starts at 3 because $1 is step and $2 is pendingStatus
 
   if (personas && personas.length > 0) {
     queryString += ` AND persona = ANY($${paramIndex++}::text[])`;
@@ -88,15 +98,25 @@ export async function getPendingJobs(step: number, limit: number = 10, personas?
  * This is a more robust pattern for serverless functions than fetching a large batch.
  */
 export async function getOldestPendingJob(step: number, accountId?: string): Promise<QuizJob | null> {
+  // Determine the correct pending status string based on the step
+  let pendingStatus;
+  switch (step) {
+    case 1: pendingStatus = 'generation_pending'; break;
+    case 2: pendingStatus = 'frames_pending'; break;
+    case 3: pendingStatus = 'assembly_pending'; break;
+    case 4: pendingStatus = 'upload_pending'; break;
+    default: pendingStatus = 'pending';
+  }
+
   let queryString = `
     SELECT * FROM quiz_jobs 
     WHERE step = $1 AND (
-      status LIKE '%pending%' OR 
+      status = $2 OR 
       (status = 'failed' AND step > 1)
     )
   `;
-  const values: any[] = [step];
-  let paramIndex = 2;
+  const values: any[] = [step, pendingStatus];
+  let paramIndex = 3;
 
   if (accountId) {
     queryString += ` AND account_id = $${paramIndex++}`;
@@ -157,7 +177,8 @@ export async function updateJob(
   
   for (const [key, value] of Object.entries(updates)) {
     if (value !== undefined) {
-      const dbKey = key === 'errorMessage' ? 'error_message' : key;
+      // FIX: Ensure key matching for 'error_message' is correct when destructuring
+      const dbKey = key === 'error_message' ? 'error_message' : key === 'errorMessage' ? 'error_message' : key;
       setParts.push(`${dbKey} = $${paramIndex++}`);
       values.push(typeof value === 'object' ? JSON.stringify(value) : value);
     }
@@ -242,4 +263,3 @@ export async function markJobCompleted(jobId: string, youtubeVideoId: string, me
     client.release();
   }
 }
-
