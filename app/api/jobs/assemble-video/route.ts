@@ -13,6 +13,19 @@ import {
 import { QuizJob } from '@/lib/types';
 import { config } from '@/lib/config';
 
+// Helper function to enforce a timeout on the Cloudinary download
+async function downloadWithTimeout(url: string, timeoutMs: number = 10000): Promise<Buffer> {
+    const timeoutPromise = new Promise<Buffer>((_, reject) =>
+        setTimeout(() => reject(new Error(`Download timed out after ${timeoutMs / 1000}s`)), timeoutMs)
+    );
+    // CRITICAL: downloadImageFromCloudinary must be async for this to work correctly
+    return Promise.race([
+        downloadImageFromCloudinary(url),
+        timeoutPromise
+    ]);
+}
+
+
 // Helper functions for video assembly
 function getFFmpegPath(): string {
   // NOTE: This require must be inside the function to be safe in module environments
@@ -242,8 +255,10 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
     const downloadStart = Date.now();
     
     try {
-      console.log(`[Job ${job.id}] Downloading frame ${frameNumber} from URL: ${url}`); // NEW LOG
-      const frameBuffer = await downloadImageFromCloudinary(url);
+      console.log(`[Job ${job.id}] Downloading frame ${frameNumber} from URL: ${url}`); 
+      
+      // Use the timeout wrapper for robust network I/O
+      const frameBuffer = await downloadWithTimeout(url); 
       
       const framePath = path.join(tempDir, `frame-${String(frameNumber).padStart(3, '0')}.png`);
       await fs.writeFile(framePath, new Uint8Array(frameBuffer));
@@ -255,9 +270,9 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
       
       console.log(`[Job ${job.id}] Downloaded frame ${frameNumber} (${duration.toFixed(1)}s) and saved to disk in ${((Date.now() - downloadStart) / 1000).toFixed(3)}s`);
     } catch (error) {
+      // CRITICAL: Log and re-throw the error to ensure job fails
       console.error(`[Job ${job.id}] CRITICAL: Failed to download or write frame ${frameNumber}:`, error);
-      // Fail fast if a frame is missing
-      throw new Error(`Failed to process frame ${frameNumber}`);
+      throw new Error(`Failed to process frame ${frameNumber} due to I/O error: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
