@@ -27,7 +27,7 @@ interface AccountSchedules {
 const englishGenerationPattern: HourlySchedule =
 {
   4: ['english_vocab_builder'],
-  12: ['english_vocab_builder'],
+  11: ['english_vocab_builder'],
   17: ['english_vocab_builder']
 };
 const healthGenerationPattern: HourlySchedule =
