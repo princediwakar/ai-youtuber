@@ -28,7 +28,8 @@ const englishGenerationPattern: HourlySchedule =
 {
   1: ['english_vocab_builder'],
   5: ['english_vocab_builder'],
-  9: ['english_vocab_builder']
+  9: ['english_vocab_builder'],
+  16: ['english_vocab_builder']
 };
 const healthGenerationPattern: HourlySchedule =
 {
@@ -44,7 +45,7 @@ const astronomyGenerationPattern: HourlySchedule =
 {
   8: ['space_facts_quiz'],
   12: ['space_facts_quiz'],
-  13: ['space_facts_quiz'],
+  16: ['space_facts_quiz'],
 };
 
 // ===================================================================
