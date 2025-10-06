@@ -1,4 +1,3 @@
-// lib/accounts.ts
 import { accountService, type Account } from './accountService';
 
 export interface AccountConfig {
@@ -17,6 +16,9 @@ export interface AccountConfig {
     tone: string;
   };
 }
+
+// CRITICAL OPTIMIZATION: In-memory cache for fetched account configurations
+const accountCache: { [accountId: string]: AccountConfig } = {};
 
 
 // Convert Account to AccountConfig format
@@ -37,7 +39,14 @@ function accountToAccountConfig(account: Account): AccountConfig {
 
 export async function getAccountConfig(accountId: string): Promise<AccountConfig> {
   const callId = Math.random().toString(36).substring(2, 8);
-  console.log(`[getAccountConfig:${callId}] Attempting to fetch account: ${accountId}`);
+  
+  // 1. Check cache first for immediate return (fastest path)
+  if (accountCache[accountId]) {
+    console.log(`[getAccountConfig:${callId}] Cache HIT for account: ${accountId}`);
+    return accountCache[accountId];
+  }
+  
+  console.log(`[getAccountConfig:${callId}] Attempting to fetch account: ${accountId} (Cache MISS)`);
   
   const account = await accountService.getAccount(accountId);
   console.log(`[getAccountConfig:${callId}] Database query result for ${accountId}:`, account ? 'Found' : 'Not found');
@@ -47,7 +56,11 @@ export async function getAccountConfig(accountId: string): Promise<AccountConfig
   }
   
   const config = accountToAccountConfig(account);
-  console.log(`[getAccountConfig:${callId}] Successfully converted to config. Personas: ${config.personas?.join(', ')}`);
+  
+  // 2. Store result in cache before returning
+  accountCache[accountId] = config;
+  
+  console.log(`[getAccountConfig:${callId}] Successfully converted and CACHED config. Personas: ${config.personas?.join(', ')}`);
   return config;
 }
 
@@ -57,13 +70,19 @@ export function getAccountConfigSync(accountId: string): AccountConfig {
 }
 
 export async function getAccountForPersona(persona: string): Promise<AccountConfig> {
+  // NOTE: This function inherently requires a DB lookup unless you cache by Persona as well,
+  // which is more complex. We only optimize the core getAccountConfig path.
   const account = await accountService.getAccountForPersona(persona);
   
   if (!account) {
     throw new Error(`No account found in database for persona: ${persona}`);
   }
   
-  return accountToAccountConfig(account);
+  const config = accountToAccountConfig(account);
+  // Cache the result by accountId in case the accountId is requested later directly
+  accountCache[config.id] = config; 
+  
+  return config;
 }
 
 // Synchronous version - deprecated, use async version instead
@@ -73,7 +92,14 @@ export function getAccountForPersonaSync(persona: string): AccountConfig {
 
 export async function getAllAccounts(): Promise<AccountConfig[]> {
   const accounts = await accountService.getAllAccounts();
-  return accounts.map(accountToAccountConfig);
+  const configs = accounts.map(accountToAccountConfig);
+
+  // Cache all fetched accounts
+  configs.forEach(config => {
+      accountCache[config.id] = config;
+  });
+
+  return configs;
 }
 
 // Synchronous version - deprecated, use async version instead
