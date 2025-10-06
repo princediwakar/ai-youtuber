@@ -1,8 +1,8 @@
 // lib/cloudinary.ts
 
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
-import { getAccountConfig, AccountConfig } from './accounts'; // Assuming AccountConfig is exported from ./accounts
-import { AccountConfig as ImportedAccountConfig } from './accounts'; // Use a specific import name if needed
+// Assuming the AccountConfig interface and function are correctly exposed/imported from './accounts'
+import { getAccountConfig, AccountConfig as AccountConfigType } from './accounts'; 
 
 export interface CloudinaryUploadResult {
   public_id: string;
@@ -14,7 +14,8 @@ export interface CloudinaryUploadResult {
 }
 
 // CRITICAL OPTIMIZATION: In-memory cache for account configurations
-const accountConfigCache: { [accountId: string]: ImportedAccountConfig } = {};
+// This cache lives for the lifetime of the serverless function instance (cold/warm starts)
+const accountConfigCache: { [accountId: string]: AccountConfigType } = {};
 
 /**
  * Get configured Cloudinary instance for a specific account.
@@ -22,14 +23,11 @@ const accountConfigCache: { [accountId: string]: ImportedAccountConfig } = {};
  * within a single serverless function invocation.
  */
 async function getCloudinaryForAccount(accountId: string) {
-  // 1. Check cache first
-  if (accountConfigCache[accountId]) {
-    // console.log(`[Cloudinary] Using cached config for ${accountId}`);
-  } else {
-    // 2. Fetch from database/external source if not cached
+  // 1. Fetch config from cache or database
+  if (!accountConfigCache[accountId]) {
+    // Database lookup only happens once per account per function instance
     const accountConfig = await getAccountConfig(accountId);
     accountConfigCache[accountId] = accountConfig;
-    // console.log(`[Cloudinary] Fetched and cached config for ${accountId}`);
   }
   
   const accountConfig = accountConfigCache[accountId];
@@ -40,7 +38,9 @@ async function getCloudinaryForAccount(accountId: string) {
     api_secret: accountConfig.cloudinaryApiSecret,
   } as const;
 
-  // Ensure the global cloudinary client is configured for this account
+  // Set the global config for this account (necessary for the SDK to function)
+  // WARNING: This is a point of potential race condition if multiple accounts run 
+  // truly concurrently on one instance, but it's required by the global SDK structure.
   cloudinary.config(cfg);
 
   return {
