@@ -1,3 +1,4 @@
+// app/api/jobs/assemble-video/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getOldestPendingJob, updateJob } from '@/lib/database';
 import { promises as fs } from 'fs';
@@ -14,6 +15,7 @@ import { config } from '@/lib/config';
 
 // Helper functions for video assembly
 function getFFmpegPath(): string {
+  // NOTE: This require must be inside the function to be safe in module environments
   const { existsSync } = require('fs');
   let ffmpegPath = '';
 
@@ -44,7 +46,7 @@ function getRandomAudioFile(): string {
   
   // NOTE: This require must be inside the function to be safe in module environments
   if (!require('fs').existsSync(audioPath)) {
-    console.warn('Audio file not found at ${audioPath}');
+    console.warn(`Audio file not found at ${audioPath}`);
     return ""; // Return empty string if not found
   }
   return audioPath;
@@ -106,9 +108,6 @@ function getFrameDuration(questionData: any, frameNumber: number, layoutType?: s
       return 2; // Fallback - increased from 4
   }
 }
-// --- MODIFICATION END ---
-
-// --- MODIFICATION END ---
 
 /**
  * Executes the entire assembly and upload process. This function is designed
@@ -121,9 +120,6 @@ async function processJob(job: QuizJob): Promise<{ processedJobId: string, video
   try {
     console.log(`[Job ${job.id}] Assembling video...`);
     
-    // --- FIX: Removed updateJob(status: 'assembly_in_progress') to avoid stuck jobs ---
-    // The job status is updated only upon success or failure.
-
     const frameUrls = job.data.frameUrls;
     if (!frameUrls || frameUrls.length === 0) {
       throw new Error('No frame URLs found in job data');
@@ -132,7 +128,7 @@ async function processJob(job: QuizJob): Promise<{ processedJobId: string, video
     await fs.mkdir(tempDir, { recursive: true });
     
     // Core assembly work (LLM, FFmpeg, Cloudinary Upload)
-    const { videoUrl, videoSize, audioFile, duration } = await assembleVideoWithConcat(frameUrls, job, tempDir);
+    const { videoUrl, videoSize, audioFile, duration } = await assembleVideoFast(frameUrls, job, tempDir);
     
     await updateJob(job.id, {
       step: 4,
@@ -227,92 +223,97 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number, audioFile: string | null, duration: number}> {
+/**
+ * Optimized video assembly using a single FFmpeg pass with the concat demuxer
+ * and duration flags on input images. This eliminates the intermediate clip generation.
+ */
+async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number, audioFile: string | null, duration: number}> {
   const startTime = Date.now();
   const ffmpegPath = getFFmpegPath();
   
   // 1. Download Frames Concurrently
-  const frameDownloadPromises = frameUrls.map(async (url, index) => {
+  const durations: number[] = [];
+  const framePaths = await Promise.all(frameUrls.map(async (url, index) => {
     const downloadStart = Date.now();
     const frameBuffer = await downloadImageFromCloudinary(url);
     const framePath = path.join(tempDir, `frame-${String(index + 1).padStart(3, '0')}.png`);
     await fs.writeFile(framePath, new Uint8Array(frameBuffer));
-    console.log(`[Job ${job.id}] Downloaded frame ${index + 1} in ${((Date.now() - downloadStart) / 1000).toFixed(3)}s`);
+    
+    // Calculate and store duration after successful download
+    const duration = getFrameDuration(job.data.content || {}, index + 1, job.data.layoutType) || 4;
+    durations.push(duration);
+    
+    console.log(`[Job ${job.id}] Downloaded frame ${index + 1} (${duration.toFixed(1)}s) in ${((Date.now() - downloadStart) / 1000).toFixed(3)}s`);
     return framePath;
-  });
-  const framePaths = await Promise.all(frameDownloadPromises);
-
-  const durations = Array.from({ length: framePaths.length }, (_, index) => {
-    return getFrameDuration(job.data.content || {}, index + 1, job.data.layoutType) || 4;
-  });
+  }));
 
   const outputVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
   const audioPath = getRandomAudioFile();
   const audioFileName = audioPath ? path.basename(audioPath) : null;
-  const clipPaths: string[] = [];
 
-  // 2. Generate Clips Concurrently
-  const clipCreationPromises = framePaths.map(async (framePath, i) => {
-    const clipStart = Date.now();
-    const duration = durations[i] || 4;
-    const clipPath = path.join(tempDir, `clip-${i}.mp4`);
-    
-    const clipArgs = [
-      '-loop', '1', '-i', framePath, '-t', String(duration), '-c:v', 'libx264',
-      '-preset', 'veryfast', // Aggressive speed optimization
-      '-crf', '30', '-pix_fmt', 'yuv420p',
-      '-vf', 'scale=1080:1920:force_original_aspect_ratio=increase', // Simplified filter
-      '-y', clipPath
-    ];
-    
-    await new Promise<void>((resolve, reject) => {
-      // Use execPath for reliable execution environment
-      const process = spawn(ffmpegPath, clipArgs, { cwd: tempDir });
-      let stderr = '';
-      const timeoutId = setTimeout(() => {
-        process.kill('SIGKILL');
-        reject(new Error(`Frame ${i} processing timed out after 30 seconds`));
-      }, 30000); // Increased timeout to 30s
-      
-      process.stderr?.on('data', (d) => { stderr += d.toString(); });
-      process.on('close', (code) => {
-        clearTimeout(timeoutId);
-        if (code === 0) resolve();
-        else reject(new Error(`Frame ${i} failed with code ${code}: ${stderr.slice(-300)}`));
-      });
-      process.on('error', (err) => {
-        clearTimeout(timeoutId);
-        reject(err);
-      });
-    });
-    
-    console.log(`[Job ${job.id}] Frame ${i} clip finished in ${((Date.now() - clipStart) / 1000).toFixed(3)}s.`);
-    return clipPath;
-  });
-
-  // Wait for all clips to finish
-  await Promise.all(clipCreationPromises);
-
-  // 3. Concatenate Clips
-  const finalAssemblyStart = Date.now();
-  const concatContent = clipPaths.map(p => `file '${path.basename(p)}'`).join('\n');
+  // 2. Generate Concat File for Single Pass
+  const concatContent = framePaths.map((p, i) => 
+    `file '${path.basename(p)}'\nduration ${durations[i]}`
+  ).join('\n') + `\nfile '${path.basename(framePaths[framePaths.length - 1])}'`; // Repeat last frame for proper duration count
+  
   const concatFilePath = path.join(tempDir, 'concat.txt');
   await fs.writeFile(concatFilePath, concatContent);
 
-  const ffmpegArgs = audioPath ? [
-      '-f', 'concat', '-safe', '0', '-i', concatFilePath, '-i', audioPath,
-      '-c:v', 'copy', '-c:a', 'aac', '-filter:a', 'volume=0.3', '-shortest', '-y', outputVideoPath
-    ] : [
-      '-f', 'concat', '-safe', '0', '-i', concatFilePath, '-c:v', 'copy', '-y', outputVideoPath
-    ];
+  // 3. Execute Single FFmpeg Command (Video & Audio)
+  // FIX: Corrected typo from Date.ISONStart to Date.now()
+  const finalAssemblyStart = Date.now(); 
+  
+  // 3a. Input Arguments (must come first)
+  const inputArgs: string[] = [
+    // Video input (images via concat demuxer)
+    '-f', 'concat', '-safe', '0', '-i', concatFilePath, 
+  ];
+
+  if (audioPath) {
+    // Audio input
+    inputArgs.push('-i', audioPath);
+  }
+
+  // 3b. Processing & Output Arguments (come after all -i flags)
+  const outputArgs: string[] = [
+    // Video Codec Arguments (Optimized for speed)
+    '-c:v', 'libx264', 
+    '-preset', 'ultrafast', // Most aggressive speed preset
+    '-crf', '28', // Slightly lower quality for major speed increase
+    '-pix_fmt', 'yuv420p',
+    // Scale filter (must be applied since we are re-encoding)
+    '-vf', 'scale=1080:1920:force_original_aspect_ratio=increase,setsar=1',
+    '-r', '25', // Target 25 FPS
+  ];
+
+  if (audioPath) {
+    // Audio options
+    outputArgs.push(
+      '-c:a', 'aac', 
+      '-filter_complex', '[1:a]volume=0.3[aout]', // Stream 1 (audio) gets volume filter
+      '-map', '0:v', // Map video stream from first input (concat)
+      '-map', '[aout]', // Map audio output from complex filter
+      '-shortest', // Stop video when audio ends (or vice-versa)
+    );
+  } else {
+    // If no audio, make sure to map the video stream explicitly
+    outputArgs.push('-map', '0:v');
+  }
+
+  const ffmpegArgs = [
+    ...inputArgs,
+    ...outputArgs,
+    '-y', outputVideoPath // Output file
+  ];
 
   await new Promise<void>((resolve, reject) => {
     const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, { cwd: tempDir });
     let stderr = '';
+    // Increase timeout to 40s to cover all file reading/encoding time
     const timeoutId = setTimeout(() => {
       ffmpegProcess.kill('SIGKILL');
-      reject(new Error('FFmpeg final assembly timed out after 20 seconds'));
-    }, 20000); // Increased timeout to 20s
+      reject(new Error('FFmpeg final assembly timed out after 40 seconds'));
+    }, 40000); 
     
     ffmpegProcess.stderr?.on('data', (d) => { stderr += d.toString(); });
     ffmpegProcess.on('close', (code) => {
@@ -325,10 +326,10 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
       reject(err);
     });
   });
-  console.log(`[Job ${job.id}] Final assembly finished in ${((Date.now() - finalAssemblyStart) / 1000).toFixed(3)}s.`);
+  console.log(`[Job ${job.id}] Final assembly (single-pass) finished in ${((Date.now() - finalAssemblyStart) / 1000).toFixed(3)}s.`);
 
 
-  // 4. Upload to Cloudinary
+  // 4. Upload to Cloudinary (remains the same)
   const uploadStart = Date.now();
   const videoBuffer = await fs.readFile(outputVideoPath);
   await saveDebugVideo(videoBuffer, job.id, job.data.themeName, job.persona);

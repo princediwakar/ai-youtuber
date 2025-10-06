@@ -1,3 +1,4 @@
+// lib/config.ts
 /**
  * HIGH-VOLUME Vocab MCQ CHANNEL CONFIGURATION
  * Optimized for 16 daily uploads targeting #1 Vocab channel position.
