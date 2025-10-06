@@ -1,9 +1,10 @@
+// app/api/jobs/upload-quiz-videos/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getOldestPendingJob, markJobCompleted, updateJob, autoRetryFailedJobs } from '@/lib/database';
 import { google, youtube_v3 } from 'googleapis';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { tmpdir } from 'os'; // --- FIX: Import tmpdir from the 'os' module ---
+import { tmpdir } from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { downloadVideoFromCloudinary, cleanupJobAssets } from '@/lib/cloudinary';
 import { findManagedPlaylists, getOrCreatePlaylist } from '@/lib/playlistManager';
@@ -38,10 +39,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting single video upload for account: ${accountId || 'all'}`);
     
-    // 1. Auto-retry previously failed jobs
     await autoRetryFailedJobs();
 
-    // 2. Check schedule before fetching a job
     if (accountId && process.env.DEBUG_MODE !== 'true') {
         const account = await getAccountConfig(accountId);
         const now = new Date();
@@ -57,7 +56,6 @@ export async function POST(request: NextRequest) {
         }
     }
       
-    // 3. Fetch the single oldest job pending upload (Step 4)
     const job = await getOldestPendingJob(4, accountId);
     
     if (!job) {
@@ -68,7 +66,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`[YouTube Upload] Found job ${job.id}. Starting process...`);
 
-    // 4. Process the single job within a robust try/catch block
     try {
       const youtube = await getYouTubeClientForJob(job);
       await processUpload(job, youtube, playlistMapCache);
@@ -140,11 +137,11 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
 }
 
 function generateVideoMetadata(job: QuizJob, playlistId?: string) {
-    const content = job.data.content;
-    const topic = job.topic_display_name || 'Quiz';
-    const accountId = job.account_id!;
+    const { content, topic, topic_display_name, account_id } = { ...job.data, ...job };
 
-    const title = (content?.hook || content?.topic || topic).substring(0, 100);
+    // --- FIX: More robust title generation ---
+    const finalTopic = topic_display_name || content?.topic || topic || 'Quiz';
+    const title = (content?.hook || finalTopic).substring(0, 100);
 
     const hashtags: { [key: string]: string } = {
         'english_shots': '#shorts #viral #learnenglish #english #vocabulary #quiz',
@@ -152,9 +149,9 @@ function generateVideoMetadata(job: QuizJob, playlistId?: string) {
         'ssc_shots': '#shorts #viral #ssc #exam #government #study #education',
         'astronomy_shots': '#shorts #viral #space #astronomy #science #facts #education'
     };
-    const finalHashtags = hashtags[accountId] || '#shorts #viral #trending #fyp #education';
+    const finalHashtags = hashtags[account_id!] || '#shorts #viral #trending #fyp #education';
 
-    const playlistLink = playlistId ? `📺 More ${topic} questions: https://www.youtube.com/playlist?list=${playlistId}\n\n` : '';
+    const playlistLink = playlistId ? `📺 More ${finalTopic} questions: https://www.youtube.com/playlist?list=${playlistId}\n\n` : '';
     const description = `${title}\n\n${playlistLink}🔔 Subscribe for daily quizzes!\n\n${finalHashtags}`;
 
     const tagMap: { [key: string]: string[] } = {
@@ -163,7 +160,7 @@ function generateVideoMetadata(job: QuizJob, playlistId?: string) {
         'ssc_shots': ['ssc', 'government exam', 'study'],
         'astronomy_shots': ['space', 'astronomy', 'science']
     };
-    const specificTags = tagMap[accountId] || [topic.toLowerCase()];
+    const specificTags = tagMap[account_id!] || [finalTopic.toLowerCase()];
 
     return { title, description, tags: ['shorts', 'education', 'quiz', ...specificTags] };
 }

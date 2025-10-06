@@ -26,27 +26,25 @@ interface AccountSchedules {
 // Strategy: Run generation earlier in the morning (4-5 AM) to ensure a full content queue for the day.
 const englishGenerationPattern: HourlySchedule =
 {
-  4: ['english_vocab_builder'],
-  11: ['english_vocab_builder'],
-  17: ['english_vocab_builder']
+  1: ['english_vocab_builder'],
+  5: ['english_vocab_builder'],
+  9: ['english_vocab_builder']
 };
 const healthGenerationPattern: HourlySchedule =
 {
-  4: ['brain_health_tips', 'eye_health_tips'],
-  13: [ 'eye_health_tips', 'brain_health_tips']
+  2: ['brain_health_tips'],
+  6: ['eye_health_tips'],
 };
 const sscGenerationPattern: HourlySchedule =
 {
-  5: ['ssc_shots'],
-  15: ['ssc_shots'],
-  18: ['ssc_shots']
+  3: ['ssc_shots'],
+  11: ['ssc_shots']
 };
 const astronomyGenerationPattern: HourlySchedule =
 {
-  5: ['space_facts_quiz'],
+  8: ['space_facts_quiz'],
+  12: ['space_facts_quiz'],
   13: ['space_facts_quiz'],
-  18: ['space_facts_quiz'],
-  20: ['space_facts_quiz']
 };
 
 // ===================================================================

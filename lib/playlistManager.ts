@@ -17,7 +17,6 @@ const FORMAT_DISPLAY_NAMES: Record<LayoutType, string> = {
   challenge: 'Interactive Challenges'
 };
 
-// Centralized configuration for generating titles and descriptions per account/persona
 interface ContentConfig {
   prefix: string;
   outro: string;
@@ -77,19 +76,16 @@ const CONTENT_CONFIG: Record<string, ContentConfig> = {
   }
 };
 
-
 // --- Helper Functions ---
 
-/** Generates a URL-safe key from string parts. */
 export function generateCanonicalKey(...parts: (string | undefined | null)[]): string {
   const sanitize = (str: string | undefined | null) => 
     str ? str.toLowerCase().trim().replace(/[\s&]+/g, '-') : '';
   return parts.map(sanitize).filter(Boolean).join('-');
 }
 
-/** Detects the layout type from job data, defaulting to 'mcq'. */
 function detectFormatFromJob(job: QuizJob): LayoutType {
-  const sources: (string | undefined)[] = [
+  const sources = [
     job.data?.layoutType,
     job.format_type,
     job.data?.content ? detectLayoutType(job.data.content) : undefined,
@@ -98,86 +94,73 @@ function detectFormatFromJob(job: QuizJob): LayoutType {
   return format || 'mcq';
 }
 
-/** Generates a playlist title. */
-function generatePlaylistTitle(accountId: string, persona: PersonaType, topic: string, format: FormatType): string {
+// --- FIX: Logic is now more robust and consistent with metadata generation ---
+function getTopicAndFormat(job: QuizJob): { topicName: string, format: FormatType } {
+    const { persona, topic, topic_display_name, data } = job;
+    const format = detectFormatFromJob(job) as FormatType;
+
+    const contentTopic = data?.content?.topic;
+    const subCat = MasterPersonas[persona as PersonaType]?.subCategories?.find(c => c.key === (contentTopic || topic));
+    
+    const topicName = subCat?.displayName || topic_display_name || contentTopic || topic;
+    return { topicName, format };
+}
+
+function generatePlaylistTitle(accountId: string, persona: PersonaType, topicName: string, format: FormatType): string {
   const configKey = accountId === 'health_shots' ? persona : (persona === 'space_facts_quiz' ? 'space_facts_quiz' : accountId);
   const config = CONTENT_CONFIG[configKey] || {};
-  const prefix = (config as any).prefix || topic;
-  const formatName = FORMAT_DISPLAY_NAMES[format as LayoutType];
-  return `${prefix}: ${topic} | ${formatName}`;
+  const prefix = (config as any).prefix || topicName;
+  const formatName = FORMAT_DISPLAY_NAMES[format as LayoutType] || 'Content';
+  return `${prefix}: ${topicName} | ${formatName}`;
 }
 
-/** Generates hashtags and SEO keywords based on persona and format. */
-function generateTags(accountId: string, persona: PersonaType, topic: string, format: FormatType): { hashtags: string, keywords: string } {
-  const baseHashtags = ['#Learn', '#Tips', `#${topic.replace(/\s/g, '')}`];
-  const baseKeywords = ['educational content', 'learning', topic.toLowerCase()];
-  
-  // Add persona-specific tags
-  const personaHashtags: Record<PersonaType, string[]> = {
-    english_vocab_builder: ['#English', '#Vocabulary', '#Grammar', '#IELTS', '#TOEFL'],
-    brain_health_tips: ['#BrainHealth', '#Memory', '#Focus', '#Wellness', '#Neuroscience'],
-    eye_health_tips: ['#EyeHealth', '#Vision', '#ScreenTime', '#EyeCare', '#DigitalWellness'],
-    ssc_shots: ['#SSC', '#GovernmentExam', '#Study', '#Preparation', '#CurrentAffairs'],
-    space_facts_quiz: ['#Space', '#Astronomy', '#Science', '#Universe', '#Facts']
-  };
-  
-  const formatHashtags: Record<FormatType, string[]> = {
-    simplified_word: ['#Vocabulary', '#WordOfTheDay', '#Learn'],
-    mcq: ['#Quiz', '#Test', '#MCQ'],
-    common_mistake: ['#Mistakes', '#Fix', '#Avoid'],
-    quick_fix: ['#QuickFix', '#Upgrade', '#Improve'],
-    usage_demo: ['#Example', '#Usage', '#Demo'],
-    quick_tip: ['#QuickTip', '#Hack', '#Secret'],
-    challenge: ['#Challenge', '#Game', '#Interactive']
-  };
-  
-  const allHashtags = [
-    ...baseHashtags,
-    ...personaHashtags[persona] || [],
-    ...formatHashtags[format] || []
-  ].slice(0, 8);
-  
-  const allKeywords = [
-    ...baseKeywords,
-    persona.replace(/_/g, ' '),
-    format.replace(/_/g, ' '),
-    'short video',
-    'educational'
-  ].slice(0, 12);
-  
-  return { 
-    hashtags: allHashtags.join(' '), 
-    keywords: allKeywords.join(', ') 
-  };
+function generateTags(accountId: string, persona: PersonaType, topicName: string, format: FormatType): { hashtags: string, keywords: string } {
+    const baseHashtags = ['#Learn', '#Tips', `#${topicName.replace(/\s/g, '')}`];
+    const baseKeywords = ['educational content', 'learning', topicName.toLowerCase()];
+
+    const personaHashtags: Partial<Record<PersonaType, string[]>> = {
+        english_vocab_builder: ['#English', '#Vocabulary', '#Grammar', '#IELTS', '#TOEFL'],
+        brain_health_tips: ['#BrainHealth', '#Memory', '#Focus', '#Wellness', '#Neuroscience'],
+        eye_health_tips: ['#EyeHealth', '#Vision', '#ScreenTime', '#EyeCare', '#DigitalWellness'],
+        ssc_shots: ['#SSC', '#GovernmentExam', '#Study', '#Preparation', '#CurrentAffairs'],
+        space_facts_quiz: ['#Space', '#Astronomy', '#Science', '#Universe', '#Facts']
+    };
+
+    const formatHashtags: Partial<Record<FormatType, string[]>> = {
+        mcq: ['#Quiz', '#Test', '#MCQ'],
+        quick_tip: ['#QuickTip', '#Hack', '#Secret'],
+        challenge: ['#Challenge', '#Game', '#Interactive']
+    };
+
+    const allHashtags = [...new Set([...baseHashtags, ...(personaHashtags[persona] || []), ...(formatHashtags[format] || [])])].slice(0, 8);
+    const allKeywords = [...new Set([...baseKeywords, persona.replace(/_/g, ' '), format.replace(/_/g, ' '), 'short video'])].slice(0, 12);
+
+    return { hashtags: allHashtags.join(' '), keywords: allKeywords.join(', ') };
 }
 
-/** Generates a playlist description using the centralized config. */
-async function generatePlaylistDescription(accountId: string, persona: PersonaType, topic: string, format: FormatType, key: string): Promise<string> {
+async function generatePlaylistDescription(accountId: string, persona: PersonaType, topicName: string, format: FormatType, key: string): Promise<string> {
   const configKey = accountId === 'health_shots' ? persona : (persona === 'space_facts_quiz' ? 'space_facts_quiz' : accountId);
   const config = CONTENT_CONFIG[configKey];
-  const formatName = FORMAT_DISPLAY_NAMES[format as LayoutType];
-  const { hashtags, keywords } = generateTags(accountId, persona, topic, format);
+  const formatName = FORMAT_DISPLAY_NAMES[format as LayoutType] || 'Content';
+  const { hashtags, keywords } = generateTags(accountId, persona, topicName, format);
   
   if (!config) {
-    return `Educational content on ${topic}.\n\nKeywords: ${keywords}\n${hashtags}\n\n${MANAGER_TAG(key)}`;
+    return `Educational content on ${topicName}.\n\nKeywords: ${keywords}\n${hashtags}\n\n${MANAGER_TAG(key)}`;
   }
 
-  const intro = (config.intros[format] || config.intros.mcq || `Learn about ${topic} with interactive content!`).replace('{TOPIC}', topic);
+  const intro = (config.intros[format] || config.intros.mcq || `Learn about {TOPIC} with interactive content!`).replace('{TOPIC}', topicName);
   const outro = `${config.outro}\n🔔 New ${formatName.toLowerCase()} uploaded regularly!`;
 
   return `${intro}\n\n${outro}\n\nKeywords: ${keywords}\n${hashtags}\n\n${MANAGER_TAG(key)}`;
 }
 
-/** Parses the canonical key from a playlist's description. */
 function parseCanonicalKeyFromDescription(desc?: string | null): string | null {
   const match = desc?.match(/\[managed-by:quiz-app; key:(.*?)]/);
   return match ? match[1] : null;
 }
 
-
 // --- Core YouTube API Logic ---
 
-/** Fetches all playlists managed by this application. */
 export async function findManagedPlaylists(youtube: youtube_v3.Youtube): Promise<Map<string, string>> {
   const playlistMap = new Map<string, string>();
   let pageToken: string | undefined;
@@ -195,18 +178,14 @@ export async function findManagedPlaylists(youtube: youtube_v3.Youtube): Promise
   return playlistMap;
 }
 
-/** Creates a new playlist if it doesn't already exist. */
 async function createPlaylist(youtube: youtube_v3.Youtube, title: string, description: string): Promise<string> {
   try {
     const res = await youtube.playlists.insert({
       part: ['snippet', 'status'],
-      requestBody: {
-        snippet: { title, description },
-        status: { privacyStatus: 'public' },
-      },
+      requestBody: { snippet: { title, description }, status: { privacyStatus: 'public' } },
     });
     if (!res.data.id) throw new Error("YouTube API did not return a playlist ID.");
-    console.log(`Created playlist ID: ${res.data.id}`);
+    console.log(`Created playlist "${title}" with ID: ${res.data.id}`);
     return res.data.id;
   } catch (error) {
     console.error(`Failed to create playlist "${title}":`, error);
@@ -214,20 +193,11 @@ async function createPlaylist(youtube: youtube_v3.Youtube, title: string, descri
   }
 }
 
-/** Gets an existing playlist ID or creates a new one, preventing race conditions. */
-export async function getOrCreatePlaylist(
-  youtube: youtube_v3.Youtube,
-  job: QuizJob,
-  playlistMap: Map<string, string>
-): Promise<string> {
-  const { account_id, persona, topic, data } = job;
-  const format = detectFormatFromJob(job) as FormatType;
+export async function getOrCreatePlaylist(youtube: youtube_v3.Youtube, job: QuizJob, playlistMap: Map<string, string>): Promise<string> {
+  const { account_id, persona } = job;
+  const { topicName, format } = getTopicAndFormat(job);
 
-  const topicKey = data?.content?.topic || data?.question?.topic || topic;
-  const subCat = MasterPersonas[persona as PersonaType]?.subCategories?.find(c => c.key === topicKey);
-  const topicName = subCat?.displayName || job.topic_display_name || data?.topic_display_name || topic;
-
-  const canonicalKey = generateCanonicalKey(account_id, persona, topicKey, format);
+  const canonicalKey = generateCanonicalKey(account_id, persona, topicName, format);
 
   if (playlistMap.has(canonicalKey)) return playlistMap.get(canonicalKey)!;
   if (playlistCreationLocks.has(canonicalKey)) return playlistCreationLocks.get(canonicalKey)!;
