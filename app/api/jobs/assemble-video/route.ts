@@ -271,7 +271,7 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
       console.log(`[Job ${job.id}] Downloaded frame ${frameNumber} (${duration.toFixed(1)}s) and saved to disk in ${((Date.now() - downloadStart) / 1000).toFixed(3)}s`);
     } catch (error) {
       // CRITICAL: Log and re-throw the error to ensure job fails
-      console.error(`[Job ${job.id}] CRITICAL: Failed to download or write frame ${frameNumber}:`, error);
+      console.error(`[Job ${job.id}] CRITICAL: Failed to download or write frame ${frameNumber}. Error:`, error);
       throw new Error(`Failed to process frame ${frameNumber} due to I/O error: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
