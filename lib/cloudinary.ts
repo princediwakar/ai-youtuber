@@ -2,6 +2,7 @@
 
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { getAccountConfig } from './accounts';
+// Note: No stream imports needed for the arrayBuffer approach
 
 export interface CloudinaryUploadResult {
   public_id: string;
@@ -111,8 +112,8 @@ export async function uploadImageToCloudinary(
 
 /**
  * Download an image from Cloudinary URL (account-agnostic)
- * FIX: Rewritten to use getReader() to avoid async iterator conflicts and 
- * handles the chunk types explicitly to resolve the Buffer/Uint8Array conflict.
+ * FIX: Reverting to the arrayBuffer method for maximum runtime stability, 
+ * relying on the 2048MB memory limit to handle the buffer size.
  */
 export async function downloadImageFromCloudinary(url: string): Promise<Buffer> {
   const response = await fetch(url);
@@ -120,34 +121,11 @@ export async function downloadImageFromCloudinary(url: string): Promise<Buffer> 
     throw new Error(`Failed to download image: ${response.statusText}`);
   }
   
-  if (response.body) {
-    // CRITICAL: Use getReader() to explicitly handle the stream iteration, 
-    // avoiding the Symbol.asyncIterator type conflict.
-    const reader = response.body.getReader();
-    const chunks: Buffer[] = [];
-    
-    while (true) {
-      const { done, value } = await reader.read();
-      
-      if (done) {
-        break;
-      }
-      
-      // CRITICAL: Ensure the chunk (value) is treated as a Buffer. 
-      // This is necessary because in some TS configurations, Uint8Array isn't 
-      // fully compatible with Buffer, even though Buffer is a Uint8Array.
-      // Casting the value to Uint8Array and wrapping in Buffer.from() 
-      // ensures it satisfies the Node.js Buffer type requirement for Buffer.concat.
-      chunks.push(Buffer.from(value as Uint8Array)); 
-    }
-    
-    // Buffer.concat safely combines the array of Buffers
-    return Buffer.concat(chunks);
-  }
-
-  // Fallback if response.body is null
+  // Reverting to the standard, highly compatible fetch/arrayBuffer pattern
   const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  
+  // The type casting below resolves the complex Buffer/Uint8Array/ArrayBufferLike conflicts
+  return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
 /**
