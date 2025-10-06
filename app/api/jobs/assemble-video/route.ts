@@ -59,42 +59,39 @@ async function saveDebugVideo(videoBuffer: Buffer, jobId: string, themeName?: st
 
 function getFrameDuration(questionData: any, frameNumber: number, layoutType?: string): number {
   if (!questionData || typeof questionData !== 'object') {
-    return 5; // Safe fallback for invalid data - increased from 4
+    return 6.0; // Generous default safe fallback
   }
   
-  // SIMPLIFIED FORMATS: Single frame gets full video duration
+  // Handle the special single-frame simplified_word layout
   if (layoutType === 'simplified_word') {
     if (frameNumber === 1) {
-      return 15; // 15 seconds for the single comprehensive frame
+      // Single comprehensive frame needs significant time
+      return 15.0; 
     }
     return 0; // No other frames should exist
   }
   
-  const MIN_DURATION = 1.5; // Minimum time to register visual content
-  
+  // Fixed, generous durations based on frame purpose:
   switch (frameNumber) {
-    case 1: // First Frame (Hook Frame - should be short and punchy)
-      // Hook frames should be brief and attention-grabbing, max 1.5s
-      return MIN_DURATION; // 1.5s for hooks
+    case 1: // HOOK Frame (Short, attention grabber)
+      return 2.0; // 
       
+    case 2: // Main Question/Setup/Key Concept (CRITICAL for MCQ Question + Options)
+      // This is the most complex reading frame, requiring the most time.
+      return 8.0; // Significantly increased to 8.0s
       
-    case 2: // Second Frame (varies by format)
-      // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
+    case 3: // Secondary Content / Answer Reveal
+      return 4.0; // Increased to 4.0s
       
-      return 3;
+    case 4: // Deep Content / Explanation / Practice
+      // Time to read the explanation/practice attempt
+      return 7.0; // Increased to 7.0s
       
-    case 3: // Third Frame (if exists)
-      // MCQ: explanation, Common Mistake: practice, Usage Demo: practice, Challenge: reveal
-        return 2;
-      
-    case 4: // Fourth Frame (if exists - Challenge: cta)
-        return 2;
-      
-    case 5: // Fifth Frame (if exists - rare, but possible for future formats)
-      return 2; // Standard duration for additional frames - increased from 3
+    case 5: // CTA Frame (Final prompt/call to action)
+      return 3.5; // Increased to 3.5s
       
     default:
-      return 2; // Fallback - increased from 4
+      return 4.0; // Fallback
   }
 }
 
