@@ -92,20 +92,20 @@ function getFrameDuration(questionData: any, frameNumber: number, layoutType?: s
     case 2: // Second Frame (varies by format)
       // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
       
-      return 3;
+      return 10;
       
     case 3: // Third Frame (if exists)
       // MCQ: explanation, Common Mistake: practice, Usage Demo: practice, Challenge: reveal
-        return 2;
+        return 5;
       
     case 4: // Fourth Frame (if exists - Challenge: cta)
-        return 2;
+        return 5;
       
     case 5: // Fifth Frame (if exists - rare, but possible for future formats)
-      return 2; // Standard duration for additional frames - increased from 3
+      return 3; // Standard duration for additional frames - increased from 3
       
     default:
-      return 2; // Fallback - increased from 4
+      return 5; // Fallback - increased from 4
   }
 }
 
@@ -231,24 +231,33 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
   const startTime = Date.now();
   const ffmpegPath = getFFmpegPath();
   
-  // 1. Download Frames Concurrently
-  console.log(`[Job ${job.id}] 1. Starting concurrent frame download...`);
+  // 1. Download Frames Sequentially (FIX for serverless stability)
+  console.log(`[Job ${job.id}] 1. Starting SEQUENTIAL frame download...`);
   const durations: number[] = [];
-  const framePaths = await Promise.all(frameUrls.map(async (url, index) => {
+  const framePaths: string[] = [];
+
+  for (let index = 0; index < frameUrls.length; index++) {
+    const url = frameUrls[index];
+    const frameNumber = index + 1;
     const downloadStart = Date.now();
-    // CRITICAL: Ensure Cloudinary I/O is fast and reliable.
-    const frameBuffer = await downloadImageFromCloudinary(url);
-    const framePath = path.join(tempDir, `frame-${String(index + 1).padStart(3, '0')}.png`);
-    // CRITICAL: Ensure file system write is reliable.
-    await fs.writeFile(framePath, new Uint8Array(frameBuffer));
     
-    // Calculate and store duration after successful download
-    const duration = getFrameDuration(job.data.content || {}, index + 1, job.data.layoutType) || 4;
-    durations.push(duration);
-    
-    console.log(`[Job ${job.id}] Downloaded frame ${index + 1} (${duration.toFixed(1)}s) in ${((Date.now() - downloadStart) / 1000).toFixed(3)}s`);
-    return framePath;
-  }));
+    try {
+      const frameBuffer = await downloadImageFromCloudinary(url);
+      const framePath = path.join(tempDir, `frame-${String(frameNumber).padStart(3, '0')}.png`);
+      await fs.writeFile(framePath, new Uint8Array(frameBuffer));
+      
+      // Calculate and store duration
+      const duration = getFrameDuration(job.data.content || {}, frameNumber, job.data.layoutType) || 4;
+      durations.push(duration);
+      framePaths.push(framePath);
+      
+      console.log(`[Job ${job.id}] Downloaded frame ${frameNumber} (${duration.toFixed(1)}s) in ${((Date.now() - downloadStart) / 1000).toFixed(3)}s`);
+    } catch (error) {
+      console.error(`[Job ${job.id}] CRITICAL: Failed to download or write frame ${frameNumber}:`, error);
+      // Fail fast if a frame is missing
+      throw new Error(`Failed to process frame ${frameNumber}`);
+    }
+  }
 
   const outputVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
   const audioPath = getRandomAudioFile();
