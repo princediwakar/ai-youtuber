@@ -92,20 +92,20 @@ function getFrameDuration(questionData: any, frameNumber: number, layoutType?: s
     case 2: // Second Frame (varies by format)
       // MCQ: answer, Common Mistake: correct, Quick Fix: advanced_word, Quick Tip: result, Usage Demo: right_example, Challenge: challenge
       
-      return 10;
+      return 3;
       
     case 3: // Third Frame (if exists)
       // MCQ: explanation, Common Mistake: practice, Usage Demo: practice, Challenge: reveal
-        return 5;
+        return 2;
       
     case 4: // Fourth Frame (if exists - Challenge: cta)
-        return 5;
+        return 2;
       
     case 5: // Fifth Frame (if exists - rare, but possible for future formats)
-      return 3; // Standard duration for additional frames - increased from 3
+      return 2; // Standard duration for additional frames - increased from 3
       
     default:
-      return 5; // Fallback - increased from 4
+      return 2; // Fallback - increased from 4
   }
 }
 
@@ -242,7 +242,9 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
     const downloadStart = Date.now();
     
     try {
+      console.log(`[Job ${job.id}] Downloading frame ${frameNumber} from URL: ${url}`); // NEW LOG
       const frameBuffer = await downloadImageFromCloudinary(url);
+      
       const framePath = path.join(tempDir, `frame-${String(frameNumber).padStart(3, '0')}.png`);
       await fs.writeFile(framePath, new Uint8Array(frameBuffer));
       
@@ -251,7 +253,7 @@ async function assembleVideoFast(frameUrls: string[], job: QuizJob, tempDir: str
       durations.push(duration);
       framePaths.push(framePath);
       
-      console.log(`[Job ${job.id}] Downloaded frame ${frameNumber} (${duration.toFixed(1)}s) in ${((Date.now() - downloadStart) / 1000).toFixed(3)}s`);
+      console.log(`[Job ${job.id}] Downloaded frame ${frameNumber} (${duration.toFixed(1)}s) and saved to disk in ${((Date.now() - downloadStart) / 1000).toFixed(3)}s`);
     } catch (error) {
       console.error(`[Job ${job.id}] CRITICAL: Failed to download or write frame ${frameNumber}:`, error);
       // Fail fast if a frame is missing
