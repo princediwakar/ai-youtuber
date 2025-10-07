@@ -1,11 +1,11 @@
-// lib/analytics/collectionService.ts
 import { google } from 'googleapis';
 import { getOAuth2Client } from '../googleAuth';
-import { query } from '../database';
+// Assuming the 'query' function handles database interaction.
+import { query } from '../database'; 
 import { VideoAnalytics, VideoToCollect } from './types';
 import { ChannelStats, PersonaStats } from '../types';
 
-// --- FIX: Define interfaces for the expected shapes of database query results ---
+// --- Interface Definitions for Database Query Results ---
 interface VideoForAnalyticsRow {
   video_id: string;
   job_id: string;
@@ -36,7 +36,6 @@ interface TopVideoRow {
   collected_at: string;
 }
 
-// New interfaces for channel and persona stats
 interface ChannelStatsRow {
   account_id: string;
   channel_name: string;
@@ -55,12 +54,81 @@ interface PersonaStatsRow {
   last_video: string | null;
 }
 
+// --- CONCURRENCY HELPER FUNCTION ---
+
+/**
+ * Processes videos for a single account by fetching statistics from the YouTube API.
+ * Uses concurrent chunking to speed up I/O time.
+ */
+async function processAccountVideos(accountId: string, videos: VideoToCollect[]): Promise<VideoAnalytics[]> {
+    const oauth2Client = await getOAuth2Client(accountId);
+    const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
+    
+    // YouTube API allows up to 50 IDs per request. Split into chunks to maximize concurrency.
+    const YOUTUBE_MAX_CHUNK_SIZE = 50; 
+    const videoChunks: VideoToCollect[][] = [];
+    for (let i = 0; i < videos.length; i += YOUTUBE_MAX_CHUNK_SIZE) {
+        videoChunks.push(videos.slice(i, i + YOUTUBE_MAX_CHUNK_SIZE));
+    }
+
+    // OPTIMIZATION: Use Promise.all to run all chunk fetches concurrently
+    const chunkPromises = videoChunks.map(async (chunk, index) => {
+        const videoIds = chunk.map(v => v.videoId).join(',');
+        
+        try {
+            console.log(`[CollectionService] Fetching chunk ${index + 1}/${videoChunks.length} for account: ${accountId}`);
+            
+            const response = await youtube.videos.list({
+                part: ['statistics'],
+                id: [videoIds],
+            });
+
+            if (!response.data.items) return [];
+
+            const analytics: VideoAnalytics[] = [];
+            for (const item of response.data.items) {
+                const video = chunk.find(v => v.videoId === item.id);
+                if (!video || !item.statistics) continue;
+
+                const stats = item.statistics;
+                const views = parseInt(stats.viewCount || '0', 10);
+                const likes = parseInt(stats.likeCount || '0', 10);
+                const comments = parseInt(stats.commentCount || '0', 10);
+                const dislikes = parseInt(stats.dislikeCount || '0', 10);
+
+                const engagementRate = views > 0 ? ((likes + comments) / views) * 100 : 0;
+                const likeRatio = views > 0 ? (likes / views) * 100 : 0;
+
+                analytics.push({
+                    videoId: video.videoId,
+                    jobId: video.jobId,
+                    accountId: video.accountId,
+                    views, likes, comments, dislikes,
+                    engagementRate: Math.round(engagementRate * 100) / 100,
+                    likeRatio: Math.round(likeRatio * 100) / 100,
+                    videoUploadedAt: video.uploadedAt
+                });
+            }
+            return analytics;
+        } catch (error) {
+            console.error(`[CollectionService] Error fetching chunk ${index + 1} for account ${accountId}:`, error);
+            return []; // Return empty array on failure
+        }
+    });
+
+    // Wait for all concurrent chunk promises to resolve
+    const results = await Promise.all(chunkPromises);
+    return results.flat();
+}
+
 
 class AnalyticsCollectionService {
+  
   /**
-   * Get videos that need analytics collection (uploaded 24+ hours ago, not yet analyzed)
+   * Get videos that need analytics collection, respecting a strict limit.
+   * Fetches (limit + 1) to determine if more work remains.
    */
-  async getVideosForAnalytics(): Promise<VideoToCollect[]> {
+  async getVideosForAnalytics(limit: number): Promise<{ videos: VideoToCollect[], totalCount: number }> {
     const result = await query<VideoForAnalyticsRow>(`
       SELECT 
         uv.youtube_video_id as video_id,
@@ -74,19 +142,24 @@ class AnalyticsCollectionService {
         uv.uploaded_at < NOW() - INTERVAL '24 hours'
         AND va.id IS NULL
       ORDER BY uv.uploaded_at ASC
-      LIMIT 50
-    `);
+      LIMIT $1 
+    `, [limit + 1]); // Fetch limit + 1
 
-    return result.rows.map((row) => ({
+    const totalCount = result.rows.length;
+    
+    // Only return the requested limit for processing in this execution
+    const videos = result.rows.slice(0, limit).map((row) => ({
       videoId: row.video_id,
       jobId: row.job_id,
       accountId: row.account_id,
       uploadedAt: new Date(row.uploaded_at)
     }));
+    
+    return { videos, totalCount };
   }
 
   /**
-   * Fetch analytics for a batch of videos from YouTube API
+   * Fetch analytics for a batch of videos from YouTube API - **CONCURRENTLY**
    */
   async fetchVideoStatistics(videos: VideoToCollect[]): Promise<VideoAnalytics[]> {
     if (videos.length === 0) return [];
@@ -98,71 +171,27 @@ class AnalyticsCollectionService {
       videosByAccount.set(video.accountId, accountVideos);
     });
 
-    const allAnalytics: VideoAnalytics[] = [];
+    // OPTIMIZATION: Run all account processing concurrently using Promise.all
+    const accountPromises = Array.from(videosByAccount.entries()).map(([accountId, accountVideos]) => 
+        processAccountVideos(accountId, accountVideos)
+    );
 
-    for (const [accountId, accountVideos] of videosByAccount) {
-      try {
-        const oauth2Client = await getOAuth2Client(accountId);
-        const youtube = google.youtube({ version: 'v3', auth: oauth2Client });
-        const videoIds = accountVideos.map(v => v.videoId).join(',');
-        
-        console.log(`[CollectionService] Fetching analytics for ${accountVideos.length} videos from account: ${accountId}`);
-        
-        const response = await youtube.videos.list({
-          part: ['statistics'],
-          id: [videoIds],
-        });
-
-        if (!response.data.items) {
-          console.warn(`[CollectionService] No data returned for account ${accountId}`);
-          continue;
-        }
-
-        for (const item of response.data.items) {
-          const video = accountVideos.find(v => v.videoId === item.id);
-          if (!video || !item.statistics) continue;
-
-          const stats = item.statistics;
-          const views = parseInt(stats.viewCount || '0', 10);
-          const likes = parseInt(stats.likeCount || '0', 10);
-          const comments = parseInt(stats.commentCount || '0', 10);
-          const dislikes = parseInt(stats.dislikeCount || '0', 10);
-
-          const engagementRate = views > 0 ? ((likes + comments) / views) * 100 : 0;
-          const likeRatio = views > 0 ? (likes / views) * 100 : 0;
-
-          allAnalytics.push({
-            videoId: video.videoId,
-            jobId: video.jobId,
-            accountId: video.accountId,
-            views,
-            likes,
-            comments,
-            dislikes,
-            engagementRate: Math.round(engagementRate * 100) / 100,
-            likeRatio: Math.round(likeRatio * 100) / 100,
-            videoUploadedAt: video.uploadedAt
-          });
-        }
-        console.log(`[CollectionService] Collected analytics for ${response.data.items.length} videos from ${accountId}`);
-      } catch (error) {
-        console.error(`[CollectionService] Error fetching analytics for account ${accountId}:`, error);
-      }
-    }
-    return allAnalytics;
+    const results = await Promise.all(accountPromises);
+    return results.flat();
   }
 
   /**
-   * Store analytics data in the database with enhanced timing and contextual data
+   * Store analytics data in the database - **CONCURRENTLY**
    */
   async storeAnalytics(analytics: VideoAnalytics[]): Promise<void> {
     if (analytics.length === 0) return;
 
     console.log(`[CollectionService] Storing analytics for ${analytics.length} videos`);
 
-    for (const data of analytics) {
+    // OPTIMIZATION: Use Promise.all to run all video inserts concurrently
+    const storePromises = analytics.map(async (data) => {
       try {
-        // --- FIX: Provide the expected row type to the generic query function ---
+        // Fetch job data (still sequential DB call per video, but independent of others)
         const jobData = await query<JobAndVideoData>(`
           SELECT 
             qj.persona, qj.question_format, qj.topic_display_name, qj.data,
@@ -174,15 +203,15 @@ class AnalyticsCollectionService {
 
         if (jobData.rows.length === 0) {
           console.warn(`[CollectionService] No job data found for ${data.jobId}`);
-          continue;
+          return;
         }
 
         const job = jobData.rows[0];
-        const uploadedAt = new Date(job.uploaded_at);
         
+        // Data Enrichment Logic
+        const uploadedAt = new Date(job.uploaded_at);
         const istOffset = 5.5 * 60 * 60 * 1000;
         const istDate = new Date(uploadedAt.getTime() + istOffset);
-        
         const uploadHour = istDate.getHours();
         const uploadDayOfWeek = istDate.getDay(); // 0=Sunday, 6=Saturday
 
@@ -200,7 +229,8 @@ class AnalyticsCollectionService {
         const content = jobDataParsed?.content || {};
         const hookType = this.extractHookType(content.hook);
         const ctaType = this.extractCtaType(content.cta);
-
+        
+        // Perform the insertion concurrently
         await query(`
           INSERT INTO video_analytics (
             video_id, job_id, account_id, views, likes, comments, dislikes,
@@ -220,7 +250,10 @@ class AnalyticsCollectionService {
       } catch (error) {
         console.error(`[CollectionService] Error storing analytics for video ${data.videoId}:`, error);
       }
-    }
+    });
+
+    // Wait for all concurrent database inserts to complete
+    await Promise.all(storePromises);
 
     console.log(`[CollectionService] Successfully stored enhanced analytics for ${analytics.length} videos`);
   }
@@ -228,29 +261,31 @@ class AnalyticsCollectionService {
   /**
    * Complete analytics collection workflow
    */
-  async collectAnalytics(): Promise<{ collected: number; errors: number }> {
+  async collectAnalytics(limit: number): Promise<{ collected: number; errors: number; moreVideosToCollect: boolean }> {
     const startTime = Date.now();
-    console.log('[CollectionService] Starting analytics collection...');
+    console.log(`[CollectionService] Starting analytics collection with limit: ${limit}`);
 
     try {
-      const videosToCollect = await this.getVideosForAnalytics();
-      console.log(`[CollectionService] Found ${videosToCollect.length} videos needing analytics`);
+      // 1. Get a small batch of videos and check if more work remains
+      const { videos: videosToCollect, totalCount } = await this.getVideosForAnalytics(limit);
+      const moreVideosToCollect = totalCount > limit;
+      console.log(`[CollectionService] Found ${totalCount} videos total, processing ${videosToCollect.length} in this batch.`);
 
       if (videosToCollect.length === 0) {
-        console.log('[CollectionService] No videos need analytics collection at this time');
-        return { collected: 0, errors: 0 };
+        return { collected: 0, errors: 0, moreVideosToCollect: false };
       }
 
+      // 2. Concurrently fetch analytics from YouTube API
       const analytics = await this.fetchVideoStatistics(videosToCollect);
-      console.log(`[CollectionService] Successfully fetched analytics for ${analytics.length} videos`);
 
+      // 3. Concurrently store all collected analytics
       await this.storeAnalytics(analytics);
 
       const duration = Date.now() - startTime;
       const errors = videosToCollect.length - analytics.length;
 
-      console.log(`[CollectionService] Analytics collection completed in ${duration}ms. Collected: ${analytics.length}, Errors: ${errors}`);
-      return { collected: analytics.length, errors };
+      console.log(`[CollectionService] Batch completed in ${duration}ms. Collected: ${analytics.length}, Errors: ${errors}`);
+      return { collected: analytics.length, errors, moreVideosToCollect };
 
     } catch (error) {
       console.error('[CollectionService] Fatal error during analytics collection:', error);
