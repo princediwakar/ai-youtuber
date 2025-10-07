@@ -89,9 +89,10 @@ class AnalyticsInsightsService {
         weeklyData: []
       },
       formatInsights: {
-        bestFormat: 'mcq',
-        worstFormat: 'unknown',
-        mostConsistent: 'mcq',
+        // FIX: Replaced hardcoded 'mcq' defaults with 'N/A' or 'unknown' for neutrality
+        bestFormat: 'N/A', 
+        worstFormat: 'N/A',
+        mostConsistent: 'N/A', 
         formatData: []
       }
     };
@@ -229,9 +230,10 @@ class AnalyticsInsightsService {
         weeklyData: timingAnalytics?.weeklyPerformance?.map(d => ({ dayOfWeek: d.dayOfWeek, dayName: d.dayName, avgEngagementRate: d.avgEngagementRate, videoCount: d.videoCount })) || []
       },
       formatInsights: {
-        bestFormat: formatAnalytics?.formatRecommendations?.bestFormat || 'mcq',
-        worstFormat: formatAnalytics?.formatRecommendations?.worstFormat || 'unknown',
-        mostConsistent: formatAnalytics?.formatRecommendations?.mostConsistent || 'mcq',
+        // FIX: Use actual format results or neutral defaults
+        bestFormat: formatAnalytics?.formatRecommendations?.bestFormat || 'N/A',
+        worstFormat: formatAnalytics?.formatRecommendations?.worstFormat || 'N/A',
+        mostConsistent: formatAnalytics?.formatRecommendations?.mostConsistent || 'N/A',
         formatData: formatAnalytics?.formatPerformance?.map(f => ({ format: f.format, avgEngagementRate: f.avgEngagementRate, videoCount: f.videoCount, consistency: f.consistency })) || []
       }
     };
@@ -534,10 +536,15 @@ class AnalyticsInsightsService {
    * Get A/B testing insights and recommendations
    */
   public async getABTestingInsights(accountId?: string, persona?: string) {
-    const [themeAnalytics, audioAnalytics] = await Promise.all([
+    const [themeAnalytics] = await Promise.all([
       this.getThemeAnalytics(accountId, persona),
-      this.getAudioAnalytics(accountId, persona),
+      // Removed call to getAudioAnalytics from Promise.all to fix TypeScript error, 
+      // but still need the data for the logic below.
     ]);
+    
+    // Call getAudioAnalytics separately
+    const audioAnalytics = await this.getAudioAnalytics(accountId, persona);
+
 
     const winningCombinations = [];
 
@@ -554,7 +561,7 @@ class AnalyticsInsightsService {
     }
     
     // This method is defined but not included in the provided file. I will create a shell for it.
-    const audioAnalyticsData = await this.getAudioAnalytics(accountId, persona);
+    const audioAnalyticsData = audioAnalytics; // Using the result from the call above
     if (audioAnalyticsData && audioAnalyticsData.audioPerformance.length > 1) {
       const best = audioAnalytics.audioPerformance[0];
       const avg = audioAnalytics.audioPerformance.reduce((sum, a) => sum + a.avgEngagementRate, 0) / audioAnalytics.audioPerformance.length;
@@ -757,12 +764,15 @@ PREDICTIVE_INSIGHTS:
   }
 
   private generateFallbackInsights(data: AnalyticsDataForAI): AIAnalyticsInsights {
+    // FIX: Fallback insights should also use the determined bestFormat, even if N/A
+    const bestFormat = data.formatInsights?.bestFormat || 'your strongest format';
+
     return {
       performanceAnalysis: `Channel performance shows a total of ${data.totalVideos} videos with an average engagement of ${data.avgEngagementRate}%. The recent trend is ${data.recentTrends.engagementTrend}.`,
       contentRecommendations: [`Focus on top-performing topics like "${data.topPerformingTopics[0]?.topic || 'your best content'}".`],
       topicOptimization: ['Double down on what works and create variations of successful topics.'],
       timingOptimization: data.timingInsights?.bestHours.length ? [`Post around these times for better reach: ${data.timingInsights.bestHours.join(':00, ')}:00 IST.`] : ['Test different posting times.'],
-      formatOptimization: data.formatInsights?.bestFormat ? [`Utilize the "${data.formatInsights.bestFormat}" format more often as it performs best.`] : ['Experiment with different video formats.'],
+      formatOptimization: [`Utilize the "${bestFormat}" format more often as it performs best.` || 'Experiment with different video formats.'],
       engagementStrategies: ['Ask engaging questions in your videos and respond to comments.'],
       personaSpecificAdvice: [`Tailor content specifically for your "${data.persona}" audience.`],
       predictiveInsights: ['Continuing to analyze performance data will reveal more growth opportunities.']
@@ -772,4 +782,3 @@ PREDICTIVE_INSIGHTS:
 
 export const analyticsInsightsService = new AnalyticsInsightsService();
 export default analyticsInsightsService;
-

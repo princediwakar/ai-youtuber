@@ -108,7 +108,7 @@ app/
 
 ### Format Performance Analysis
 - **MCQ Format:** 1.26% engagement rate (ONLY format that works)
-- **Complex Formats:** 0% engagement rate (quick_fix, common_mistake, usage_demo, challenge, quick_tip)
+- **Complex Formats:** 0% engagement rate (quick_fix, common_mistake, usage_demo, quick_tip)
 - **73% of videos** have zero engagement - complex formats are the primary cause
 
 ### Content Optimization (2025-09-10)

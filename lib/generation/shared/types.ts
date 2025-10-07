@@ -1,9 +1,10 @@
+// lib/generation/shared/types.ts
 /**
  * Shared TypeScript types for prompt generation system
  * Centralized type definitions for better maintainability
  */
 
-import type { AIAnalyticsInsights } from '../../analytics/types';
+import type { AIAnalyticsInsights, AnalyticsDataForAI } from '../../analytics/types'; // <-- Import AnalyticsDataForAI
 import type { TimingContext } from './analyticsOptimizer';
 
 export interface VariationMarkers {
@@ -21,7 +22,8 @@ export interface PromptConfig {
   formatDefinition?: any;
   // Analytics enhancement fields
   timingContext?: TimingContext;
-  analyticsInsights?: AIAnalyticsInsights;
+  // FIX: Change AIAnalyticsInsights to AnalyticsDataForAI to include raw data like topPerformingTopics
+  analyticsInsights?: AnalyticsDataForAI; 
 }
 
 export interface RandomizationElements {
@@ -58,7 +60,6 @@ export type FormatType =
   | 'common_mistake'
   | 'quick_fix'
   | 'usage_demo'
-  | 'challenge'
   | 'quick_tip'
 
 export type PromptGenerator = (config: PromptConfig) => string;

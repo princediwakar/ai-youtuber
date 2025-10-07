@@ -1,162 +1,159 @@
-# Gemini Project: Automated YouTube Shorts English Vocabulary Quiz Generator
 
-This document provides context for the Gemini AI assistant to understand and work with this project.
+# Multi-Channel YouTube Shorts Generator
 
-## 1\. Project Context
+Next.js application for automated multi-account educational YouTube Shorts generation and upload.
 
-This project is an automated system that generates and uploads **English vocabulary quiz videos as YouTube Shorts**. The entire pipeline is designed to create engaging, short-form content for a **global audience of English language learners**.
+## Quick Setup
 
-The system is deployed as a single Next.js application on Vercel.
-
-## 2\. Local Development Setup
-
-To get the project running locally, follow these steps:
-
-1.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
-2.  **Set Up Environment Variables**:
-    Copy the `.env.example` file to a new file named `.env.local` and fill in the required values.
-    ```bash
-    cp .env.example .env.local
-    ```
-3.  **Setup Database**:
-    Run the database setup script to initialize the database schema.
-    ```bash
-    node setup-database.js
-    ```
-4.  **Run the Development Server**:
-    ```bash
-    npm run dev
-    ```
-
-The application should now be running at `http://localhost:3000`.
-
-## 3\. Environment Variables
-
-The following environment variables are required in `.env.local`:
-
-  * `NEXTAUTH_URL`: The canonical URL of the application (e.g., `http://localhost:3000`).
-  * `NEXTAUTH_SECRET`: A secret string used for token hashing and signing.
-  * `GOOGLE_CLIENT_ID`: The client ID for Google OAuth.
-  * `GOOGLE_CLIENT_SECRET`: The client secret for Google OAuth.
-  * `CLOUDINARY_CLOUD_NAME`: Cloudinary cloud name for frame storage.
-  * `CLOUDINARY_API_KEY`: Cloudinary API key.
-  * `CLOUDINARY_API_SECRET`: Cloudinary API secret.
-  * `DEEPSEEK_API_KEY`: API key for the DeepSeek AI model.
-  * `CRON_SECRET`: A secret key to authorize cron job requests.
-
-## 4\. Authentication Flow
-
-Authentication is handled by **NextAuth.js** using Google as the OAuth provider.
-
-  * The configuration is located in `lib/auth.ts`.
-  * It requests access to the user's YouTube account (`youtube` and `youtube.upload` scopes).
-  * It uses a JSON Web Token (JWT) strategy with refresh token rotation to maintain the session.
-
-## 5\. API Endpoint Overview
-
-The application's core logic is exposed under `/api/`.
-
-  * **/api/auth/**: Handles NextAuth.js authentication routes.
-  * **/api/jobs/**: Manages the English vocabulary quiz video generation pipeline.
-      * `generate-quiz`: Creates new vocabulary quiz questions.
-      * `create-frames`: Generates video frames from questions.
-      * `assemble-video`: Compiles frames into a video file.
-      * `upload-quiz-videos`: Uploads the final video to YouTube.
-  * **/api/quiz-dashboard/**: Provides data for the generation monitoring dashboard.
-
-## 6\. Directory Structure
-
-The project follows a standard Next.js project structure:
-
-```
-/
-├── app/                  # Main application code
-│   ├── api/              # API routes
-│   │   ├── auth/         # NextAuth.js authentication
-│   │   └── jobs/         # Quiz generation pipeline jobs
-│   ├── page.tsx          # Monitoring Dashboard UI
-│   └── ...
-├── database/             # Database schema
-│   └── schema.sql
-├── lib/                  # Shared libraries
-│   ├── auth.ts           # NextAuth configuration
-│   ├── database.ts       # Database utilities
-│   ├── generationService.ts # Vocabulary quiz generation service
-│   ├── personas.ts       # Defines the 'english_vocab_builder' persona
-│   ├── schedule.ts       # Generation and upload schedules
-│   └── playlistManager.ts # Manages topic-based YouTube playlists
-├── public/               # Static assets
-├── .env.example          # Environment variables example
-└── ...
+```bash
+npm install
+node setup-database.js
+npm run dev
 ```
 
-## 7\. Database Schema
+## Essential Commands
 
-The database schema is defined in `database/schema.sql`. It consists of two main tables:
+- `npm run build` - Build project (required before committing)
+- `npm run dev` - Start development server  
+- `node setup-database.js` - Initialize database
 
-  * `quiz_jobs`: Stores the state of each step in the English vocabulary quiz generation pipeline.
-  * `uploaded_videos`: Stores metadata about the videos successfully uploaded to YouTube.
+## Environment Variables (.env.local)
 
-## 8\. Quiz Generation and Upload Pipeline
+- `NEXTAUTH_URL` - App URL
+- `NEXTAUTH_SECRET` - Auth secret
+- `DEEPSEEK_API_KEY` - AI content generation
+- `CRON_SECRET` - API route security
+- `DEBUG_MODE` - Save videos locally when 'true'
 
-The system uses a 4-step, fully automated pipeline:
+Account credentials stored in database `accounts` table.
 
-**Content Coverage:**
+**NOTE:** Current state includes full analytics system with video_analytics table.
 
-  * The system is built around a single, comprehensive persona: **`english_vocab_builder`**.
-  * This persona covers a wide variety of topics, including Synonyms, Antonyms, Phrasal Verbs, Idioms, Thematic Vocabulary, and more.
+## Architecture
 
-**Pipeline Process:**
+**Stack:** Next.js 14, TypeScript, PostgreSQL, NextAuth.js  
+**AI:** DeepSeek API  
+**Media:** Canvas, FFmpeg, Cloudinary  
+**Database:** Neon PostgreSQL (crimson-haze-61309062)
 
-1.  **Question Generation**: Cron jobs call `/api/jobs/generate-quiz` to create English vocabulary questions using the DeepSeek API.
-2.  **Frame Creation**: Cron jobs call `/api/jobs/create-frames` to generate video frames for the quiz using the Canvas API.
-3.  **Video Assembly**: Cron jobs call `/api/jobs/assemble-video` to compile the frames into a short video using FFmpeg.
-4.  **YouTube Upload**: Cron jobs call `/api/jobs/upload-quiz-videos` to upload the final video to YouTube with optimized metadata.
+## API Routes
 
-**Scheduling:**
+- `/api/jobs/generate-quiz` - Content generation (DeepSeek)
+- `/api/jobs/create-frames` - Video frame generation (Canvas)  
+- `/api/jobs/assemble-video` - Video compilation (FFmpeg)
+- `/api/jobs/upload-quiz-videos` - YouTube upload
+- `/api/analytics/*` - Performance analytics
 
-  * **Generation**: **3 batches daily** (2 AM, 10 AM, 6 PM) to create a steady buffer of content (9 quizzes/day).
-  * **Upload**: **8 uploads daily**, spread throughout the day to maximize reach across global time zones.
+Pass `{ "accountId": "english_shots" }` or `{ "accountId": "health_shots" }` in requests.
 
-The entire pipeline is monitored via the dashboard at the root URL (`/`).
+## Directory Structure
 
-## 9\. Testing with Playwright MCP
+```
+lib/
+├── generation/           # AI content generation system
+│   ├── core/            # Core generation logic
+│   │   ├── generationService.ts
+│   │   ├── promptGenerator.ts
+│   │   ├── contentValidator.ts
+│   │   └── contentSource.ts
+│   ├── personas/        # Account-specific personas
+│   │   ├── english/     # English vocabulary prompts
+│   │   ├── health/      # Health tips prompts
+│   │   ├── ssc/         # SSC exam prompts
+│   │   └── astronomy/   # Space facts prompts
+│   ├── routing/         # Prompt routing logic
+│   ├── shared/          # Shared types and utilities
+│   └── index.ts         # Main exports
+├── visuals/             # Video frame generation
+│   ├── layouts/         # Frame layout systems
+│   ├── themes.ts        # Visual themes
+│   └── themeMap.ts      # Theme routing
+├── accounts.ts          # Account management
+├── frameService.ts      # Frame generation service
+├── database.ts          # Database utilities
+└── config.ts           # Application config
 
-This project is configured with Playwright MCP for direct browser testing:
+database/
+├── schema.sql          # Complete database schema
+└── migrations/         # Schema migrations
 
-```json
-{
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest"]
-    }
-  }
-}
+app/
+├── api/jobs/          # Generation pipeline endpoints
+├── api/analytics/     # Analytics endpoints
+└── page.tsx          # Dashboard
 ```
 
-## 10\. Development Workflow
+## Database Schema
 
-Please follow this workflow:
+**Tables (Current State):**
+- `accounts` - Account credentials and configuration (OAuth, Cloudinary)
+- `quiz_jobs` - Content generation pipeline tracking (uses account_id)
+- `uploaded_videos` - YouTube upload records
+- `video_analytics` - Performance tracking (views, engagement, timing, etc.)
 
-1.  Make your changes to the codebase.
-2.  Before committing, run the build command to check for errors:
-    ```bash
-    npm run build
-    ```
-3.  Once the build succeeds, commit your changes.
+**Current Implementation:**
+- Uses `account_id` for account identification
+- Full analytics system with performance tracking
+- Video analytics collected but currently empty (0 rows)
+- Complete 4-table schema for comprehensive tracking
 
-## 11\. Content Structure
+## Active Accounts
 
-The content is organized around a single, comprehensive persona system:
+**ANALYTICS UPDATE (2025-09-10):** Based on engagement analysis, all content now uses MCQ format only.
 
-  * **Single Persona**: `english_vocab_builder` is the sole focus.
-  * **Sub-categories**: The persona is divided into multiple sub-categories (e.g., Synonyms, Idioms) to provide a rich variety of quiz content.
-  * **Targeted Prompts**: AI prompts are tailored to generate high-quality, intermediate-level vocabulary questions.
+**English Shots:** `english_vocab_builder` persona (1.26% engagement rate - best performing)
+**Health Shots:** `brain_health_tips`, `eye_health_tips` personas (0.18% engagement - needs optimization)
+**SSC Shots:** `ssc_shots` persona (paused - 0% engagement)
+**Astronomy:** `space_facts_quiz` persona (paused - 0% engagement)
 
-## 12\. Deployment
+### Format Performance Analysis
+- **MCQ Format:** 1.26% engagement rate (ONLY format that works)
+- **Complex Formats:** 0% engagement rate (quick_fix, common_mistake, usage_demo, quick_tip)
+- **73% of videos** have zero engagement - complex formats are the primary cause
 
-The production URL for this project is: [https://aiyoutuber.vercel.app/](https://aiyoutuber.vercel.app/)
+### Content Optimization (2025-09-10)
+**Analytics-Driven Changes:**
+- Forced MCQ format across all personas (prompt router updated)
+- Disabled complex layout detection (layout selector simplified)
+- Added hook effectiveness tracking based on high-performing patterns
+- Priority focus on English vocabulary content (proven 1.26% engagement)
+- Paused low-performing personas (SSC, Astronomy) until format is proven
+
+## Development
+
+```bash
+# Test endpoints
+curl -X POST http://localhost:3000/api/jobs/assemble-video \
+  -H "Authorization: Bearer tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c=" \
+  -H "Content-Type: application/json" \
+  -d '{"accountId": "health_shots"}'
+```
+
+**Production:** https://aiyoutuber.vercel.app/
+
+## MCP Integrations
+
+The project uses Model Context Protocol (MCP) for enhanced development capabilities:
+
+**Neon Database MCP:**
+- `mcp__Neon__run_sql` - Execute SQL queries
+- `mcp__Neon__get_connection_string` - Database connections
+- `mcp__Neon__describe_table_schema` - Schema inspection
+- `mcp__Neon__list_projects` - Project management
+
+**Vercel MCP:**
+- `mcp__vercel__list_deployments` - Deployment monitoring
+- `mcp__vercel__get_deployment_build_logs` - Build diagnostics
+
+**Playwright MCP:**
+- `mcp__playwright__browser_*` - Automated browser testing and screenshots
+
+**IDE MCP:**
+- `mcp__ide__getDiagnostics` - Language diagnostics
+- `mcp__ide__executeCode` - Jupyter code execution
+
+
+
+
+
+curl -X POST https://aiyoutuber.vercel.app/api/jobs/generate-quiz -H "Authorization: Bearer tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c=" -H "Content-Type: application/json"  -d '{"accountId": "english_shots"}'

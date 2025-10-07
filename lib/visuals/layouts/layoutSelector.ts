@@ -1,4 +1,3 @@
-// Simple layout selector based on content structure
 // lib/visuals/layouts/layoutSelector.ts
 import { Canvas } from 'canvas';
 import { QuizJob } from '@/lib/types';
@@ -8,10 +7,9 @@ import * as quickTipLayout from './quickTipLayout';
 import * as commonMistakeLayout from './commonMistakeLayout';
 import * as quickFixLayout from './quickFixLayout';
 import * as usageDemoLayout from './usageDemoLayout';
-import * as challengeLayout from './challengeLayout';
 import * as simplifiedWordLayout from './simplifiedWordLayout';
 
-export type LayoutType = 'mcq' | 'quick_tip' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'challenge' | 'simplified_word';
+export type LayoutType = 'mcq' | 'quick_tip' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'simplified_word';
 
 export interface LayoutDefinition {
   type: LayoutType;
@@ -43,53 +41,57 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
   },
   quick_tip: {
     type: 'quick_tip',
-    frames: ['hook', 'action', 'result'],
+    // FIX: Added 'cta' frame for a complete video sequence
+    frames: ['hook', 'action', 'result', 'cta'],
     renderers: {
       hook: quickTipLayout.renderHookFrame,
       action: quickTipLayout.renderActionFrame,
       result: quickTipLayout.renderResultFrame,
+      // Using generic CTA renderer
+      cta: mcqLayout.renderCtaFrame, 
     },
   },
   common_mistake: {
     type: 'common_mistake',
-    frames: ['hook', 'mistake', 'correct', 'practice'],
+    // FIX: Added 'practice' frame and re-ordered to match common video flow (Hook -> Mistake -> Correct -> Practice -> Explanation -> CTA)
+    frames: ['hook', 'mistake', 'correct', 'practice', 'explanation', 'cta'],
     renderers: {
       hook: commonMistakeLayout.renderHookFrame,
       mistake: commonMistakeLayout.renderMistakeFrame,
       correct: commonMistakeLayout.renderCorrectFrame,
-      practice: commonMistakeLayout.renderPracticeFrame,
+      // ASSUMPTION: A renderPracticeFrame exists in commonMistakeLayout, as the content is generated.
+      practice: commonMistakeLayout.renderPracticeFrame, 
+      // Use MCQ's generic renderers for the Explanation and CTA frames
+      explanation: mcqLayout.renderExplanationFrame, 
+      cta: mcqLayout.renderCtaFrame,
     },
   },
   quick_fix: {
     type: 'quick_fix',
-    frames: ['hook', 'basic_word', 'advanced_word'],
+    // FIX: Added 'cta' frame for a complete video sequence
+    frames: ['hook', 'basic_word', 'advanced_word', 'cta'],
     renderers: {
       hook: quickFixLayout.renderHookFrame,
       basic_word: quickFixLayout.renderBasicWordFrame,
       advanced_word: quickFixLayout.renderAdvancedWordFrame,
+      // Using generic CTA renderer
+      cta: mcqLayout.renderCtaFrame, 
     },
   },
   usage_demo: {
     type: 'usage_demo',
-    frames: ['hook', 'wrong_example', 'right_example', 'practice'],
+    // FIX: Added 'cta' frame for a complete video sequence
+    frames: ['hook', 'wrong_example', 'right_example', 'practice', 'cta'],
     renderers: {
       hook: usageDemoLayout.renderHookFrame,
       wrong_example: usageDemoLayout.renderWrongExampleFrame,
       right_example: usageDemoLayout.renderRightExampleFrame,
       practice: usageDemoLayout.renderPracticeFrame,
+      // Using generic CTA renderer
+      cta: mcqLayout.renderCtaFrame, 
     },
   },
-  challenge: {
-    type: 'challenge',
-    frames: ['hook', 'setup', 'challenge', 'reveal', 'cta'],
-    renderers: {
-      hook: challengeLayout.renderHookFrame,
-      setup: challengeLayout.renderSetupFrame,
-      challenge: challengeLayout.renderChallengeFrame,
-      reveal: challengeLayout.renderRevealFrame,
-      cta: challengeLayout.renderCtaFrame,
-    },
-  },
+
 };
 
 // ANALYTICS-DRIVEN: Simplified Word format for maximum engagement
@@ -102,16 +104,50 @@ export function detectLayoutType(contentData: any): LayoutType {
   const detectedKeys = Object.keys(contentData);
   console.log(`🔍 Layout detection: content has keys: ${detectedKeys.join(', ')}`);
 
-  // PRIORITY 1: Force MCQ for SSC content (analytics-driven decision)
+  // PRIORITY 1: Detect Common Mistake structure
+  const hasCommonMistakeStructure = detectedKeys.includes('mistake') &&
+                                    detectedKeys.includes('correct') &&
+                                    detectedKeys.includes('practice') &&
+                                    contentData.format_type === 'common_mistake';
+
+  if (hasCommonMistakeStructure) {
+    console.log(`✅ Detected common_mistake layout - using 6-frame mistake-fix format`);
+    return 'common_mistake'; // Prioritize the generated format
+  }
+
+
+  // PRIORITY 2: Detect Usage Demo structure
+  const hasUsageDemoStructure = detectedKeys.includes('wrong_example') &&
+                                detectedKeys.includes('right_example') &&
+                                detectedKeys.includes('practice') &&
+                                contentData.format_type === 'usage_demo';
+
+  if (hasUsageDemoStructure) {
+    console.log(`✅ Detected usage_demo layout - using 5-frame demo format`);
+    return 'usage_demo'; 
+  }
+
+
+  // PRIORITY 3: Force MCQ for SSC content (analytics-driven decision)
   const hasSSCStructure = detectedKeys.includes('fact_title') ||
                           detectedKeys.includes('key_info');
 
-  if (hasSSCStructure) {
-    console.log(`🔄 Detected SSC content - using MCQ layout (best performing format)`);
+  if (hasSSCStructure && contentData.content_type === 'multiple_choice') {
+    console.log(`🔄 Detected SSC MCQ content - using MCQ layout (best performing format)`);
     return 'mcq'; // Force MCQ for better engagement
   }
+  
+  // PRIORITY 4: Detect quick_fix structure for word upgrades
+  const hasQuickFixStructure = detectedKeys.includes('basic_word') &&
+                               detectedKeys.includes('advanced_word');
 
-  // PRIORITY 2: Detect simplified word format structure
+  if (hasQuickFixStructure) {
+    console.log(`✅ Detected quick_fix layout - using 4-frame upgrade format`);
+    return 'quick_fix';
+  }
+
+
+  // PRIORITY 5: Detect simplified word format structure
   const hasSimplifiedWordStructure = detectedKeys.includes('word') &&
                                      detectedKeys.includes('definition') &&
                                      detectedKeys.includes('format_type') &&
@@ -122,7 +158,7 @@ export function detectLayoutType(contentData: any): LayoutType {
     return 'simplified_word';
   }
 
-  // ANALYTICS BREAKTHROUGH: Detect quick_tip structure for health content
+  // PRIORITY 6: Detect quick_tip structure for health content
   const hasQuickTipStructure = detectedKeys.includes('hook') &&
                               detectedKeys.includes('action') &&
                               detectedKeys.includes('result') &&
@@ -134,7 +170,7 @@ export function detectLayoutType(contentData: any): LayoutType {
     return 'quick_tip';
   }
 
-  // PROVEN FORMAT: MCQ for traditional content (1.26% engagement success)
+  // FALLBACK 1: PROVEN FORMAT: MCQ for traditional content
   const hasMCQStructure = detectedKeys.includes('question') &&
                          detectedKeys.includes('options') ||
                          detectedKeys.includes('hook') &&
@@ -145,7 +181,7 @@ export function detectLayoutType(contentData: any): LayoutType {
     return 'mcq';
   }
 
-  // Default to proven MCQ format
+  // FINAL DEFAULT
   console.log(`🎯 Using MCQ layout (proven default format)`);
   return 'mcq';
 }
@@ -170,7 +206,7 @@ export function createRenderFunctions(
   } else if (layoutType === 'quick_tip') {
     console.log(`✅ Using quick_tip render functions (1.2K views breakthrough format)`);
     // Keep quick_tip - it works for health content!
-  } else {
+    } else {
     console.log(`✅ Using requested layout: ${layoutType}`);
     // Keep all layouts available - no forced overrides
   }
@@ -191,9 +227,9 @@ export function createRenderFunctions(
   return finalLayout.frames.map(frameType => {
     const renderer = finalLayout.renderers[frameType];
     if (!renderer) {
-      console.warn(`No renderer found for frame type: ${frameType}, using word frame`);
-      // Fallback to word frame for simplified layout
-      return (canvas: Canvas) => finalLayout.renderers.word || finalLayout.renderers.hook(canvas, job, theme);
+      // Fallback is generally safe here as long as the content has a hook
+      console.warn(`No renderer found for frame type: ${frameType} in ${finalLayoutType} layout. Falling back to Hook.`);
+      return (canvas: Canvas) => finalLayout.renderers.hook(canvas, job, theme);
     }
     return (canvas: Canvas) => renderer(canvas, job, theme);
   });

@@ -6,7 +6,7 @@ import { getAccountConfig } from '@/lib/accounts';
 import { generatePrompt, type JobConfig } from './promptGenerator';
 import { parseAndValidateResponse, generateContentHash } from './contentValidator';
 import { generateVariationMarkers } from '../shared/utils';
-import { LayoutType } from '@/lib/visuals/layouts/layoutSelector';
+import { LayoutType, getLayout } from '@/lib/visuals/layouts/layoutSelector'; // <-- FIX 1: Import getLayout
 import { analyticsInsightsService as analyticsService } from '../../analytics/insightsService';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -94,7 +94,7 @@ function getLayoutDistributionForPersona(persona: string): LayoutWeight[] {
   // English vocabulary - balanced format distribution matching prompt router
   if (persona === 'english_vocab_builder') {
     return [
-      { layout: 'mcq', weight: 60 },           // 60% MCQ (best engagement)
+      { layout: 'mcq', weight: 40 },           // 60% MCQ (best engagement)
       { layout: 'simplified_word', weight: 20 }, // 20% vocabulary format
       { layout: 'quick_fix', weight: 10 },      // 10% quick fixes
       { layout: 'usage_demo', weight: 10 }      // 10% usage examples
@@ -106,7 +106,6 @@ function getLayoutDistributionForPersona(persona: string): LayoutWeight[] {
     return [
       { layout: 'mcq', weight: 60 },           // 60% MCQ
       { layout: 'quick_tip', weight: 25 },     // 25% tips (proven format)
-      { layout: 'challenge', weight: 15 }      // 15% challenges
     ];
   }
 
@@ -117,7 +116,6 @@ function getLayoutDistributionForPersona(persona: string): LayoutWeight[] {
       { layout: 'quick_tip', weight: 15 },      // 15% study tips
       { layout: 'common_mistake', weight: 15 },  // 15% common mistakes
       { layout: 'usage_demo', weight: 10 },      // 10% usage demos
-      { layout: 'challenge', weight: 10 }       // 10% challenges
     ];
   }
 
@@ -328,8 +326,9 @@ export async function generateAndStoreContent(
     const personaData = MasterPersonas[jobConfig.persona];
     const topicData = personaData?.subCategories?.find(sub => sub.key === topicKey);
 
-    // Frame sequence will be determined by layout detection in frameService
-    const frameSequence: any[] = [];
+    // FIX 2: Explicitly set the frame sequence based on the selected layout
+    const layoutDefinition = getLayout(selectedLayout);
+    const frameSequence = layoutDefinition.frames; 
 
     const jobPayload = {
       persona: jobConfig.persona,
@@ -345,7 +344,7 @@ export async function generateAndStoreContent(
 
       // Layout tracking fields
       format_type: selectedLayout, // Keep for compatibility
-      frame_sequence: frameSequence,
+      frame_sequence: frameSequence, // <-- NOW CORRECTLY SET
       layout_metadata: {
         layoutType: selectedLayout,
         detectedAtGeneration: true,
@@ -369,7 +368,8 @@ export async function generateAndStoreContent(
       account_id: jobPayload.account_id,
       topic: jobPayload.topic,
       status: jobPayload.status,
-      step: jobPayload.step
+      step: jobPayload.step,
+      frame_sequence: jobPayload.frame_sequence // Logging to confirm the fix
     });
 
     const jobId = await createQuizJob(jobPayload);

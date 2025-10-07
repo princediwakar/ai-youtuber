@@ -15,68 +15,6 @@ const LENGTH_LIMITS = {
   CTA: 80  // Increased from 35 to allow for more powerful, engaging CTAs
 } as const;
 
-/**
- * Truncates text to specified length with ellipsis if needed
- */
-// function truncateText(text: string, maxLength: number): string {
-//   if (!text || text.length <= maxLength) return text;
-//   return text.substring(0, maxLength - 3) + '...';
-// }
-
-/**
- * Enforces length limits on content with smart truncation
- */
-// function enforceLengthLimits(data: any): void {
-//   // Truncate hook
-//   if (data.hook) {
-//     const originalLength = data.hook.length;
-//     data.hook = truncateText(data.hook, LENGTH_LIMITS.HOOK);
-//     if (data.hook.length < originalLength) {
-//       console.warn(`Hook truncated from ${originalLength} to ${data.hook.length} chars`);
-//     }
-//   }
-  
-//   // Truncate question/content
-//   if (data.question) {
-//     const originalLength = data.question.length;
-//     data.question = truncateText(data.question, LENGTH_LIMITS.QUESTION);
-//     if (data.question.length < originalLength) {
-//       console.warn(`Question truncated from ${originalLength} to ${data.question.length} chars`);
-//     }
-//   }
-  
-//   // Truncate options
-//   if (data.options && typeof data.options === 'object') {
-//     Object.keys(data.options).forEach(key => {
-//       if (typeof data.options[key] === 'string') {
-//         const originalLength = data.options[key].length;
-//         data.options[key] = truncateText(data.options[key], LENGTH_LIMITS.OPTION);
-//         if (data.options[key].length < originalLength) {
-//           console.warn(`Option ${key} truncated from ${originalLength} to ${data.options[key].length} chars`);
-//         }
-//       }
-//     });
-//   }
-  
-//   // Truncate explanation
-//   if (data.explanation) {
-//     const originalLength = data.explanation.length;
-//     data.explanation = truncateText(data.explanation, LENGTH_LIMITS.EXPLANATION);
-//     if (data.explanation.length < originalLength) {
-//       console.warn(`Explanation truncated from ${originalLength} to ${data.explanation.length} chars`);
-//     }
-//   }
-  
-//   // Truncate CTA
-//   if (data.cta) {
-//     const originalLength = data.cta.length;
-//     data.cta = truncateText(data.cta, LENGTH_LIMITS.CTA);
-//     if (data.cta.length < originalLength) {
-//       console.warn(`CTA truncated from ${originalLength} to ${data.cta.length} chars`);
-//     }
-//   }
-// }
-
 export interface ValidationResult {
   success: boolean;
   data?: ContentData;
@@ -132,8 +70,7 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
   // Format-specific validation for health content
   if (format === 'quick_tip') {
     return validateQuickTipFormat(data);
-  } else if (format === 'challenge') {
-    return validateChallengeFormat(data);
+  
   }
 
   // Default MCQ validation for health content
@@ -196,14 +133,28 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
  */
 function validateSSCContent(data: any, format?: string): ValidationResult {
   // Format-specific validation for SSC content
-  if (format === 'challenge') {
-    return validateSSCChallengeFormat(data);
-  } else if (format === 'common_mistake') {
+  
+   if (format === 'common_mistake') {
     return validateSSCCommonMistakeFormat(data);
   } else if (format === 'usage_demo') {
     return validateSSCUsageDemoFormat(data);
   } else if (format === 'quick_tip') {
-    return validateSSCQuickTipFormat(data);
+    // Use the specific validator
+    const result = validateSSCQuickTipFormat(data);
+    if (!result.success) return result;
+    
+    // FIX: Map SSC-specific fields to generic QuickTip fields for compatibility with the generic renderer
+    data.action = data.traditional_approach;
+    data.result = data.smart_shortcut;
+    
+    // Ensure CTA is explicitly present for the generic quick_tip layout, as it's now a required frame.
+    if (!data.cta) {
+        // This should not happen if validateSSCQuickTipFormat passed, but serves as a final check
+        return { success: false, error: 'SSC Quick Tip format mapping failed: missing CTA' };
+    }
+    
+    return { success: true, data };
+    
   }
 
   // Default MCQ validation for SSC content
@@ -336,8 +287,7 @@ function validateEnglishContent(data: any, format?: string): ValidationResult {
     return validateQuickFixFormat(data);
   } else if (format === 'usage_demo') {
     return validateUsageDemoFormat(data);
-  } else if (format === 'challenge') {
-    return validateChallengeFormat(data);
+  
   } else if (format === 'simplified_word' || data.format_type === 'simplified_word') {
     return validateSimplifiedWordFormat(data);
   }
@@ -516,58 +466,6 @@ function validateQuickTipFormat(data: any): ValidationResult {
 }
 
 
-/**
- * Validates Challenge format structure (for health)
- */
-function validateChallengeFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'setup', 'instructions', 'challenge_type', 'reveal', 'answer', 'cta'];
-  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
-  
-  if (missingFields.length > 0) {
-    return {
-      success: false,
-      error: `Challenge format missing required fields: ${missingFields.join(', ')}`
-    };
-  }
-
-  // Validate challenge_type is one of expected values
-  const validChallengeTypes = ['memory', 'visual', 'logic'];
-  if (!validChallengeTypes.includes(data.challenge_type)) {
-    return {
-      success: false,
-      error: `Challenge format challenge_type must be one of: ${validChallengeTypes.join(', ')}`
-    };
-  }
-
-  // For memory challenges, validate challenge_items array exists
-  if (data.challenge_type === 'memory' && (!data.challenge_items || !Array.isArray(data.challenge_items))) {
-    return {
-      success: false,
-      error: 'Memory challenge format requires challenge_items array'
-    };
-  }
-
-  return { success: true, data };
-}
-
-// SSC-specific format validation functions
-
-/**
- * Validates SSC Challenge format structure
- */
-function validateSSCChallengeFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'challenge_question', 'time_limit', 'correct_answer', 'confidence_message', 'learning_tip', 'cta'];
-  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
-  
-  if (missingFields.length > 0) {
-    return {
-      success: false,
-      error: `SSC Challenge format missing required fields: ${missingFields.join(', ')}`
-    };
-  }
-
-  return { success: true, data };
-}
 
 /**
  * Validates SSC Common Mistake format structure
@@ -607,6 +505,7 @@ function validateSSCUsageDemoFormat(data: any): ValidationResult {
  * Validates SSC Quick Tip format structure
  */
 function validateSSCQuickTipFormat(data: any): ValidationResult {
+  // FIX: Check for SSC-specific fields
   const requiredFields = ['hook', 'traditional_approach', 'smart_shortcut', 'application_example', 'explanation', 'cta'];
   const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
   
@@ -688,10 +587,10 @@ export function generateContentHash(content: ContentData): string {
   const contentString = JSON.stringify({
     // Primary content identifiers - prioritize the main word/concept
     main: content.question || content.hook || content.target_word || content.target_concept || 
-          content.challenge_question || content.traditional_approach || content.content,
+           content.traditional_approach || content.content,
     answer: content.answer || content.correct || content.advanced_word || content.smart_shortcut || 
-            content.correct_answer || content.result,
-    content_type: content.question_type || content.content_type || content.challenge_type || 'format_based',
+             content.result,
+    content_type: content.question_type || content.content_type || 'format_based',
     // For simplified word format, include definition to ensure uniqueness
     definition: content.definition,
     // Include usage to catch similar words with different examples

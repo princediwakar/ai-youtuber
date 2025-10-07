@@ -149,41 +149,40 @@ export function generateSimplifiedSSCPrompt(config: PromptConfig): string {
   const audienceContext = timingContext?.audience || primaryAudience;
   
   if (topicData) {
-    return `You are an expert SSC coaching instructor creating addictive exam preparation content for YouTube Shorts.
+    return `You are an **EXPERT SSC TOPPER COACH** creating addictive, high-value exam preparation content for YouTube Shorts. Your goal is to maximize study speed and confidence.
 
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential SSC exam concepts for government job preparation'}
 
 ${timingPrefix} STRATEGY:
-• HOOK: Create competitive achievement hooks - under 25 chars, topper-focused + success differentiation
-• PSYCHOLOGY: Use achievement motivation + social proof (what successful candidates know vs failed candidates)
-• SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'real SSC exam patterns and previous year questions'}
-• ENGAGEMENT: ${guidelines?.engagement || 'Create immediate exam advantage for serious aspirants'}
+• HOOK: Create **HIGH-STAKES, COMPETITIVE** hooks (under 25 chars). Use words like 'Topper', 'Guarantee', 'Marks'.
+• PSYCHOLOGY: Use **ACHIEVEMENT MOTIVATION** + contrast "successful candidates" vs "average aspirants."
+• SCENARIOS: Focus on **real SSC exam patterns** in ${guidelines?.scenarios?.join(', ')}
+• ENGAGEMENT: **DEMAND IMMEDIATE ACTION** related to exam success. ${guidelines?.engagement || 'Create immediate exam advantage for serious aspirants'}
 • PATTERN: "Toppers know this" + success differentiation + strategic advantage
-• TIMING: Perfect for ${timingContext?.timeOfDay || 'daily'} study sessions
+• TIMING: Optimize for quick, valuable ${timingContext?.timeOfDay || 'daily'} study sessions.
 
-Generate exam content that targets ${audienceContext} preparing for government jobs:
+Generate exam content that targets ${audienceContext} who want to **CRACK government jobs**:
 
 CONTENT APPROACH:
-• Present concepts that appear frequently in SSC exams
-• Include practical application in government job context  
-• Create "This could be in my exam" moments that boost preparation focus
-• Lead with confidence-building ("Master this and crack SSC!")
+• Present concepts that appear **FREQUENTLY** in SSC exams.
+• Include practical application in **high-stakes exam context**.
+• Create "This could be in my exam" moments that boost preparation focus.
+• Lead with **unshakeable confidence** ("Master this and crack SSC!").
 
 FACT SELECTION CRITERIA:
-• PRECISION: Choose facts that directly address the topic focus: "${guidelines?.focus}"
-• RELEVANCE: Focus on information that ${audienceContext} encounter in actual exams
-• DIFFICULTY: Important enough to be tested but achievable for motivated aspirants
-• IMPACT: Provide knowledge that immediately improves exam performance
-• SCENARIOS: Perfect for ${guidelines?.scenarios?.join(', ') || 'SSC exam contexts'}
+• PRECISION: Choose facts that directly address the topic focus: **EXAM-READY CONTENT ONLY**.
+• RELEVANCE: Focus on information that **separates high scorers from the rest**.
+• DIFFICULTY: Important enough to be tested but easy to memorize with your tip.
+• IMPACT: Provide knowledge that immediately **IMPROVES EXAM SCORE**.
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
-  "fact_title": "powerful_fact_concept_exam_focused_title",
+  "fact_title": "powerful_fact_concept_exam_focused_title_under_60_chars",
   "key_info": "core_information_exam_relevant_format_under_60_chars", 
   "category": "subject_category_SSC_syllabus_History_Geography_Polity_Science",
   "definition": "clear_explanation_exam_context_under_100_chars",
   "usage": "how_this_appears_in_SSC_exams_application_context_under_120_chars",
-  "format_type": "mcq"
+  "format_type": "simplified_ssc" // FIX: Renamed format_type to be distinct from generic MCQ
 }
 
 IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
@@ -211,7 +210,7 @@ OUTPUT FORMAT:
 • "category": Subject category from SSC syllabus
 • "definition": Clear, exam-focused explanation
 • "usage": SSC exam context example
-• "format_type": "mcq"
+• "format_type": "simplified_ssc" // FIX: Renamed format_type to be distinct from generic MCQ
 
 Make aspirants feel accomplished and ready to tackle their government job exam. [${timeMarker}-${tokenMarker}]`;
   }
@@ -233,38 +232,38 @@ export async function generateSSCCurrentAffairsPrompt(config: PromptConfig): Pro
   const contextSection = dynamicContext ? `\n\nRECENT DEVELOPMENTS:\n${dynamicContext}\n` : '';
 
   if (topicData) {
-    return `You are an expert SSC coaching instructor creating viral current affairs content for YouTube Shorts.
+    return `You are an **SSC CURRENT AFFAIRS GURU** creating hyper-relevant, viral updates for YouTube Shorts. Your focus is 100% on what will appear in the next exam.
 
-TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Latest 2025 current affairs for SSC exam preparation'}${contextSection}
+TOPIC: "${topicData.displayName}" - **GUARANTEED** ${guidelines?.focus || 'Latest 2025 current affairs for SSC exam preparation'}${contextSection}
 
 EXAM STRATEGY:
-• HOOK: Create competitive achievement hooks like motivating exam hooks - under 25 chars, topper-focused + success differentiation  
-• PSYCHOLOGY: Use achievement motivation + social proof (what successful candidates know vs what failed candidates miss)
-• SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'recent government appointments, new schemes, major policy updates'}
-• ENGAGEMENT: ${guidelines?.engagement || 'Create immediate current affairs advantage for exam success'}
-• PATTERN: "Successful aspirants know this" + exam relevance + strategic update
+• HOOK: Create competitive achievement hooks (15-25 chars). Use **URGENT** words: 'Alert!', 'Must Watch!', 'Final Chance!'.
+• PSYCHOLOGY: Use **FOMO** (Fear of Missing Out) on crucial exam marks. Contrast "successful candidates" vs "those who fail to update."
+• SCENARIOS: Focus on **latest government appointments, new schemes, major policy updates**.
+• ENGAGEMENT: **DEMAND** immediate attention and sharing. ${guidelines?.engagement || 'Create immediate current affairs advantage for exam success'}
+• PATTERN: "Successful aspirants know this" + exam relevance + **STRATEGIC UPDATE**
 
 Generate a current affairs question that targets ${primaryAudience} preparing for SSC exams:
 
 CONTENT APPROACH:
-• Focus on 2025 developments and recent government updates
-• Include practical context from real news and government announcements
-• Create "This will definitely be in my exam" moments based on recent events
+• Focus on **recent, high-weightage developments** from 2025.
+• Include practical context from **real government sources**.
+• Create **HIGH-CONFIDENCE** moments ("This will definitely be in my exam").
 
 QUESTION CRAFTING:
-• CURRENT: Based on recent developments from 2025 (last 3 months)
-• RELEVANT: Focus on topics frequently asked in SSC current affairs sections
-• FACTUAL: Use accurate information from government sources and reliable news
-• EXAM-FOCUSED: Frame questions in typical SSC current affairs pattern
-• IMPACT: Provide knowledge that gives immediate exam advantage
+• CURRENT: Based on recent developments (last 3 months)
+• RELEVANT: Focus on topics **frequently asked** in SSC current affairs sections.
+• FACTUAL: Use **accurate, verified** information.
+• EXAM-FOCUSED: Frame questions in typical **SSC difficulty and pattern**.
+• IMPACT: Provide knowledge that gives **immediate exam advantage and saves study time**.
 
 MANDATORY OUTPUT:
-• "hook": Generate contextual hook based on the specific current affairs topic (15-25 chars, reference actual event/update/policy). Examples: "Budget 2025 update! 📊", "New policy alert! 🚨", "Current affairs! 📰"
-• "question": Current affairs question based on recent 2025 developments (NO hook text in question)
-• "options": Object with "A", "B", "C", "D" - one correct answer based on facts, three plausible distractors
+• "hook": Generate contextual hook based on the specific SSC topic being tested (15-25 chars, reference actual subject/strategy/fact). Examples: "SSC History trick! 📚", "Geography hack! 🌍", "Math shortcut! ⚡"
+• "question": Clear, exam-style question that tests real SSC concepts (NO hook text in question)
+• "options": Object with "A", "B", "C", "D" - one correct answer, three smart distractors based on common exam errors
 • "answer": Single letter "A", "B", "C", or "D"
-• "explanation": Why this answer is correct + current affairs relevance (under 120 characters)
-• "cta": Use engaging current affairs CTA (under 80 chars - make it compelling and action-oriented)
+• "explanation": **The ultimate exam logic.** Why this answer is correct + **strategic exam relevance tip** (under 120 characters)
+• "cta": Use engaging, **HIGH-URGENCY** CTA (under 80 chars - e.g., "Follow now or miss your next 5 marks!").
 • "content_type": "multiple_choice"
 
 Create current affairs content that makes aspirants confident about 2025 updates. [${timeMarker}-${tokenMarker}]`;
@@ -278,8 +277,8 @@ REQUIREMENTS:
 • EXAM-RELEVANT: Present topics frequently tested in SSC current affairs
 • FACTUAL: Use accurate information from reliable government and news sources
 • ENGAGING: Create immediate "current affairs upgrade" value for aspirants
-• EXPLANATION: Provide current affairs insight that improves exam readiness (under 120 characters)
-• CTA: Use engaging current affairs CTA (under 80 chars - make it compelling and action-oriented)
+• EXPLANATION: Provide insight that improves exam performance (under 120 characters)
+• CTA: Use engaging SSC exam CTA (under 80 chars - make it compelling and action-oriented)
 
 Make aspirants feel updated and ready for their SSC current affairs section. [${timeMarker}-${tokenMarker}]`;
   }
@@ -297,38 +296,38 @@ export function generateSSCMCQPrompt(config: PromptConfig): string {
   const primaryAudience = 'SSC exam aspirants';
 
   if (topicData) {
-    return `You are an expert SSC coaching instructor creating viral exam preparation content for YouTube Shorts.
+    return `You are an **SSC TOPPER STRATEGIST** creating viral exam preparation content for YouTube Shorts. You specialize in giving candidates a competitive edge.
 
-TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential SSC exam concepts for government job preparation'}
+TOPIC: "${topicData.displayName}" - **MASTER** ${guidelines?.focus || 'Essential SSC exam concepts for government job preparation'}
 
 EXAM STRATEGY:
-• HOOK: Create competitive achievement hooks like motivating exam hooks - under 25 chars, topper-focused + success differentiation
-• PSYCHOLOGY: Use achievement motivation + social proof (what successful candidates do vs failed candidates)
-• SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'real SSC exam patterns and previous year questions'}
-• ENGAGEMENT: ${guidelines?.engagement || 'Create immediate exam advantage for serious aspirants'}
-• PATTERN: "Toppers know this" + success differentiation + strategic advantage
+• HOOK: Create competitive achievement hooks (15-25 chars). **Focus on Marks and Speed.**
+• PSYCHOLOGY: Use **ACHIEVEMENT MOTIVATION** + contrast "successful candidates" vs "average aspirants."
+• SCENARIOS: Focus on **HIGH-PROBABILITY** topics from ${guidelines?.scenarios?.join(', ')}
+• ENGAGEMENT: **DEMAND** immediate attention and memorization. ${guidelines?.engagement || 'Create immediate exam advantage for serious aspirants'}
+• PATTERN: "**Toppers know this shortcut**" + success differentiation + strategic advantage
 
 Generate a question that targets ${primaryAudience} preparing for government jobs:
 
 CONTENT APPROACH:
-• Present concepts that appear frequently in SSC exams
-• Include practical application in government job context
-• Create "This could be in my exam" moments that boost preparation focus
+• Present concepts that appear **FREQUENTLY** in SSC exams.
+• Include practical application in **high-pressure exam contexts**.
+• Create "This could be in my exam" moments that boost preparation focus.
 
 QUESTION CRAFTING:
-• PRECISION: Direct, exam-style questions matching SSC pattern
-• RELEVANCE: Focus on topics with high probability in actual exams
-• DIFFICULTY: Challenging enough to teach but achievable for motivated aspirants
-• DISTRACTORS: Include common exam mistakes, close alternatives, and typical confusions
-• IMPACT: Provide knowledge that immediately improves exam performance
+• PRECISION: Direct, exam-style questions matching **exact SSC patterns**.
+• RELEVANCE: Focus on topics with **highest probability** in actual exams.
+• DIFFICULTY: Challenging enough to teach, but the explanation must be a **game-changer**.
+• DISTRACTORS: Include common exam mistakes, **plausible but incorrect** alternatives.
+• IMPACT: Provide knowledge that immediately **IMPROVES EXAM PERFORMANCE AND SPEED**.
 
 MANDATORY OUTPUT:
 • "hook": Generate contextual hook based on the specific SSC topic being tested (15-25 chars, reference actual subject/strategy/fact). Examples: "SSC History trick! 📚", "Geography hack! 🌍", "Math shortcut! ⚡"
 • "question": Clear, exam-style question that tests real SSC concepts (NO hook text in question)
-• "options": Object with "A", "B", "C", "D" - one correct answer, three smart distractors based on common exam errors
+• "options": Object with "A", "B", "C", "D" - one correct answer, three **EXAM-PLAUISIBLE** distractors
 • "answer": Single letter "A", "B", "C", or "D"
-• "explanation": Why this answer is correct + exam relevance tip (under 120 characters)
-• "cta": Use engaging exam preparation CTA (under 80 chars - make it compelling and action-oriented)
+• "explanation": **The secret exam logic.** Why this answer is correct + strategic exam relevance tip (under 120 characters)
+• "cta": Use engaging exam preparation CTA (under 80 chars - e.g., "Follow for instant mark-boosting tricks!").
 • "content_type": "multiple_choice"
 
 Create exam content that makes aspirants feel more confident and prepared for success. [${timeMarker}-${tokenMarker}]`;
@@ -356,23 +355,25 @@ export function generateSSCCommonMistakePrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
 
-  return `You are an expert SSC coaching instructor creating viral "Common Mistake" content for YouTube Shorts.
+  return `You are an **SSC MISTAKE AVOIDANCE EXPERT** creating viral "Common Mistake" content for YouTube Shorts. Focus on errors that **cost candidates marks and time**.
 
-TOPIC: "${topicData.displayName}" - Focus on mistakes that 99% of aspirants make
+TOPIC: "${topicData.displayName}" - Focus on mistakes that **99% of aspirants make under exam pressure**.
 
-FORMAT: Common Mistake (4 frames)
-Frame 1 (Hook): "Stop answering this question wrong!"
-Frame 2 (Mistake): "99% choose: [incorrect option/approach]"
-Frame 3 (Correct): "SSC toppers know: [correct answer/approach]"
-Frame 4 (Practice): "Try it now! Apply this strategy..."
+FORMAT: Common Mistake (5 frames - for full video flow)
+Frame 1 (Hook): "🚨 **STOP LOSING MARKS** on this question!"
+Frame 2 (Mistake): "99% choose: [incorrect option/approach] (The Costly Error)"
+Frame 3 (Correct): "**SSC TOPPERS KNOW:** [correct answer/approach] (The Winning Strategy)"
+Frame 4 (Practice): "**Instant Exam Fix:** Apply this strategy to..."
+Frame 5 (CTA/Explanation): "Why this works/Follow"
 
 CONTENT REQUIREMENTS:
-• HOOK: Create urgency about a common exam error most aspirants make
-• MISTAKE: Show the wrong approach that seems logical but isn't correct
-• CORRECT: Provide the expert strategy that toppers use
-• PRACTICE: Give immediate practice opportunity
+• HOOK: Create **MAXIMUM URGENCY** about a common exam error.
+• MISTAKE: Show the wrong approach that seems logical but **FAILS UNDER EXAM CONDITIONS**.
+• CORRECT: Provide the **expert, high-speed strategy** that toppers use.
+• PRACTICE: Give **immediate practice opportunity** to solidify the correct habit.
+• EXPLANATION: Explain the logic/relevance (under 100 chars).
 
-TARGET: SSC aspirants who want to avoid common exam pitfalls
+TARGET: SSC aspirants who want to **avoid common exam pitfalls and secure their score**.
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -387,12 +388,9 @@ RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 
 IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
-Create content that makes aspirants feel embarrassed about their mistake but excited to fix it. [${timeMarker}-${tokenMarker}]`;
+Create content that makes aspirants feel embarrassed about their mistake but **excited to fix it and gain a competitive edge**. [${timeMarker}-${tokenMarker}]`;
 }
 
-/**
- * Generates Quick Tip format prompt (SSC)
- */
 /**
  * Generates Quick Tip format prompt (SSC)
  */
@@ -400,24 +398,25 @@ export function generateSSCQuickTipPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
 
-  return `You are an SSC exam expert creating viral "Quick Tip" content for YouTube Shorts. Your sole focus is on strategies for the Indian SSC (Staff Selection Commission) government exams.
+  return `You are an **SSC SPEED HACKER** creating viral "Quick Tip" content for YouTube Shorts. Your focus is on **strategic time-saving** techniques for the Indian SSC exams.
 
-TOPIC: "${topicData.displayName}" - Instant exam performance upgrades
+TOPIC: "${topicData.displayName}" - **INSTANT** exam performance upgrades and time hacks.
 
-FORMAT: Quick Tip (3 frames)
-Frame 1 (Hook): "Crack SSC faster with this trick"
+FORMAT: Quick Tip (4 frames - Hook, Traditional, Shortcut, CTA)
+Frame 1 (Hook): "CRACK SSC 2X FASTER with this trick!"
 Frame 2 (Before): "Traditional Approach: [Time-consuming method]"
 Frame 3 (After): "Smart Shortcut: [Faster, more effective method]"
+Frame 4 (CTA): "Follow for more..."
 
 CONTENT REQUIREMENTS:
-• The tip MUST be a concrete study or problem-solving shortcut for the given SSC topic.
-• ABSOLUTELY NO health, wellness, exercise, or generic "brain-boosting" advice.
-• HOOK: Promise an immediate exam advantage.
-• TRADITIONAL_APPROACH: Describe a time-consuming method most aspirants use for the specific SSC topic.
-• SMART_SHORTCUT: Provide an efficient, alternative strategy that saves time and improves accuracy.
-• APPLICATION_EXAMPLE: Show how to apply the shortcut in a specific SSC exam context.
+• The tip MUST be a **concrete, repeatable study or problem-solving shortcut** for the given SSC topic.
+• HOOK: Promise a **massive advantage in speed and marks**.
+• TRADITIONAL_APPROACH: Describe the time-consuming method most aspirants use.
+• SMART_SHORTCUT: Provide an **efficient, alternative strategy that saves time and improves accuracy**.
+• APPLICATION_EXAMPLE: Show exactly how to apply the shortcut in an SSC context.
+• EXPLANATION: Explain the **psychological/logical reason** the shortcut works (e.g., "Your brain prefers patterns...").
 
-TARGET: SSC aspirants who want to study smarter, not harder.
+TARGET: SSC aspirants who want to **study smarter, save time, and score higher**.
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -442,23 +441,23 @@ export function generateSSCUsageDemoPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
 
-  return `You are an SSC exam strategy expert creating viral "Usage Demo" content for YouTube Shorts.
+  return `You are an **SSC STRATEGY ARCHITECT** creating viral "Usage Demo" content for YouTube Shorts. You focus on applying concepts precisely under exam pressure.
 
-TOPIC: "${topicData.displayName}" - Strategic concept application
+TOPIC: "${topicData.displayName}" - Strategic concept application in the exam hall.
 
 FORMAT: Usage Demo (4 frames)
-Frame 1 (Hook): "When to use this SSC strategy"
-Frame 2 (Wrong): "Don't use it here: [wrong scenario]"
-Frame 3 (Right): "Perfect for: [correct scenario]"
-Frame 4 (Practice): "Your turn to identify!"
+Frame 1 (Hook): "When to use this **High-Value** SSC strategy"
+Frame 2 (Wrong): "❌ **COULD COST MARKS:** Don't use it here: [wrong scenario]"
+Frame 3 (Right): "✅ **SECURE YOUR MARKS:** Perfect for: [correct scenario]"
+Frame 4 (Practice): "**Identify the Trap:** Your turn to identify the scenario!"
 
 CONTENT REQUIREMENTS:
-• HOOK: Promise to show strategic application of an SSC concept
-• WRONG: Common misapplication that seems plausible but is incorrect
-• RIGHT: Perfect strategic usage that ensures exam success
-• PRACTICE: Interactive challenge for viewer engagement
+• HOOK: Promise to show **strategic application of an SSC concept** that determines success.
+• WRONG: Common misapplication that seems plausible but is **EXAM-FATAL**.
+• RIGHT: Perfect strategic usage that **ENSURES EXAM SUCCESS**.
+• PRACTICE: Interactive challenge for viewer engagement focused on **identifying the right context**.
 
-TARGET: Advanced SSC aspirants who want strategic precision
+TARGET: Advanced SSC aspirants who want **strategic precision and zero mistakes**.
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -479,45 +478,3 @@ IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no a
 
 Create content that makes aspirants confident about strategic concept application. [${timeMarker}-${tokenMarker}]`;
 }
-
-/**
- * Generates Challenge format prompt (SSC)
- */
-export function generateSSCChallengePrompt(config: PromptConfig): string {
-  const { topicData, markers } = config;
-  const { timeMarker, tokenMarker } = markers;
-
-  return `You are an SSC exam challenge creator making viral "Challenge" content for YouTube Shorts.
-
-TOPIC: "${topicData.displayName}" - Test your SSC preparation level
-
-FORMAT: Challenge (3 frames)
-Frame 1 (Hook): "Only SSC toppers can solve this"
-Frame 2 (Challenge): "Can you crack this in 30 seconds?"
-Frame 3 (Answer): "If you got it, you're ready!"
-
-CONTENT REQUIREMENTS:
-• HOOK: Create urgency and challenge the viewer's preparation level
-• CHALLENGE: Present a moderately difficult question that tests real understanding
-• ANSWER: Provide solution with brief explanation and confidence boost
-• Include timer pressure typical of SSC exams
-
-TARGET: SSC aspirants who want to test their preparation level
-
-RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
-{
-  "hook": "challenge_opener_that_tests_preparation_under_60_chars",
-  "challenge_question": "moderately_difficult_test_question",
-  "time_limit": "suggested_time_limit_eg_30_seconds",
-  "correct_answer": "right_answer_with_brief_explanation",
-  "confidence_message": "success_message_for_those_who_got_it_right_under_80_chars",
-  "learning_tip": "quick_tip_for_those_who_got_it_wrong_under_100_chars",
-  "cta": "engaging_SSC_exam_daily_testing_CTA_under_80_chars",
-  "format_type": "challenge"
-}
-
-IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
-
-Create content that makes aspirants excited to test and improve their preparation. [${timeMarker}-${tokenMarker}]`;
-}
-

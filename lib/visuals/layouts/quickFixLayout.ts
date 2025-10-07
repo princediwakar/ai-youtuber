@@ -87,14 +87,17 @@ export function renderBasicWordFrame(canvas: Canvas, job: QuizJob, theme: Theme)
     const cardWidth = canvas.width - (CONTENT_PADDING * 2);
     const cardX = CONTENT_PADDING;
 
+    // FIX: Use a neutral or light color for the 'Before' card
+    const basicColor = theme.header.background || theme.page.background; 
+
     applyShadow(ctx, theme.button.shadow, 20, 0, 10);
-    applyFillStyle(ctx, theme.header.background, {x: cardX, y: cardY, w: cardWidth, h: cardHeight});
+    applyFillStyle(ctx, basicColor, {x: cardX, y: cardY, w: cardWidth, h: cardHeight});
     drawRoundRect(ctx, cardX, cardY, cardWidth, cardHeight, 30);
     clearShadow(ctx);
 
     const innerPadding = 40;
 
-    // UPDATE: Title is now drawn INSIDE the card
+    // Title is drawn INSIDE the card. Use primary text color.
     drawFrameTitle(ctx, "Instead of Saying...", cardY + innerPadding, canvas.width, theme);
     
     const contentY = cardY + innerPadding + 70;
@@ -136,17 +139,19 @@ export function renderAdvancedWordFrame(canvas: Canvas, job: QuizJob, theme: The
     const cardX = CONTENT_PADDING;
 
     applyShadow(ctx, 'rgba(0,0,0,0.2)', 20, 0, 10);
+    // Use the theme's main accent color (button) for the 'After' card
     applyFillStyle(ctx, theme.button.background, {x: cardX, y: cardY, w: cardWidth, h: cardHeight});
     drawRoundRect(ctx, cardX, cardY, cardWidth, cardHeight, 30);
     clearShadow(ctx);
     
     const innerPadding = 40;
 
-    // UPDATE: Title is now drawn INSIDE the card
+    // Title is drawn INSIDE the card. Use onAccent color.
     drawFrameTitle(ctx, 'Try Saying This!', cardY + innerPadding, canvas.width, theme, true);
     
     const contentY = cardY + innerPadding + 70;
     const textMaxWidth = cardWidth - (innerPadding * 2);
+    // Estimate space for the word based on whether an example exists
     const mainWordHeight = cardHeight - (contentY - cardY) - innerPadding - (usageExample ? 120 : 0);
 
     const measurement = measureQuestionContent(
@@ -156,7 +161,7 @@ export function renderAdvancedWordFrame(canvas: Canvas, job: QuizJob, theme: The
     const wordUnusedSpace = Math.max(0, mainWordHeight - measurement.height);
     const wordStartY = contentY + (wordUnusedSpace / 2);
     
-    ctx.fillStyle = theme.button.text;
+    ctx.fillStyle = theme.button.text; // Use button text color for the main word
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.font = `bold ${measurement.fontSize}px ${theme.fontFamily}`;
@@ -168,9 +173,9 @@ export function renderAdvancedWordFrame(canvas: Canvas, job: QuizJob, theme: The
 
     if (usageExample) {
         const exampleY = contentY + mainWordHeight;
-        // UPDATE: Improved legibility for supporting text
-        ctx.font = `500 48px ${theme.fontFamily}`; // Bolder and larger
-        ctx.globalAlpha = 0.9; // Less transparent
+        ctx.fillStyle = theme.button.text; 
+        ctx.font = `500 48px ${theme.fontFamily}`; 
+        ctx.globalAlpha = 0.9; 
         const exampleLines = wrapText(ctx, `e.g., "${usageExample}"`, textMaxWidth);
         exampleLines.forEach((line, index) => {
              ctx.fillText(line, canvas.width / 2, exampleY + (index * 50));
@@ -180,4 +185,3 @@ export function renderAdvancedWordFrame(canvas: Canvas, job: QuizJob, theme: The
 
     drawFooter(ctx, canvas.width, canvas.height, theme, job);
 }
-

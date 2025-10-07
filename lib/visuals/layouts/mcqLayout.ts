@@ -33,7 +33,8 @@ export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): voi
   
   // Enhanced fallback hook
   if (!hookText) {
-    hookText = 'Quick knowledge boost! Ready?';
+    // Keep this unique fallback for the HOOK
+    hookText = 'Quick knowledge boost! Ready?'; 
   }
   
   // Calculate dynamic layout for hook text
@@ -84,9 +85,10 @@ export function renderOptionsFrame(canvas: Canvas, job: QuizJob, theme: Theme): 
   drawHeader(ctx, canvas.width, theme, job);
 
   // ✨ MODIFIED: Determine the full text for measurement purposes with robust fallbacks
+  // FIX: Provide a distinct fallback for the question text if the primary fields are missing
   const layoutQuestionText = question.question_type === 'assertion_reason'
     ? `Assertion (A): ${question.assertion}\n\nReason (R): ${question.reason}`
-    : (question.question || question.content || question.hook || question.action || "Question content not available");
+    : (question.question || question.content || "Can you ace this challenge? Guess the right word!"); // <-- MODIFIED FALLBACK
   
   // Calculate optimal layout based on the full text
   const measurements = calculateOptimalLayout(
@@ -114,7 +116,7 @@ export function renderOptionsFrame(canvas: Canvas, job: QuizJob, theme: Theme): 
       );
   } else {
       actualQuestionEndY = drawQuestionText(
-          ctx, canvas, (question.question || question.content || question.hook || "Question content"), theme, positions.questionStartY, measurements.questionFontSize
+          ctx, canvas, layoutQuestionText, theme, positions.questionStartY, measurements.questionFontSize
       );
   }
   
@@ -206,9 +208,10 @@ export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme):
   drawHeader(ctx, canvas.width, theme, job);
 
   // ✨ MODIFIED: Determine the full text for measurement purposes with robust fallbacks
+  // FIX: Use the distinct fallback
   const layoutQuestionText = question.question_type === 'assertion_reason'
     ? `Assertion (A): ${question.assertion}\n\nReason (R): ${question.reason}`
-    : (question.question || question.content || question.hook || question.action || "Question content not available");
+    : (question.question || question.content || "Guess the word: Elevate your English now!"); // <-- MODIFIED FALLBACK
   
   // Calculate optimal layout based on the full text
   const measurements = calculateOptimalLayout(
@@ -236,7 +239,7 @@ export function renderQuestionFrame(canvas: Canvas, job: QuizJob, theme: Theme):
       );
   } else {
       actualQuestionEndY = drawQuestionText(
-          ctx, canvas, (question.question || question.content || question.hook || "Question content"), theme, positions.questionStartY, measurements.questionFontSize
+          ctx, canvas, layoutQuestionText, theme, positions.questionStartY, measurements.questionFontSize
       );
   }
   
@@ -258,10 +261,11 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
   drawHeader(ctx, canvas.width, theme, job);
   
   // ✨ MODIFIED: Determine the full text for measurement purposes with robust fallbacks
+  // FIX: Use the distinct fallback
   const layoutQuestionText = question.question_type === 'assertion_reason'
     ? `Assertion (A): ${question.assertion}\n\nReason (R): ${question.reason}`
-    : (question.question || question.content || question.hook || question.action || "Question content not available");
-
+    : (question.question || question.content || "Answer Reveal: Master this vocabulary!"); // <-- MODIFIED FALLBACK
+  
   // Calculate optimal layout (same as question frame)
   const measurements = calculateOptimalLayout(
     ctx, 
@@ -288,7 +292,7 @@ export function renderAnswerFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
       );
   } else {
       actualQuestionEndY = drawQuestionText(
-          ctx, canvas, (question.question || question.content || question.hook || "Question content"), theme, positions.questionStartY, measurements.questionFontSize
+          ctx, canvas, layoutQuestionText, theme, positions.questionStartY, measurements.questionFontSize
       );
   }
   
@@ -367,11 +371,6 @@ function renderOptions(
 ) {
 const { options, answer } = job.data.content;
 
-// Guard against undefined/null options (for non-MCQ formats)
-if (!options || typeof options !== 'object') {
-    console.warn(`Skipping options rendering - no valid options found for job ${job.id}`);
-    return;
-}
 
 const buttonWidth = width * 0.85;
 const buttonX = (width - buttonWidth) / 2;
@@ -404,10 +403,10 @@ Object.entries(options).forEach(([optionKey, optionText]) => {
         fillStyle = 'rgba(128, 128, 128, 0.3)';
     }
 
-    // 3. Apply the gradient/solid color and draw the button
-    const bounds = { x: buttonX, y: optionY, w: buttonWidth, h: dynamicButtonHeight };
-    applyFillStyle(ctx, fillStyle, bounds);
-    drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
+    // // 3. Apply the gradient/solid color and draw the button
+    // const bounds = { x: buttonX, y: optionY, w: buttonWidth, h: dynamicButtonHeight };
+    // applyFillStyle(ctx, fillStyle, bounds);
+    // drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
     
     // 4. Clear shadow before drawing text so the text isn't blurry
     clearShadow(ctx);
@@ -549,4 +548,3 @@ function drawEngagementElements(ctx: CanvasRenderingContext2D, width: number, he
   });
   
 }
-

@@ -5,7 +5,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';
 import { v4 as uuidv4 } from 'uuid';
-import { downloadVideoFromCloudinary, cleanupJobAssets } from '@/lib/cloudinary';
+import { downloadVideoFromCloudinary } from '@/lib/cloudinary';
 import { findManagedPlaylists, getOrCreatePlaylist } from '@/lib/playlistManager';
 import { QuizJob } from '@/lib/types';
 import { config } from '@/lib/config';
@@ -150,23 +150,13 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
     const youtubeVideoId = await uploadToYouTube(tempFile, metadata, youtube, thumbnailUrl);
     console.log(`[Job ${job.id}] YouTube upload (file transfer) completed in ${(Date.now() - uploadStart) / 1000}s.`);
     
-    const playlistAddStart = Date.now();
     await addVideoToPlaylist(youtubeVideoId, playlistId, youtube, job.id);
     console.log(`[Job ${job.id}] Added video to playlist.`);
 
     
-    const dbCleanupStart = Date.now();
     // 1. Mark job complete first
     await markJobCompleted(job.id, youtubeVideoId, metadata);
     
-    // --- CRITICAL ASYNC CHANGE ---
-    // 2. Schedule Cloudinary cleanup to run WITHOUT awaiting the result.
-    // This removes the 7+ seconds of network latency from the response time.
-    cleanupJobAssets(job.data, job.account_id!)
-        .catch(e => console.error(`[Job ${job.id}] ASYNC CLEANUP FAILED:`, e));
-    
-    console.log(`[Job ${job.id}] Final DB/Cleanup scheduled in ${(Date.now() - dbCleanupStart) / 1000}s.`);
-    // --- END CRITICAL ASYNC CHANGE ---
 
 
     const totalProcessDuration = (Date.now() - processStart) / 1000;

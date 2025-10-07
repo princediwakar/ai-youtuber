@@ -49,12 +49,6 @@ export interface Question {
   wrong_scenario?: string;
   right_scenario?: string;
   
-  // SSC Challenge Format
-  challenge_question?: string;
-  time_limit?: string;
-  correct_answer?: string;
-  confidence_message?: string;
-  learning_tip?: string;
   
   // SSC Quick Tip Format
   traditional_approach?: string;
@@ -88,19 +82,7 @@ export interface Question {
   immediate_action?: string;
   next_step?: string;
   
-  // Challenge Format (Health)
-  setup?: string;
-  challenge_type?: string;
-  challenge_items?: string[];
-  items_to_remember?: string[];
-  challenge_content?: string;
-  visual_test?: string;
-  reveal?: string;
-  trick?: string;
-  method?: string;
-  solution?: string;
-  encouragement?: string;
-  next_challenge?: string;
+
 }
 
 // Union type for all content types (now just Question since health content uses the same format)

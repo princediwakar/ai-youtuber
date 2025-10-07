@@ -1,3 +1,4 @@
+// lib/generation/personas/english/prompts.ts
 /**
  * English vocabulary prompt templates
  * All English-specific content generation prompts
@@ -135,37 +136,38 @@ export function generateSimplifiedWordPrompt(config: PromptConfig): string {
   const categoryList = wordCategories[topic] || ['professional vocabulary', 'academic terms', 'advanced expressions'];
   const selectedCategory = categoryList[Math.floor(Math.random() * categoryList.length)];
   
+  // ANALYTICS INTEGRATION: Push for better performing topics if data is available
+  const topTopicHint = analyticsInsights?.topPerformingTopics?.[0]?.topic ? 
+    ` (HINT: Your audience loves content on "${analyticsInsights.topPerformingTopics[0].topic}")` : '';
+
   if (topicData) {
-    return `You are a viral English education expert creating addictive vocabulary content for YouTube Shorts.
+    return `You are a **VIRAL ENGLISH HUSTLER** creating highly addictive, 15-second vocabulary fixes for YouTube Shorts. Your goal is MAX engagement and growth.
 
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential English vocabulary mastery'}
 
 ${timingPrefix} STRATEGY:
-• APPROACH: ${selectedPattern.approach.replace('_', ' ').toUpperCase()} - ${selectedPattern.focus}
-• PSYCHOLOGY: Use social proof (90% statistics) + embarrassment avoidance + high self-efficacy (you can quickly fix this)
-• SCENARIOS: Apply to ${guidelines?.scenarios?.join(', ') || 'professional and academic communication'}
-• ENGAGEMENT: ${selectedPattern.engagement}
-• PATTERN: Social proof statistic + "Are you making this mistake?" + quick confidence fix
-• TIMING: Perfect for ${timingContext?.timeOfDay || 'daily'} learning sessions
-• CATEGORY FOCUS: Prioritize ${selectedCategory} within this topic
+• APPROACH: **HIGH-IMPACT UPGRADE** - ${selectedPattern.focus}
+• PSYCHOLOGY: Leverage social proof (90% statistics) + **FEAR OF SOUNDING DUMB** + guarantee a quick confidence fix.
+• SCENARIOS: Make it immediately relevant to **CAREER ADVANCEMENT** in ${guidelines?.scenarios?.join(', ')}
+• ENGAGEMENT: **DEMAND** action: ${selectedPattern.engagement}
+• PATTERN: Use a **1-LINE, DRAMATIC HOOK** + immediate confidence fix.
+• TIMING: Perfect for **MAX SCROLL-STOPPING** during ${timingContext?.timeOfDay || 'daily'} learning sessions.
+• CATEGORY FOCUS: Prioritize **HIGH-VALUE, LOW-FREQUENCY** words in ${selectedCategory}${topTopicHint}
 
-Generate vocabulary content that targets ${audienceContext} who want to sound more fluent and professional:
+Generate vocabulary content that targets ${audienceContext} who want to **sound fluent, educated, and professional INSTANTLY**:
 
 ENHANCED WORD SELECTION:
-• PRECISION: ${selectedPattern.criteria}
-• RELEVANCE: Focus on vocabulary that ${audienceContext} encounter in real situations
-• DIFFICULTY: Challenging enough to teach but achievable for motivated learners
-• IMPACT: Provide vocabulary that immediately improves communication
-• SCENARIOS: Perfect for ${guidelines?.scenarios?.join(', ') || 'professional contexts'}
-• CATEGORY: Specifically target ${selectedCategory} to add topic depth
-• VARIABILITY: Avoid common/basic words - choose distinctive vocabulary that stands out
+• PRECISION: **Choose a WORD THAT SEPARATES NATIVE FROM NON-NATIVE SPEAKERS.** ${selectedPattern.criteria}
+• RELEVANCE: Focus on vocabulary that is an **IMMEDIATE COMMUNICATIVE POWER UP**.
+• DIFFICULTY: Challenging enough to be a teaching moment, but easy to master in 15 seconds.
+• IMPACT: Provide vocabulary that immediately **IMPRESSES COLLEAGUES/PROFESSORS**.
+• SCENARIOS: Must be usable in a **HIGH-STAKES professional context**.
+• VARIABILITY: Avoid common/basic words - choose **DISTINCTIVE, MEMORABLE, STATUS-ELEVATING** vocabulary.
 
 CONTENT APPROACH VARIATION:
-• Lead with ${selectedPattern.focus.toLowerCase()}
-• Present vocabulary that elevates communication skills
-• Include practical, immediate application opportunities
-• Create "aha!" moments that boost learning motivation
-• Focus on ${selectedCategory} to provide topic-specific value
+• Lead with a statement that makes the viewer feel like they are **LITERALLY UPGRADING THEIR BRAIN**.
+• Create **"AHA!" MOMENTS** that are easy to screenshot and share.
+• Focus on ${selectedCategory} to provide topic-specific value.
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -181,23 +183,24 @@ CRITICAL: Return EXACTLY ONE JSON object as shown above. Do NOT return an array.
 
 [${timeMarker}-${tokenMarker}]`;
   } else {
+    // Fallback prompt (less detailed but still high-impact)
     return `You are an expert English educator creating viral vocabulary content for YouTube Shorts.
 
-ENHANCED GENERATION APPROACH: ${selectedPattern.approach.replace('_', ' ').toUpperCase()}
+ENHANCED GENERATION APPROACH: **VIRAL GROWTH HACK** - ${selectedPattern.approach.replace('_', ' ').toUpperCase()}
 • FOCUS: ${selectedPattern.focus}
-• CRITERIA: ${selectedPattern.criteria}
-• ENGAGEMENT: ${selectedPattern.engagement}
+• CRITERIA: **HIGH-STATUS VOCABULARY**. ${selectedPattern.criteria}
+• ENGAGEMENT: **CREATE A SENSE OF URGENCY**. ${selectedPattern.engagement}
 
-Generate vocabulary content for ${primaryAudience} on "${topic}" that challenges while building confidence.
+Generate vocabulary content for ${primaryAudience} on "${topic}" that delivers a powerful, immediate language upgrade.
 
 ENHANCED REQUIREMENTS:
-• WORD FOCUS: Choose ONE vocabulary word that directly addresses the topic "${topic}" with ${selectedCategory} emphasis (even for synonym topics, choose only one word)
-• PRACTICAL: Focus on words used in professional and academic contexts
-• ENGAGEMENT: Create immediate "vocabulary upgrade" value
-• DEFINITION: Provide clear explanation that elevates communication (under 100 characters)
-• USAGE: Include practical example that shows professional application (under 120 characters)
-• VARIABILITY: Avoid repetitive word choices - select distinctive, memorable vocabulary
-• CATEGORY: Target ${selectedCategory} specifically within this topic area
+• WORD FOCUS: Choose ONE vocabulary word that directly addresses the topic "${topic}" with **high career/academic impact**.
+• PRACTICAL: Focus on words used in **boardrooms and academic papers**.
+• ENGAGEMENT: Create immediate "vocabulary upgrade" value that feels like a secret cheat code.
+• DEFINITION: Provide a **shockingly clear** explanation that elevates communication (under 100 characters).
+• USAGE: Include a **powerful, professional example** that shows expert application (under 120 characters).
+• VARIABILITY: Avoid repetitive word choices - select **distinctive, memorable, high-value** vocabulary.
+• CATEGORY: Target ${selectedCategory} specifically within this topic area.
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -227,57 +230,55 @@ export function generateEnglishPrompt(config: PromptConfig): string {
   const timingPrefix = timingContext ? `${timingContext.timeOfDay.toUpperCase()} LEARNING` : 'VIRAL LEARNING';
   const audienceContext = timingContext?.audience || primaryAudience;
   
-  if (topicData) {
-    return `You are a viral English education expert creating addictive vocabulary content for YouTube Shorts.
+  // ANALYTICS INTEGRATION: Suggest testing the best performing format if available
+  const bestFormatHint = analyticsInsights?.formatInsights?.bestFormat && analyticsInsights.formatInsights.bestFormat !== 'mcq' ?
+    ` (NOTE: Your audience strongly prefers the **${analyticsInsights.formatInsights.bestFormat.toUpperCase()}** format - tailor the tone for maximum engagement).` : '';
 
-TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential English vocabulary mastery'}
+  if (topicData) {
+    return `You are a **HYPER-ENGAGING VOCABULARY QUIZ MASTER** creating highly viral, 15-second multiple-choice challenges for YouTube Shorts. Your goal is to maximize shares and comments.
+
+TOPIC: "${topicData.displayName}" - **DRAMATICALLY** improve English fluency via ${guidelines?.focus || 'Essential English vocabulary mastery'}
 
 ${timingPrefix} STRATEGY:
-• HOOK: Generate contextual hooks based on the specific vocabulary being tested (15-25 chars, reference actual word/concept)
-• PSYCHOLOGY: Use social proof (90% statistics) + embarrassment avoidance + high self-efficacy (you can quickly fix this)
-• SCENARIOS: Apply to ${guidelines?.scenarios?.join(', ') || 'professional and academic communication'}
-• ENGAGEMENT: ${guidelines?.engagement || 'Create immediate vocabulary upgrade opportunities'}
-• PATTERN: Social proof statistic + "Are you making this mistake?" + quick confidence fix
-• TIMING: Perfect for ${timingContext?.timeOfDay || 'daily'} learning sessions
+• HOOK: Generate a **SINGLE-LINE, HYPER-CURIOUS, CONTEXTUAL QUESTION** (15-25 chars, use emojis like '🤯', '🔥', '🤔', '🚨'). The hook must create an immediate sense of **"I MUST KNOW THIS ANSWER."**
+• PSYCHOLOGY: Leverage **FOMO (Fear of Missing Out)** + the competitive nature of a quiz. Guarantee a quick fix that feels like a cheat code.
+• SCENARIOS: Apply to high-stakes moments like **JOB INTERVIEWS or UNIVERSITY ESSAYS**.
+• ENGAGEMENT: **FORCE THE VIEWER TO PAUSE AND GUESS**. ${guidelines?.engagement || 'Create immediate vocabulary upgrade opportunities'}
+• PATTERN: **DRAMA HOOK** + challenging question + quick confidence fix.
+• TIMING: Maximize **INTERACTION**. ${timingContext?.timeOfDay || 'daily'} learning sessions.
 
-Generate a question that targets ${audienceContext} who want to sound more fluent and professional:
-
-CONTENT APPROACH:
-• Lead with confidence-building ("Master this and sound fluent!")
-• Present vocabulary that elevates communication skills
-• Include practical, immediate application opportunities
-• Create "aha!" moments that boost learning motivation
+Generate a question that targets ${audienceContext} who want to **stop sounding basic** and start sounding **fluent and authoritative**:
 
 QUESTION CRAFTING:
-• PRECISION: Direct, clear questions that test practical usage
-• RELEVANCE: Focus on words learners encounter in real situations
-• DIFFICULTY: Challenging enough to teach but achievable for motivated learners
-• DISTRACTORS: Include common mistakes, close alternatives, and learner confusions
-• IMPACT: Provide vocabulary that immediately improves communication
+• PRECISION: Direct, clear questions that test **HIGH-VALUE, NUANCED** usage.
+• RELEVANCE: Focus on words that are common pitfalls or **STATUS SYMBOLS** in English.
+• DIFFICULTY: Must feel challenging, but the explanation should be a massive "aha!" moment.
+• DISTRACTORS: Include extremely plausible errors (the mistakes 90% of educated people make).
+• IMPACT: Provide vocabulary that immediately **ELEVATES THE VIEWER'S SOCIAL STATUS**.
 
 MANDATORY OUTPUT:
-• "hook": Generate a contextual hook based on the specific vocabulary being tested (15-25 chars, curious/empowering, reference the actual word/concept). Examples: "Historic vs Historical? 🤔", "Affect or Effect? 💭", "Literally shocking! ⚡"
+• "hook": Generate a **HYPER-ENGAGING HOOK** (15-25 chars, use emojis, reference actual word/concept). Examples: "Affect or Effect? The TRUE Test! 🔥", "This word is a lie! 🤯", "The 1% know this... 🤫"
 • "question": Clear, practical vocabulary question that tests real-world usage (NO hook text in question)
-• "options": Object with "A", "B", "C", "D" - one perfect answer, three smart distractors based on common errors
+• "options": Object with "A", "B", "C", "D" - one perfect answer, three **SMART, PLAUSIBLE** distractors based on common errors
 • "answer": Single letter "A", "B", "C", or "D"
-• "explanation": Why this answer elevates communication + usage tip (under 120 characters)
-• "cta": Generate an engaging English learning CTA (under 80 chars - make it compelling and action-oriented)
+• "explanation": **The ultimate mic-drop explanation.** Explain *why* the answer is correct and *how* using it correctly makes the speaker sound superior (under 120 characters)
+• "cta": Generate an engaging, **URGENT** English learning CTA (under 80 chars - make it compelling and action-oriented, e.g., "Hit FOLLOW to stop sounding basic!").
 • "content_type": "multiple_choice"
 
-Create vocabulary content that makes learners feel smarter and more confident immediately. [${timeMarker}-${tokenMarker}]`;
+Create vocabulary content that makes learners feel like they've just unlocked an English superpower. ${bestFormatHint} [${timeMarker}-${tokenMarker}]`;
   } else {
     return `You are an expert English educator creating viral vocabulary content for YouTube Shorts.
 
 Generate a question for ${primaryAudience} on "${topic}" that challenges while building confidence.
 
 REQUIREMENTS:
-• HOOK: Generate contextual hook based on the specific vocabulary (15-25 chars, reference actual word/concept)
-• QUESTION: Present vocabulary that separates intermediate from advanced speakers (NO hook text in question)
-• PRACTICAL: Focus on words used in professional and academic contexts
+• HOOK: Generate a **HIGH-IMPACT, CONTEXTUAL HOOK** (15-25 chars, reference actual word/concept)
+• QUESTION: Present vocabulary that separates intermediate from **ADVANCED, HIGH-STATUS** speakers (NO hook text in question)
+• PRACTICAL: Focus on words used in **professional and academic contexts**
 • DISTRACTORS: Include common learner mistakes and plausible alternatives
 • ENGAGEMENT: Create immediate "vocabulary upgrade" value
-• EXPLANATION: Provide usage insight that elevates communication (under 120 characters)
-• CTA: Generate an engaging vocabulary CTA (under 80 chars - make it compelling and action-oriented)
+• EXPLANATION: Provide **high-value usage insight** that elevates communication (under 120 characters)
+• CTA: Generate an engaging vocabulary CTA that **demands a follow** (under 80 chars - make it compelling and action-oriented)
 
 OUTPUT FORMAT:
 • "hook": Contextual hook referencing the specific word/concept being tested
@@ -296,21 +297,21 @@ export function generateCommonMistakePrompt(config: PromptConfig): string {
 
   return `You are a native English speaker creating viral "Common Mistake" content for YouTube Shorts.
 
-TOPIC: "${topicData.displayName}" - Focus on mistakes that 99% of learners make
+TOPIC: "${topicData.displayName}" - Focus on mistakes that **99% of learners make and sound unprofessional**
 
 FORMAT: Common Mistake (4 frames)
-Frame 1 (Hook): "Stop saying this word wrong!"  
-Frame 2 (Mistake): "99% say: [incorrect pronunciation/usage]"
-Frame 3 (Correct): "Natives say: [correct version]"
+Frame 1 (Hook): "**STOP EMBARRASSING YOURSELF** with this word!"  
+Frame 2 (Mistake): "99% say: [incorrect pronunciation/usage] (Sounds Basic)"
+Frame 3 (Correct): "**Natives say:** [correct version] (Sound Fluent)"
 Frame 4 (Practice): "Try it now! Repeat after me..."
 
 CONTENT REQUIREMENTS:
-• HOOK: Create urgency about a common error most learners make
-• MISTAKE: Show the wrong way that sounds natural but isn't correct
-• CORRECT: Provide the native speaker version with clear difference
-• PRACTICE: Give immediate practice opportunity
+• HOOK: Create **MAXIMUM URGENCY** about a common error most learners make.
+• MISTAKE: Show the wrong way that sounds natural but isn't correct—label it as 'Basic' or 'Unprofessional'.
+• CORRECT: Provide the native speaker version with clear difference—label it as 'Fluent' or 'Expert'.
+• PRACTICE: Give **immediate practice opportunity for confidence boost**.
 
-TARGET: Intermediate English learners who want to sound more native
+TARGET: Intermediate English learners who want to sound **more native and less clumsy**.
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -325,7 +326,7 @@ RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 
 IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
-Create content that makes learners feel embarrassed about their mistake but excited to fix it. [${timeMarker}-${tokenMarker}]`;
+Create content that makes learners feel embarrassed about their mistake but **excited to fix it and gain social status**. [${timeMarker}-${tokenMarker}]`;
 }
 
 /**
@@ -337,20 +338,20 @@ export function generateQuickFixPrompt(config: PromptConfig): string {
 
   return `You are an English fluency coach creating viral "Quick Fix" content for YouTube Shorts.
 
-TOPIC: "${topicData.displayName}" - Instant vocabulary upgrades
+TOPIC: "${topicData.displayName}" - **Instant Vocabulary Status Upgrades**
 
 FORMAT: Quick Fix (3 frames)
-Frame 1 (Hook): "Upgrade your English in 15 seconds"
-Frame 2 (Before): "Instead of saying [basic word]..."  
-Frame 3 (After): "Sound smarter with [advanced word]"
+Frame 1 (Hook): "**STOP SOUNDING BASIC** - Upgrade now!"
+Frame 2 (Before): "Instead of saying [basic word] (The Basic Way)..."  
+Frame 3 (After): "**SOUND SMARTER** with [advanced word] (The Expert Way)"
 
 CONTENT REQUIREMENTS:
-• HOOK: Promise immediate vocabulary improvement
-• BEFORE: Common basic word that sounds childish/unprofessional
-• AFTER: Advanced alternative that sounds sophisticated
-• Include usage example in professional/academic context
+• HOOK: Promise **immediate vocabulary improvement and social status gain**.
+• BEFORE: Common basic word that sounds childish/unprofessional—label it clearly as the "Basic Way."
+• AFTER: Advanced alternative that sounds sophisticated—label it clearly as the "Expert Way."
+• Include **impactful usage example** in professional/academic context.
 
-TARGET: Intermediate learners who want to sound more professional
+TARGET: Intermediate learners who want to **sound more powerful and professional**.
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -365,7 +366,7 @@ RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 
 IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
-Create content that makes learners immediately feel more sophisticated. [${timeMarker}-${tokenMarker}]`;
+Create content that makes learners immediately feel **empowered and superior**. [${timeMarker}-${tokenMarker}]`;
 }
 
 /**
@@ -377,21 +378,21 @@ export function generateUsageDemoPrompt(config: PromptConfig): string {
 
   return `You are an English fluency expert creating viral "Usage Demo" content for YouTube Shorts.
 
-TOPIC: "${topicData.displayName}" - Contextual word mastery
+TOPIC: "${topicData.displayName}" - **Mastering the Contextual Nuances of High-Value Words**
 
 FORMAT: Usage Demo (4 frames)
-Frame 1 (Hook): "When to use this advanced word"
-Frame 2 (Wrong): "Don't use it here: [wrong example]"
-Frame 3 (Right): "Perfect usage: [correct example]"  
+Frame 1 (Hook): "**STOP GUESSING** - Use this word like a native."
+Frame 2 (Wrong): "❌ **NOPE** Don't use it here: [wrong example]"
+Frame 3 (Right): "✅ **EXPERT** Perfect usage: [correct example]"  
 Frame 4 (Practice): "Your turn to try!"
 
 CONTENT REQUIREMENTS:
-• HOOK: Promise to show contextual mastery of an advanced word
-• WRONG: Common misuse that sounds plausible but is incorrect
-• RIGHT: Perfect contextual usage that sounds natural and professional
-• PRACTICE: Interactive challenge for viewer engagement
+• HOOK: Promise to show **CONTEXTUAL MASTERY** of an advanced, tricky word.
+• WRONG: Common misuse that sounds plausible but is incorrect—clearly marked with '❌ NOPE'.
+• RIGHT: Perfect contextual usage that sounds natural and professional—clearly marked with '✅ EXPERT'.
+• PRACTICE: Interactive challenge for viewer engagement.
 
-TARGET: Advanced learners who want contextual precision
+TARGET: Advanced learners who want **contextual precision and zero mistakes**.
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -409,5 +410,5 @@ RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 
 IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
-Create content that makes learners confident about contextual word usage. [${timeMarker}-${tokenMarker}]`;
+Create content that makes learners **confident and detail-oriented** about contextual word usage. [${timeMarker}-${tokenMarker}]`;
 }

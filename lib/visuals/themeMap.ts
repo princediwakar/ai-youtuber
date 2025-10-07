@@ -9,7 +9,6 @@ export const PersonaThemeMap: Record<string, string[]> = {
 
   // English vocabulary - premium themes optimized for video engagement
   english_vocab_builder: [
-    'GoldenHour',       // Premium, luxurious feel 🌟
     'SunsetVibes',      // Warm and engaging 🌅
     'ArcticGlow',       // Clean, modern, crisp ❄️
     'CosmicDawn',       // Dramatic gradients for impact
@@ -21,7 +20,6 @@ export const PersonaThemeMap: Record<string, string[]> = {
     'ArcticGlow',       // Clean, modern health aesthetic ❄️
     'SunsetVibes',      // Positive, calming energy 🌅
     'MintyFresh',       // Fresh health feel
-    'GoldenHour',       // Premium wellness vibe 🌟
     'SakuraGrove',      // Natural and trustworthy
     'CanyonSunset'      // Warm earth tones
   ],
@@ -29,14 +27,12 @@ export const PersonaThemeMap: Record<string, string[]> = {
   // Eye health - high-contrast themes optimized for visual content
   eye_health_tips: [
     'ArcticGlow',       // Clean, eye-friendly ❄️
-    'GoldenHour',       // Luxurious health appeal 🌟
     'SunsetVibes',      // Warm, approachable 🌅
     'MintyFresh'        // Clean medical aesthetic
   ],
   
   // SSC exam preparation - authoritative yet engaging themes for education
   ssc_shots: [
-    'GoldenHour',       // Premium education feel 🌟
     'ArcticGlow',       // Clean, focused study ❄️
     'MintyFresh',       // Clean academic look
     'CanyonSunset'      // Warm institutional feel

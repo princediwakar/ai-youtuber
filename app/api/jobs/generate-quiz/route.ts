@@ -1,3 +1,4 @@
+// app/api/jobs/generate-quiz/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { MasterPersonas } from '@/lib/personas';
 import { generateAndStoreContent } from '@/lib/generation/core/generationService';

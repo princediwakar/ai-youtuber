@@ -1,6 +1,6 @@
 // lib/visuals/themes.ts
 
-// The Theme interface remains the same
+// The Theme interface is updated to include 'incorrect'
 export interface Theme {
   name: string;
   fontFamily: string;
@@ -23,6 +23,7 @@ export interface Theme {
   };
   feedback: {
     correct: string | string[];
+    incorrect: string | string[]; // ADDED: Incorrect feedback color
   };
 }
 
@@ -37,7 +38,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(37, 36, 34, 0.08)', text: '#252422' },
     text: { primary: '#252422', secondary: 'rgba(37, 36, 34, 0.5)', onAccent: '#FFFCF2' },
     button: { background: '#EB5E28', text: '#FFFCF2', shadow: 'rgba(0,0,0,0.2)' },
-    feedback: { correct: '#252422' },
+    feedback: { 
+        correct: '#252422',
+        incorrect: '#9D0208' // Added
+    },
   },
 
   SakuraGrove: {
@@ -47,7 +51,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(6, 66, 50, 0.08)', text: '#064232' },
     text: { primary: '#064232', secondary: 'rgba(6, 66, 50, 0.55)', onAccent: '#FFF5F2' },
     button: { background: '#568F87', text: '#FFF5F2', shadow: 'rgba(0,0,0,0.15)' },
-    feedback: { correct: '#064232' },
+    feedback: { 
+        correct: '#064232',
+        incorrect: '#D00000' // Added
+    },
   },
   
   // --- Gradient Themes ---
@@ -58,7 +65,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(255, 255, 255, 0.1)', text: '#FFEAD8' },
     text: { primary: '#FFEAD8', secondary: 'rgba(255, 234, 216, 0.7)', onAccent: '#FFFFFF' },
     button: { background: ['#9B177E', '#7B1585'], text: '#FFFFFF', shadow: 'rgba(0, 0, 0, 0.3)' },
-    feedback: { correct: ['#F7B801', '#F18701'] },
+    feedback: { 
+        correct: ['#F7B801', '#F18701'],
+        incorrect: ['#FF6F6F', '#E63946'] // Added
+    },
   },
 
 
@@ -70,7 +80,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(61, 64, 91, 0.08)', text: '#3D405B' },
     text: { primary: '#3D405B', secondary: 'rgba(61, 64, 91, 0.5)', onAccent: '#F4F1DE' },
     button: { background: '#E07A5F', text: '#F4F1DE', shadow: 'rgba(0,0,0,0.15)' },
-    feedback: { correct: ['#3D405B', '#2C2E40'] }, // Added gradient to feedback
+    feedback: { 
+        correct: ['#3D405B', '#2C2E40'], // Added gradient to feedback
+        incorrect: ['#C1121F', '#8C0000'] // Added
+    },
   },
 
   // --- ✨ NEW THEMES ---
@@ -83,7 +96,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(0, 77, 64, 0.07)', text: '#004D40' },
     text: { primary: '#004D40', secondary: 'rgba(0, 77, 64, 0.6)', onAccent: '#FFFFFF' },
     button: { background: ['#FF8C42', '#FF6347'], text: '#FFFFFF', shadow: 'rgba(139, 69, 19, 0.25)' },
-    feedback: { correct: ['#2196F3', '#1976D2'] },
+    feedback: { 
+        correct: ['#2196F3', '#1976D2'],
+        incorrect: ['#EF476F', '#D62828'] // Added
+    },
   },
   
   // 3. Enchanted Forest 🌲
@@ -94,7 +110,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(224, 239, 230, 0.1)', text: '#E0EFE6' },
     text: { primary: '#E0EFE6', secondary: 'rgba(224, 239, 230, 0.7)', onAccent: '#0A0F0D' },
     button: { background: ['#2E6B4F', '#4A936F'], text: '#E0EFE6', shadow: 'rgba(0, 0, 0, 0.4)' },
-    feedback: { correct: ['#FFD700', '#FFC300'] },
+    feedback: { 
+        correct: ['#FFD700', '#FFC300'],
+        incorrect: ['#990011', '#B90022'] // Added
+    },
   },
 
   // 4. Minty Fresh 🧼
@@ -105,7 +124,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(33, 37, 41, 0.05)', text: '#212529' },
     text: { primary: '#212529', secondary: 'rgba(33, 37, 41, 0.6)', onAccent: '#FFFFFF' },
     button: { background: ['#64DDBB', '#48BCA8'], text: '#FFFFFF', shadow: 'rgba(0, 0, 0, 0.1)' },
-    feedback: { correct: ['#28A745', '#20C997'] },
+    feedback: { 
+        correct: ['#28A745', '#20C997'],
+        incorrect: ['#DC3545', '#C82333'] // Added
+    },
   },
 
   // --- 🚀 PREMIUM VIDEO-OPTIMIZED THEMES ---
@@ -118,7 +140,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(255, 255, 255, 0.2)', text: '#2c3e50' },
     text: { primary: '#2c3e50', secondary: 'rgba(44, 62, 80, 0.7)', onAccent: '#ffffff' },
     button: { background: ['#ff6b6b', '#4ecdc4'], text: '#ffffff', shadow: 'rgba(255, 107, 107, 0.3)' },
-    feedback: { correct: ['#f39c12', '#e67e22'] },
+    feedback: { 
+        correct: ['#f39c12', '#e67e22'],
+        incorrect: ['#e74c3c', '#c0392b'] // Added
+    },
   },
 
 
@@ -130,7 +155,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(255, 255, 255, 0.1)', text: '#ffffff' },
     text: { primary: '#ffffff', secondary: 'rgba(255, 255, 255, 0.85)', onAccent: '#2d1b69' },
     button: { background: ['#ff4081', '#ff6ec7'], text: '#ffffff', shadow: 'rgba(255, 64, 129, 0.4)' },
-    feedback: { correct: ['#00e676', '#69f0ae'] },
+    feedback: { 
+        correct: ['#00e676', '#69f0ae'],
+        incorrect: ['#ff1744', '#f50057'] // Added
+    },
   },
 
   // 9. Golden Hour 🌟 - Premium, luxurious feel
@@ -141,7 +169,10 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(0, 0, 0, 0.1)', text: '#2c3e50' },
     text: { primary: '#2c3e50', secondary: 'rgba(44, 62, 80, 0.8)', onAccent: '#ffffff' },
     button: { background: ['#e74c3c', '#c0392b'], text: '#ffffff', shadow: 'rgba(231, 76, 60, 0.3)' },
-    feedback: { correct: ['#27ae60', '#2ecc71'] },
+    feedback: { 
+        correct: ['#27ae60', '#2ecc71'],
+        incorrect: ['#8e44ad', '#9b59b6'] // Added (using a dark contrast color)
+    },
   },
 
   // 10. Arctic Glow ❄️ - Clean, modern, crisp
@@ -152,6 +183,9 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(52, 73, 94, 0.08)', text: '#34495e' },
     text: { primary: '#2c3e50', secondary: 'rgba(44, 62, 80, 0.7)', onAccent: '#ffffff' },
     button: { background: ['#3498db', '#2980b9'], text: '#ffffff', shadow: 'rgba(52, 152, 219, 0.3)' },
-    feedback: { correct: ['#1abc9c', '#16a085'] },
+    feedback: { 
+        correct: ['#1abc9c', '#16a085'],
+        incorrect: ['#e67e22', '#d35400'] // Added
+    },
   },
 };

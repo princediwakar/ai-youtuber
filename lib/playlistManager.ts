@@ -14,7 +14,6 @@ const FORMAT_DISPLAY_NAMES: Record<LayoutType, string> = {
   simplified_word: 'Vocabulary Lessons',
   mcq: 'Quiz Questions', common_mistake: 'Common Mistakes', quick_fix: 'Quick Fixes', 
   usage_demo: 'Usage Examples', quick_tip: 'Quick Tips', 
-  challenge: 'Interactive Challenges'
 };
 
 interface ContentConfig {
@@ -33,7 +32,6 @@ const CONTENT_CONFIG: Record<string, ContentConfig> = {
       quick_fix: `🚀 Upgrade your {TOPIC} vocabulary instantly! Transform basic words into sophisticated expressions.`,
       usage_demo: `🚀 See {TOPIC} in action! Real-world usage examples that make English natural.`,
       quick_tip: `🚀 Master {TOPIC} with lightning-fast tips! English fluency shortcuts revealed.`,
-      challenge: `🚀 Take the {TOPIC} challenge! Can you beat these tricky English questions?`,
     }
   },
   brain_health_tips: {
@@ -42,7 +40,6 @@ const CONTENT_CONFIG: Record<string, ContentConfig> = {
     intros: {
       mcq: `🧠 Test your {TOPIC} knowledge with brain health quizzes! Science-backed questions for cognitive wellness.`,
       quick_tip: `🧠 Boost your brain health with {TOPIC} quick tips! 30-second science-backed advice for cognitive wellness.`,
-      challenge: `🧠 Take the {TOPIC} brain challenge! Test your cognitive wellness knowledge.`,
     }
   },
   eye_health_tips: {
@@ -51,7 +48,6 @@ const CONTENT_CONFIG: Record<string, ContentConfig> = {
     intros: {
       mcq: `👁️ Test your {TOPIC} knowledge with eye health quizzes! Professional vision care questions for digital age protection.`,
       quick_tip: `👁️ Protect your eyes with {TOPIC} quick tips! 30-second vision care advice from eye health experts.`,
-      challenge: `👁️ Take the {TOPIC} vision challenge! How well do you know eye health?`,
     }
   },
   ssc_shots: {
@@ -61,7 +57,6 @@ const CONTENT_CONFIG: Record<string, ContentConfig> = {
       mcq: `📚 Master {TOPIC} with targeted SSC practice questions! Government exam preparation made effective.`,
       quick_tip: `📚 Ace {TOPIC} with expert SSC preparation tips! Government exam success in bite-sized content.`,
       common_mistake: `📚 Avoid {TOPIC} mistakes that cost exam marks! Learn what 90% of SSC aspirants get wrong.`,
-      challenge: `📚 Take the {TOPIC} SSC challenge! Are you ready for the government exam?`,
     }
   },
   space_facts_quiz: {
@@ -71,7 +66,6 @@ const CONTENT_CONFIG: Record<string, ContentConfig> = {
       mcq: `🚀 Test your {TOPIC} knowledge with mind-blowing space quizzes! Universe facts that will leave you speechless.`,
       common_mistake: `🚀 Stop believing {TOPIC} space myths! Learn what 99% of people get wrong about the universe.`,
       quick_tip: `🚀 Blow your mind with {TOPIC} cosmic facts! 30-second space revelations that change everything.`,
-      challenge: `🚀 Take the {TOPIC} space challenge! How well do you know the universe?`,
     }
   }
 };
@@ -129,7 +123,6 @@ function generateTags(accountId: string, persona: PersonaType, topicName: string
     const formatHashtags: Partial<Record<FormatType, string[]>> = {
         mcq: ['#Quiz', '#Test', '#MCQ'],
         quick_tip: ['#QuickTip', '#Hack', '#Secret'],
-        challenge: ['#Challenge', '#Game', '#Interactive']
     };
 
     const allHashtags = [...new Set([...baseHashtags, ...(personaHashtags[persona] || []), ...(formatHashtags[format] || [])])].slice(0, 8);

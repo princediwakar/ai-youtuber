@@ -1,3 +1,4 @@
+// lib/visuals/layouts/quickTipLayout.ts
 import { Canvas, CanvasRenderingContext2D } from 'canvas';
 import { QuizJob } from '@/lib/types';
 import { Theme } from '@/lib/visuals/themes';
@@ -9,7 +10,8 @@ import {
     applyFillStyle,
     applyShadow,
     clearShadow,
-    measureQuestionContent
+    measureQuestionContent,
+    wrapText // Added import for wrapText if not already there, assumed from context
 } from '../drawingUtils';
 
 /**
@@ -81,6 +83,7 @@ export function renderActionFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
+    // FIX: Check for both generic 'action' and SSC-specific 'traditional_approach'
     const actionText = job.data.content?.action || job.data.content?.traditional_approach || "Do this one simple thing.";
     
     const cardY = HEADER_HEIGHT + 20;
@@ -94,7 +97,9 @@ export function renderActionFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     clearShadow(ctx);
     
     const innerPadding = 40;
-    drawFrameTitle(ctx, "The Action", cardY + innerPadding, canvas.width, theme);
+    // FIX: Use context-specific title
+    const frameTitle = job.persona === 'ssc_shots' ? "TRADITIONAL APPROACH" : "THE ACTION";
+    drawFrameTitle(ctx, frameTitle, cardY + innerPadding, canvas.width, theme); 
     
     const contentY = cardY + innerPadding + 70;
     const textMaxWidth = cardWidth - (innerPadding * 2);
@@ -126,6 +131,7 @@ export function renderResultFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     drawBackground(ctx, canvas.width, canvas.height, theme);
     drawHeader(ctx, canvas.width, theme, job);
     
+    // FIX: Check for both generic 'result' and SSC-specific 'smart_shortcut'
     const resultText = job.data.content?.result || job.data.content?.smart_shortcut || "You will see amazing results.";
     
     const cardY = HEADER_HEIGHT + 20;
@@ -134,12 +140,16 @@ export function renderResultFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     const cardX = CONTENT_PADDING;
 
     applyShadow(ctx, 'rgba(0,0,0,0.2)', 20, 0, 10);
-    applyFillStyle(ctx, theme.feedback.correct, {x: cardX, y: cardY, w: cardWidth, h: cardHeight});
+    // FIX: Robust fallback for correct color (if missing)
+    const correctColor = theme.feedback?.correct || theme.button?.background || 'rgba(100, 255, 100, 0.9)';
+    applyFillStyle(ctx, correctColor, {x: cardX, y: cardY, w: cardWidth, h: cardHeight});
     drawRoundRect(ctx, cardX, cardY, cardWidth, cardHeight, 30);
     clearShadow(ctx);
     
     const innerPadding = 40;
-    drawFrameTitle(ctx, "The Result", cardY + innerPadding, canvas.width, theme, true);
+    // FIX: Use context-specific title
+    const frameTitle = job.persona === 'ssc_shots' ? "SMART SHORTCUT" : "THE RESULT";
+    drawFrameTitle(ctx, frameTitle, cardY + innerPadding, canvas.width, theme, true);
     
     const contentY = cardY + innerPadding + 70;
     const textMaxWidth = cardWidth - (innerPadding * 2);
@@ -152,12 +162,12 @@ export function renderResultFrame(canvas: Canvas, job: QuizJob, theme: Theme): v
     const unusedSpace = Math.max(0, availableHeightForText - measurement.height);
     const startY = contentY + (unusedSpace / 2);
     
+    // FIX: Set content color to onAccent
     ctx.fillStyle = theme.text.onAccent;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.font = `600 ${measurement.fontSize}px ${theme.fontFamily}`;
 
-    // FIX: The x-coordinate for drawing text is now correctly centered.
     measurement.lines.forEach((line, index) => {
         const lineHeight = measurement.fontSize * 1.4;
         ctx.fillText(line, canvas.width / 2, startY + index * lineHeight);

@@ -25,7 +25,6 @@ import {
   generateBrainHealthPrompt,
   generateEyeHealthPrompt,
   generateQuickTipPrompt,
-  generateChallengePrompt
 } from '../personas/health/prompts';
 
 import {
@@ -34,7 +33,6 @@ import {
   generateSSCCommonMistakePrompt,
   generateSSCQuickTipPrompt,
   generateSSCUsageDemoPrompt,
-  generateSSCChallengePrompt
 } from '../personas/ssc/prompts';
 
 import {
@@ -57,7 +55,6 @@ export {
   generateQuickFixPrompt,
   generateUsageDemoPrompt,
   generateQuickTipPrompt,
-  generateChallengePrompt
 };
 
 /**
@@ -86,12 +83,7 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
     ssc_shots: generateSSCUsageDemoPrompt, // CORRECTED: Mapped to the correct SSC-specific prompt
     default: generateUsageDemoPrompt
   },
-  challenge: {
-    brain_health_tips: generateChallengePrompt,
-    eye_health_tips: generateChallengePrompt,
-    ssc_shots: generateSSCChallengePrompt, // CORRECTED: Mapped to the correct SSC-specific prompt
-    default: generateChallengePrompt
-  },
+
   // ENABLED: Quick Tips for health personas (384 avg views, 1.2K max views)
   quick_tip: {
     brain_health_tips: generateQuickTipPrompt,
@@ -132,9 +124,9 @@ const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, Prom
  */
 const FORMAT_ROTATION: Record<PersonaType, FormatType[]> = {
   english_vocab_builder: ['mcq', 'simplified_word', 'quick_fix', 'usage_demo'], // Restore variety - all formats supported
-  brain_health_tips: ['mcq', 'quick_tip', 'challenge'], // Health-specific formats
-  eye_health_tips: ['mcq', 'quick_tip', 'challenge'], // Health-specific formats
-  ssc_shots: ['mcq', 'quick_tip', 'common_mistake', 'usage_demo', 'challenge'], // SSC-specific formats (added challenge)
+  brain_health_tips: ['mcq', 'quick_tip'], // Health-specific formats
+  eye_health_tips: ['mcq', 'quick_tip'], // Health-specific formats
+  ssc_shots: ['mcq', 'quick_tip', 'common_mistake', 'usage_demo'], 
   space_facts_quiz: ['mcq', 'quick_tip'] // Astronomy-specific formats
 };
 
