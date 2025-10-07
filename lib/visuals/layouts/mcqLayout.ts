@@ -403,10 +403,10 @@ Object.entries(options).forEach(([optionKey, optionText]) => {
         fillStyle = 'rgba(128, 128, 128, 0.3)';
     }
 
-    // // 3. Apply the gradient/solid color and draw the button
-    // const bounds = { x: buttonX, y: optionY, w: buttonWidth, h: dynamicButtonHeight };
-    // applyFillStyle(ctx, fillStyle, bounds);
-    // drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
+    // 3. Apply the gradient/solid color and draw the button
+    const bounds = { x: buttonX, y: optionY, w: buttonWidth, h: dynamicButtonHeight };
+    applyFillStyle(ctx, fillStyle, bounds);
+    drawRoundRect(ctx, buttonX, optionY, buttonWidth, dynamicButtonHeight, 30);
     
     // 4. Clear shadow before drawing text so the text isn't blurry
     clearShadow(ctx);
