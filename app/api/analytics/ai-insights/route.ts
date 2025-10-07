@@ -1,6 +1,7 @@
+// app/api/analytics/ai-insights/route.ts
 import { NextResponse } from 'next/server';
 import { analyticsInsightsService as analyticsService } from '@/lib/analytics/insightsService';
-import { getAllAccounts } from '@/lib/accounts';
+import { getAllAccounts } from '@/lib/accounts'; // Assuming this function is correctly defined elsewhere
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
@@ -18,42 +19,57 @@ export async function POST(request: Request) {
     console.log('[AI Analytics] Starting AI-powered analytics analysis...');
     
     const startTime = Date.now();
-    let results: any[] = [];
+    let analysisPromises: Promise<any>[] = [];
 
     if (persona && accountId) {
       // Analyze specific persona
       console.log(`[AI Analytics] Analyzing specific persona: ${persona} (${accountId})`);
-      const result = await analyticsService.analyzePerformanceWithAI(accountId, persona);
-      results.push({
-        persona,
-        accountId,
-        ...result
-      });
+      // Use an IIFE to match the promise structure below
+      analysisPromises.push((async () => {
+        try {
+            const result = await analyticsService.analyzePerformanceWithAI(accountId, persona);
+            return { persona, accountId, ...result };
+        } catch (error) {
+            console.error(`[AI Analytics] Error analyzing ${persona} (${accountId}):`, error);
+            return {
+                persona,
+                accountId,
+                error: error instanceof Error ? error.message : 'Analysis failed'
+            };
+        }
+      })());
+      
     } else {
       // Analyze all personas across all accounts
-      console.log('[AI Analytics] Analyzing all personas...');
+      console.log('[AI Analytics] Analyzing all personas concurrently...');
       const accounts = await getAllAccounts();
       
       for (const account of accounts) {
         for (const personaName of account.personas) {
-          try {
-            const result = await analyticsService.analyzePerformanceWithAI(account.id, personaName);
-            results.push({
-              persona: personaName,
-              accountId: account.id,
-              ...result
-            });
-          } catch (error) {
-            console.error(`[AI Analytics] Error analyzing ${personaName} (${account.id}):`, error);
-            results.push({
-              persona: personaName,
-              accountId: account.id,
-              error: error instanceof Error ? error.message : 'Analysis failed'
-            });
-          }
+          // Push a promise for each analysis task
+          analysisPromises.push((async () => {
+            try {
+              const result = await analyticsService.analyzePerformanceWithAI(account.id, personaName);
+              return {
+                persona: personaName,
+                accountId: account.id,
+                ...result
+              };
+            } catch (error) {
+              console.error(`[AI Analytics] Error analyzing ${personaName} (${account.id}):`, error);
+              return {
+                persona: personaName,
+                accountId: account.id,
+                error: error instanceof Error ? error.message : 'Analysis failed'
+              };
+            }
+          })()); // IIFE to execute the async function and get the promise
         }
       }
     }
+
+    // Wait for all analysis tasks to complete concurrently
+    const results = await Promise.all(analysisPromises);
 
     const duration = Date.now() - startTime;
     const successfulAnalyses = results.filter(r => !r.error).length;
@@ -126,6 +142,7 @@ export async function GET(request: Request) {
 
     console.log(`[AI Analytics] Getting AI insights for ${persona} (${accountId})`);
     
+    // This part remains sequential as it's a single request
     const result = await analyticsService.analyzePerformanceWithAI(accountId, persona);
     
     return NextResponse.json({

@@ -50,6 +50,7 @@ async function populateAccounts() {
       {
         id: 'ssc_shots',
         name: 'SSC Exam Preparation',
+        status: 'active',
         googleClientId: process.env.SSC_GOOGLE_CLIENT_ID,
         googleClientSecret: process.env.SSC_GOOGLE_CLIENT_SECRET,
         refreshToken: process.env.SSC_GOOGLE_REFRESH_TOKEN,
@@ -62,6 +63,7 @@ async function populateAccounts() {
       {
         id: 'astronomy_shots',
         name: 'Space Facts & Astronomy',
+        status: 'active',
         googleClientId: process.env.ASTRONOMY_GOOGLE_CLIENT_ID,
         googleClientSecret: process.env.ASTRONOMY_GOOGLE_CLIENT_SECRET,
         refreshToken: process.env.ASTRONOMY_GOOGLE_REFRESH_TOKEN,

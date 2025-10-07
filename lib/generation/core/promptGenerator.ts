@@ -92,7 +92,8 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
     formatDefinition: jobConfig.formatDefinition,
     // Pass timing and analytics context
     timingContext,
-    analyticsInsights
+    // analyticsInsights
+
   };
   
   // Use format-aware prompt generation for new formats or layouts

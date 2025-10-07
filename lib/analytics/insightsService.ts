@@ -1,3 +1,4 @@
+// lib/analytics/insightsService.ts
 import { QueryResult } from 'pg';
 import { query } from '../database';
 import { AIAnalyticsInsights, AnalyticsDataForAI } from './types';
