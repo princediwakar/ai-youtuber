@@ -133,12 +133,7 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
  */
 function validateSSCContent(data: any, format?: string): ValidationResult {
   // Format-specific validation for SSC content
-  
-   if (format === 'common_mistake') {
-    return validateSSCCommonMistakeFormat(data);
-  } else if (format === 'usage_demo') {
-    return validateSSCUsageDemoFormat(data);
-  } else if (format === 'quick_tip') {
+   if (format === 'quick_tip') {
     // Use the specific validator
     const result = validateSSCQuickTipFormat(data);
     if (!result.success) return result;
@@ -466,40 +461,6 @@ function validateQuickTipFormat(data: any): ValidationResult {
 }
 
 
-
-/**
- * Validates SSC Common Mistake format structure
- */
-function validateSSCCommonMistakeFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'mistake', 'correct', 'practice', 'explanation', 'cta'];
-  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
-  
-  if (missingFields.length > 0) {
-    return {
-      success: false,
-      error: `SSC Common Mistake format missing required fields: ${missingFields.join(', ')}`
-    };
-  }
-
-  return { success: true, data };
-}
-
-/**
- * Validates SSC Usage Demo format structure
- */
-function validateSSCUsageDemoFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'target_concept', 'wrong_scenario', 'wrong_context', 'right_scenario', 'right_context', 'practice', 'practice_scenario', 'cta'];
-  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
-  
-  if (missingFields.length > 0) {
-    return {
-      success: false,
-      error: `SSC Usage Demo format missing required fields: ${missingFields.join(', ')}`
-    };
-  }
-
-  return { success: true, data };
-}
 
 /**
  * Validates SSC Quick Tip format structure

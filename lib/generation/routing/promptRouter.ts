@@ -9,7 +9,8 @@ import {
   VariationMarkers,
   PromptConfig,
   generateVariationMarkers,
-  addJsonFormatInstructions
+  addJsonFormatInstructions,
+  QuestionFormatType
 } from '../shared/utils';
 
 // Import persona-specific prompts
@@ -29,10 +30,8 @@ import {
 
 import {
   generateSSCMCQPrompt,
-  generateSimplifiedSSCPrompt,
-  generateSSCCommonMistakePrompt,
+  generateSSCCurrentAffairsPrompt, // Needed for async routing
   generateSSCQuickTipPrompt,
-  generateSSCUsageDemoPrompt,
 } from '../personas/ssc/prompts';
 
 import {
@@ -42,8 +41,8 @@ import {
 // Import types
 import type { PersonaType, FormatType, PromptGenerator } from '../shared/types';
 
-// Re-export shared utilities for backward compatibility
-export type { VariationMarkers, PromptConfig };
+// Re-export shared utilities and types
+export type { VariationMarkers, PromptConfig, QuestionFormatType };
 export { generateVariationMarkers, addJsonFormatInstructions };
 
 // Re-export persona-specific functions for backward compatibility
@@ -58,104 +57,97 @@ export {
 };
 
 /**
- * Format and persona routing lookup table
- * ANALYTICS-DRIVEN: Simplified Word format for maximum engagement
- * Addressing 73% zero engagement by using ultra-simple single-frame format
- */
-const FORMAT_PERSONA_ROUTES: Record<FormatType, Partial<Record<PersonaType, PromptGenerator>> & { default: PromptGenerator }> = {
-  // NEW: Simplified Word format for maximum engagement (single frame)
+* FIX: Centralized Format and Persona Routing Lookup Table (PROMPT_ROUTE_CONFIG)
+* This is the single source of truth for mapping formats/personas to generator functions.
+*/
+const PROMPT_ROUTE_CONFIG: Record<FormatType, Partial<Record<PersonaType, PromptGenerator>> & { default: PromptGenerator }> = {
   simplified_word: {
-    english_vocab_builder: generateSimplifiedWordPrompt,
-    default: generateSimplifiedWordPrompt
+      english_vocab_builder: generateSimplifiedWordPrompt,
+      default: generateSimplifiedWordPrompt
   },
-  // AVAILABLE: Complex formats (0% engagement but kept for experimentation)
   common_mistake: {
-    english_vocab_builder: generateCommonMistakePrompt,
-    ssc_shots: generateSSCCommonMistakePrompt, // CORRECTED: Mapped to the correct SSC-specific prompt
-    default: generateCommonMistakePrompt
+      english_vocab_builder: generateCommonMistakePrompt,
+      default: generateCommonMistakePrompt
   },
   quick_fix: {
-    english_vocab_builder: generateQuickFixPrompt,
-    default: generateQuickFixPrompt
+      english_vocab_builder: generateQuickFixPrompt,
+      default: generateQuickFixPrompt
   },
   usage_demo: {
-    english_vocab_builder: generateUsageDemoPrompt,
-    ssc_shots: generateSSCUsageDemoPrompt, // CORRECTED: Mapped to the correct SSC-specific prompt
-    default: generateUsageDemoPrompt
+      english_vocab_builder: generateUsageDemoPrompt,
+      default: generateUsageDemoPrompt
   },
 
-  // ENABLED: Quick Tips for health personas (384 avg views, 1.2K max views)
   quick_tip: {
-    brain_health_tips: generateQuickTipPrompt,
-    eye_health_tips: generateQuickTipPrompt,
-    english_vocab_builder: generateQuickTipPrompt, // Test for other personas
-    ssc_shots: generateSSCQuickTipPrompt, // CORRECTED: Point ssc_shots to its own quick_tip prompt
-    space_facts_quiz: generateAstronomyPrompt,    
-    default: generateQuickTipPrompt
+      brain_health_tips: generateQuickTipPrompt,
+      eye_health_tips: generateQuickTipPrompt,
+      english_vocab_builder: generateQuickTipPrompt,
+      ssc_shots: generateSSCQuickTipPrompt,
+      space_facts_quiz: generateAstronomyPrompt,
+      default: generateQuickTipPrompt
   },
-  // PRIMARY: MCQ format (1.26% engagement - PROVEN PERFORMER)
   mcq: {
     brain_health_tips: generateBrainHealthPrompt,
     eye_health_tips: generateEyeHealthPrompt,
-    english_vocab_builder: generateEnglishPrompt, // Restore proven MCQ format
-    ssc_shots: generateSSCMCQPrompt, // Restore proven MCQ format
+    english_vocab_builder: generateEnglishPrompt,
+    // FIX: Handle SSC Current Affairs within the centralized routing table
+    ssc_shots: async (config) => { // <--- This function returns Promise<string>
+         if (config.topic === 'ssc_current_affairs') {
+            return await generateSSCCurrentAffairsPrompt(config);
+        }
+        return generateSSCMCQPrompt(config);
+    },
     space_facts_quiz: generateAstronomyPrompt,
-    default: generateEnglishPrompt // Default to proven MCQ
-  }
-  /*
-   * NOTE: To use the unused `generateSimplifiedSSCPrompt`, you would need to add a new
-   * format to this routing table, for example:
-   *
-   * simplified_ssc: {
-   * ssc_shots: generateSimplifiedSSCPrompt,
-   * default: generateSimplifiedSSCPrompt
-   * }
-   */
+    default: generateEnglishPrompt
+}
 };
 
 /**
- * Main format-aware prompt generator - routes to appropriate persona functions
- * ANALYTICS-DRIVEN: Simplified Word format for maximum engagement
- * Addresses 73% zero engagement by using ultra-simple single-frame format
- */
-/**
- * Format rotation strategy for balanced testing
- * Distributes different formats across personas and time for A/B testing
- */
+* FIX: Centralized Format Rotation Strategy
+* This strategy must be consistent with the layout weights in generationService.ts.
+*/
 const FORMAT_ROTATION: Record<PersonaType, FormatType[]> = {
-  english_vocab_builder: ['mcq', 'simplified_word', 'quick_fix', 'usage_demo'], // Restore variety - all formats supported
-  brain_health_tips: ['mcq', 'quick_tip'], // Health-specific formats
-  eye_health_tips: ['mcq', 'quick_tip'], // Health-specific formats
-  ssc_shots: ['mcq', 'quick_tip', 'common_mistake', 'usage_demo'], 
-  space_facts_quiz: ['mcq', 'quick_tip'] // Astronomy-specific formats
+  english_vocab_builder: ['mcq', 'simplified_word', 'quick_fix', 'usage_demo', 'common_mistake'], // Added common_mistake for full variety
+  brain_health_tips: ['mcq', 'quick_tip'],
+  eye_health_tips: ['mcq', 'quick_tip'],
+  ssc_shots: ['mcq', 'quick_tip', 'common_mistake', 'usage_demo'],
+  space_facts_quiz: ['mcq', 'quick_tip']
 };
 
-export function generateFormatPrompt(config: PromptConfig): string {
+/**
+* Main format-aware prompt generator - routes to appropriate persona functions
+* FIX: Function is now async to support generators like generateSSCCurrentAffairsPrompt.
+*/
+export async function generateFormatPrompt(config: PromptConfig): Promise<string> {
   let format = config.format as FormatType;
   const persona = config.persona as PersonaType;
+  
+  const SIX_HOURS_IN_MS = 1000 * 60 * 60 * 6; // FIX: Constant for rotation period
 
   // If no format specified, use rotation strategy for balanced testing
   if (!format) {
-    const rotationFormats = FORMAT_ROTATION[persona] || ['mcq', 'simplified_word'];
-    const rotationIndex = Math.floor(Date.now() / (1000 * 60 * 60 * 6)) % rotationFormats.length; // 6-hour rotation
-    format = rotationFormats[rotationIndex];
-    console.log(`🔄 Format rotation: Using ${format} for ${persona} (${rotationIndex + 1}/${rotationFormats.length})`);
+      const rotationFormats = FORMAT_ROTATION[persona] || ['mcq', 'simplified_word'];
+      const rotationIndex = Math.floor(Date.now() / SIX_HOURS_IN_MS) % rotationFormats.length; 
+      format = rotationFormats[rotationIndex];
+      console.log(`🔄 Format rotation: Using ${format} for ${persona} (${rotationIndex + 1}/${rotationFormats.length})`);
   } else {
-    console.log(`✅ Using requested format: ${format} for ${persona}`);
+      console.log(`✅ Using requested format: ${format} for ${persona}`);
   }
 
-  const formatRoutes = FORMAT_PERSONA_ROUTES[format];
+  const formatRoutes = PROMPT_ROUTE_CONFIG[format];
   if (!formatRoutes) {
-    // Fallback to proven MCQ if format not found
-    const mcqRoutes = FORMAT_PERSONA_ROUTES.mcq;
-    const generator = mcqRoutes[persona] || mcqRoutes.default;
-    return generator(config);
+      // Fallback to proven MCQ if format not found
+      const mcqRoutes = PROMPT_ROUTE_CONFIG.mcq;
+      const generator = mcqRoutes[persona] || mcqRoutes.default;
+      return generator(config);
   }
 
   const generator = formatRoutes[persona] || formatRoutes.default;
   if (!generator) {
-    throw new Error(`No generator found for format: ${format}, persona: ${persona}`);
+      // This is a configuration error: the persona is missing from the format map
+      throw new Error(`No generator found for format: ${format}, persona: ${persona}`);
   }
 
-  return generator(config);
+  // FIX: Await the generator result as it might be an async function (like the SSC one)
+  return await generator(config); 
 }

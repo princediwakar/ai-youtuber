@@ -5,52 +5,44 @@
  */
 
 import { MasterPersonas } from '../../personas';
-import { generateSSCMCQPrompt, generateSSCCurrentAffairsPrompt } from '../personas/ssc/prompts';
-import { generateAstronomyPrompt } from '../personas/astronomy/prompts';
+// NOTE: Only generateFormatPrompt and utils are imported as they handle all routing/formatting.
 import {
-  generateVariationMarkers,
-  generateBrainHealthPrompt,
-  generateEyeHealthPrompt,
-  generateEnglishPrompt,
-  generateFormatPrompt,
-  addJsonFormatInstructions,
-  type PromptConfig
+    generateVariationMarkers,
+    generateFormatPrompt,
+    addJsonFormatInstructions,
+    type PromptConfig,
+    type QuestionFormatType
 } from '../routing/promptRouter';
-// FIX: Import AnalyticsDataForAI, which contains the raw data needed for optimization functions.
-import type { AIAnalyticsInsights, AnalyticsDataForAI } from '../../analytics/types';
-import { 
-  generateTopicWeights, 
-  getTimingContext, 
-  getOptimalFormat,
-  enhancePromptWithTiming,
-  selectOptimalTopic,
-  enhanceCTA
+import type { AIAnalyticsInsights } from '../../analytics/types';
+import {
+    generateTopicWeights,
+    getTimingContext,
+    getOptimalFormat,
+    enhancePromptWithTiming,
+    selectOptimalTopic,
 } from '../shared/analyticsOptimizer';
 
 export interface JobConfig {
-  persona: string;
-  topic: string;
-  accountId: string;
-  generationDate: string | Date;
-  // Format support
-  preferredFormat?: string;
-  formatDefinition?: any;
-  // Layout support
-  preferredLayout?: string;
-  // Analytics enhancement
-  // FIX: Reverting type to AIAnalyticsInsights. The optimization functions 
-  // in analyticsOptimizer.ts currently consume the AI's textual recommendations 
-  // (AIAnalyticsInsights), not the raw data structure (AnalyticsDataForAI).
-  analyticsInsights?: AIAnalyticsInsights;
-  uploadHour?: number; // IST hour for timing-aware prompts
+    persona: string;
+    topic: string;
+    accountId: string;
+    generationDate: string | Date;
+    // Format support
+    preferredFormat?: string;
+    formatDefinition?: any;
+    // Layout support
+    preferredLayout?: string;
+    // Analytics enhancement
+    analyticsInsights?: AIAnalyticsInsights;
+    uploadHour?: number; // IST hour for timing-aware prompts
 }
 
 export interface GeneratedPrompt {
-  prompt: string;
-  markers: {
-    timeMarker: string;
-    tokenMarker: string;
-  };
+    prompt: string;
+    markers: {
+        timeMarker: string;
+        tokenMarker: string;
+    };
 }
 
 /**
@@ -58,114 +50,74 @@ export interface GeneratedPrompt {
  * Enhanced with analytics-driven optimization for improved performance
  */
 export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPrompt> {
-  const { persona, topic, analyticsInsights, uploadHour } = jobConfig;
-  const markers = generateVariationMarkers();
-  
-  // Get timing context for prompt optimization
-  const timingContext = getTimingContext(uploadHour);
-  
-  // Generate analytics-driven weights for topic selection
-  const topicWeights = generateTopicWeights(analyticsInsights);
-  
-  const personaData = MasterPersonas[persona];
-  let selectedTopic = topic;
-  
-  // If we have topic options and analytics, use weighted selection
-  if (personaData?.subCategories && topicWeights.length > 0) {
-    const availableTopics = personaData.subCategories.map(sub => sub.key);
-    if (availableTopics.includes(topic)) {
-      selectedTopic = selectOptimalTopic(availableTopics, topicWeights);
-      console.log(`[Analytics] Topic selection: ${topic} -> ${selectedTopic} (${timingContext.timeOfDay})`);
-    }
-  }
-  
-  const topicData = personaData?.subCategories?.find(sub => sub.key === selectedTopic);
+    const { persona, topic, analyticsInsights, uploadHour } = jobConfig;
+    const markers = generateVariationMarkers();
 
-  let prompt = '';
-  
-  const promptConfig: PromptConfig = {
-    persona,
-    topic: selectedTopic, // Use analytics-optimized topic
-    topicData,
-    markers,
-    format: jobConfig.preferredFormat || jobConfig.preferredLayout,
-    formatDefinition: jobConfig.formatDefinition,
-    // Pass timing and analytics context
-    timingContext,
-    // analyticsInsights
+    // Get timing context for prompt optimization
+    const timingContext = getTimingContext(uploadHour);
 
-  };
-  
-  // Use format-aware prompt generation for new formats or layouts
-  // This handles the weighted layout selection from generationService.ts
-  if ((jobConfig.preferredFormat && jobConfig.preferredFormat !== 'mcq') || 
-      (jobConfig.preferredLayout && jobConfig.preferredLayout !== 'mcq')) {
-    prompt = generateFormatPrompt(promptConfig);
-    // For new formats, we don't need the legacy JSON formatting
-    return { prompt, markers };
-  }
-  
-  // Legacy format generation for MCQ
-  if (persona === 'brain_health_tips' || persona === 'eye_health_tips') {
-    if (!topicData) {
-      throw new Error(`Topic "${topic}" not found for persona "${persona}"`);
-    }
-    
-    // Use analytics-driven format selection or default to multiple_choice
-    const questionFormat = getOptimalFormat(analyticsInsights, 'multiple_choice');
-    
-    promptConfig.questionFormat = questionFormat;
-    
-    if (persona === 'brain_health_tips') {
-      prompt = generateBrainHealthPrompt(promptConfig);
-    } else {
-      prompt = generateEyeHealthPrompt(promptConfig);
-    }
-    
-    prompt = addJsonFormatInstructions(prompt, questionFormat);
-  }
-  // English content generation
-  else if (persona === 'english_vocab_builder') {
-    prompt = generateEnglishPrompt(promptConfig);
-    
-    // Use analytics-driven format selection or default to multiple_choice
-    const questionFormat = getOptimalFormat(analyticsInsights, 'multiple_choice');
-    
-    prompt = addJsonFormatInstructions(prompt, questionFormat);
-  }
-  else if (persona === 'ssc_shots') {
-    // Check if this is a current affairs topic that needs RSS content
-    if (selectedTopic === 'ssc_current_affairs') {
-      prompt = await generateSSCCurrentAffairsPrompt(promptConfig);
-    } else {
-      prompt = generateSSCMCQPrompt(promptConfig);
-    }
-    
-    // Use analytics-driven format selection or default to multiple_choice
-    const questionFormat = getOptimalFormat(analyticsInsights, 'multiple_choice');
-    
-    prompt = addJsonFormatInstructions(prompt, questionFormat);
-  }
-  else if (persona === 'space_facts_quiz') {
-    prompt = generateAstronomyPrompt(promptConfig);
-    
-    // Astronomy content uses multiple choice format
-    const questionFormat = 'multiple_choice';
-    
-    prompt = addJsonFormatInstructions(prompt, questionFormat);
-  }
-  else {
-    throw new Error(`Unsupported persona: ${persona}`);
-  }
+    // Generate analytics-driven weights for topic selection
+    const topicWeights = generateTopicWeights(analyticsInsights);
 
-  // Apply timing-aware enhancements to the generated prompt
-  if (timingContext) {
-    prompt = enhancePromptWithTiming(prompt, timingContext);
-    console.log(`[Analytics] Applied ${timingContext.timeOfDay} timing enhancements (${timingContext.energy} energy)`);
-  }
+    const personaData = MasterPersonas[persona];
+    let selectedTopic = topic;
 
-  return {
-    prompt,
-    markers
-  };
+    // If we have topic options and analytics, use weighted selection
+    if (personaData?.subCategories && topicWeights.length > 0) {
+        const availableTopics = personaData.subCategories.map(sub => sub.key);
+        if (availableTopics.includes(topic)) {
+            selectedTopic = selectOptimalTopic(availableTopics, topicWeights);
+            console.log(`[Analytics] Topic selection: ${topic} -> ${selectedTopic} (${timingContext.timeOfDay})`);
+        }
+    }
+
+    const topicData = personaData?.subCategories?.find(sub => sub.key === selectedTopic);
+
+    // Determine the optimal question format (e.g., 'multiple_choice')
+    const questionFormat: QuestionFormatType = getOptimalFormat(analyticsInsights, 'multiple_choice');
+
+    const promptConfig: PromptConfig = {
+        persona,
+        topic: selectedTopic, // Use analytics-optimized topic
+        topicData,
+        markers,
+        format: jobConfig.preferredFormat || jobConfig.preferredLayout, // Format or Layout
+        formatDefinition: jobConfig.formatDefinition,
+        timingContext,
+        questionFormat, // Pass questionFormat for analytics-driven prompt tailoring
+    };
+
+    // --- FIX: Unified Prompt Generation using the router ---
+    // ALL prompt generation is now handled by generateFormatPrompt, which includes the logic
+    // for legacy MCQ types like SSC and Health Quizzes in its internal routing table.
+    let prompt = await generateFormatPrompt(promptConfig); 
+
+    // Apply JSON format instructions only if the persona is one that historically required
+    // JSON output, which typically corresponds to MCQ-based content.
+    const formatsRequiringJson = ['mcq', 'multiple_choice', 'quick_fix', 'usage_demo', 'common_mistake'];
+    const currentFormat = jobConfig.preferredFormat || jobConfig.preferredLayout || 'mcq';
+    
+    if (formatsRequiringJson.includes(currentFormat as string) || 
+        persona === 'brain_health_tips' || 
+        persona === 'eye_health_tips' || 
+        persona === 'english_vocab_builder' || 
+        persona === 'ssc_shots' || 
+        persona === 'space_facts_quiz') {
+        
+        // We use the analytics-driven questionFormat (e.g., 'multiple_choice') for the instructions
+        prompt = addJsonFormatInstructions(prompt, questionFormat);
+    }
+    // --- END FIX ---
+
+
+    // Apply timing-aware enhancements to the generated prompt
+    if (timingContext) {
+        prompt = enhancePromptWithTiming(prompt, timingContext);
+        console.log(`[Analytics] Applied ${timingContext.timeOfDay} timing enhancements (${timingContext.energy} energy)`);
+    }
+
+    return {
+        prompt,
+        markers
+    };
 }

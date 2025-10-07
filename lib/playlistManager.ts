@@ -56,7 +56,6 @@ const CONTENT_CONFIG: Record<string, ContentConfig> = {
     intros: {
       mcq: `📚 Master {TOPIC} with targeted SSC practice questions! Government exam preparation made effective.`,
       quick_tip: `📚 Ace {TOPIC} with expert SSC preparation tips! Government exam success in bite-sized content.`,
-      common_mistake: `📚 Avoid {TOPIC} mistakes that cost exam marks! Learn what 90% of SSC aspirants get wrong.`,
     }
   },
   space_facts_quiz: {

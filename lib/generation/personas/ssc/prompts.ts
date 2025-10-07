@@ -351,45 +351,7 @@ Make aspirants feel accomplished and ready to tackle their government job exam. 
 /**
  * Generates Common Mistake format prompt (SSC)
  */
-export function generateSSCCommonMistakePrompt(config: PromptConfig): string {
-  const { topicData, markers } = config;
-  const { timeMarker, tokenMarker } = markers;
 
-  return `You are an **SSC MISTAKE AVOIDANCE EXPERT** creating viral "Common Mistake" content for YouTube Shorts. Focus on errors that **cost candidates marks and time**.
-
-TOPIC: "${topicData.displayName}" - Focus on mistakes that **99% of aspirants make under exam pressure**.
-
-FORMAT: Common Mistake (5 frames - for full video flow)
-Frame 1 (Hook): "🚨 **STOP LOSING MARKS** on this question!"
-Frame 2 (Mistake): "99% choose: [incorrect option/approach] (The Costly Error)"
-Frame 3 (Correct): "**SSC TOPPERS KNOW:** [correct answer/approach] (The Winning Strategy)"
-Frame 4 (Practice): "**Instant Exam Fix:** Apply this strategy to..."
-Frame 5 (CTA/Explanation): "Why this works/Follow"
-
-CONTENT REQUIREMENTS:
-• HOOK: Create **MAXIMUM URGENCY** about a common exam error.
-• MISTAKE: Show the wrong approach that seems logical but **FAILS UNDER EXAM CONDITIONS**.
-• CORRECT: Provide the **expert, high-speed strategy** that toppers use.
-• PRACTICE: Give **immediate practice opportunity** to solidify the correct habit.
-• EXPLANATION: Explain the logic/relevance (under 100 chars).
-
-TARGET: SSC aspirants who want to **avoid common exam pitfalls and secure their score**.
-
-RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
-{
-  "hook": "attention_grabbing_opener_about_mistake_under_60_chars",
-  "mistake": "incorrect_approach_most_aspirants_use",
-  "correct": "expert_strategy_that_ensures_success",
-  "practice": "practice_instruction_with_correct_approach",
-  "explanation": "why_experts_use_this_strategy_under_100_chars",
-  "cta": "engaging_SSC_exam_hack_CTA_under_80_chars",
-  "format_type": "common_mistake"
-}
-
-IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
-
-Create content that makes aspirants feel embarrassed about their mistake but **excited to fix it and gain a competitive edge**. [${timeMarker}-${tokenMarker}]`;
-}
 
 /**
  * Generates Quick Tip format prompt (SSC)
@@ -434,47 +396,3 @@ IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no a
 Create content that makes aspirants immediately feel more strategic about their preparation. [${timeMarker}-${tokenMarker}]`;
 }
 
-/**
- * Generates Usage Demo format prompt (SSC)
- */
-export function generateSSCUsageDemoPrompt(config: PromptConfig): string {
-  const { topicData, markers } = config;
-  const { timeMarker, tokenMarker } = markers;
-
-  return `You are an **SSC STRATEGY ARCHITECT** creating viral "Usage Demo" content for YouTube Shorts. You focus on applying concepts precisely under exam pressure.
-
-TOPIC: "${topicData.displayName}" - Strategic concept application in the exam hall.
-
-FORMAT: Usage Demo (4 frames)
-Frame 1 (Hook): "When to use this **High-Value** SSC strategy"
-Frame 2 (Wrong): "❌ **COULD COST MARKS:** Don't use it here: [wrong scenario]"
-Frame 3 (Right): "✅ **SECURE YOUR MARKS:** Perfect for: [correct scenario]"
-Frame 4 (Practice): "**Identify the Trap:** Your turn to identify the scenario!"
-
-CONTENT REQUIREMENTS:
-• HOOK: Promise to show **strategic application of an SSC concept** that determines success.
-• WRONG: Common misapplication that seems plausible but is **EXAM-FATAL**.
-• RIGHT: Perfect strategic usage that **ENSURES EXAM SUCCESS**.
-• PRACTICE: Interactive challenge for viewer engagement focused on **identifying the right context**.
-
-TARGET: Advanced SSC aspirants who want **strategic precision and zero mistakes**.
-
-RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
-{
-  "hook": "promise_about_strategic_concept_mastery_under_60_chars",
-  "target_concept": "SSC_strategy_concept_to_demonstrate",
-  "wrong_scenario": "situation_showing_incorrect_application",
-  "wrong_context": "brief_explanation_why_wrong_under_80_chars",
-  "right_scenario": "situation_showing_perfect_application",
-  "right_context": "brief_explanation_why_correct_under_80_chars",
-  "practice": "practice_instruction_with_scenario",
-  "practice_scenario": "specific_SSC_context_for_aspirant_to_practice",
-  "explanation": "why_strategic_usage_matters_for_exam_success_under_120_chars",
-  "cta": "engaging_SSC_exam_strategy_mastery_CTA_under_80_chars",
-  "format_type": "usage_demo"
-}
-
-IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
-
-Create content that makes aspirants confident about strategic concept application. [${timeMarker}-${tokenMarker}]`;
-}

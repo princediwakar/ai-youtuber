@@ -62,4 +62,4 @@ export type FormatType =
   | 'usage_demo'
   | 'quick_tip'
 
-export type PromptGenerator = (config: PromptConfig) => string;
+  export type PromptGenerator = (config: PromptConfig) => string | Promise<string>;

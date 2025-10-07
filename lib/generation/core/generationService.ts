@@ -6,13 +6,14 @@ import { getAccountConfig } from '@/lib/accounts';
 import { generatePrompt, type JobConfig } from './promptGenerator';
 import { parseAndValidateResponse, generateContentHash } from './contentValidator';
 import { generateVariationMarkers } from '../shared/utils';
-import { LayoutType, getLayout } from '@/lib/visuals/layouts/layoutSelector'; // <-- FIX 1: Import getLayout
+import { LayoutType, getLayout } from '@/lib/visuals/layouts/layoutSelector';
 import { analyticsInsightsService as analyticsService } from '../../analytics/insightsService';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { config } from '@/lib/config';
 
 // ANALYTICS: Track hook patterns from highest-performing videos
+// FIX: Moving these outside the main logic block.
 const HIGH_ENGAGEMENT_HOOK_PATTERNS = [
   'this 30-second habit will boost',
   'you\'ve been using this word wrong',
@@ -79,59 +80,48 @@ export interface GenerationJobConfig extends JobConfig {
   previousLayouts?: LayoutType[];
   targetEngagement?: 'educational' | 'entertaining' | 'interactive' | 'practical';
 }
-/**
- * ANALYTICS-DRIVEN: Always return MCQ layout
- * Data shows it's the only format that drives engagement
- */
-// Weighted layout distribution for better content variety
-// 60% MCQ (best performing), 40% other formats for experimentation
+
 interface LayoutWeight {
   layout: LayoutType;
   weight: number;
 }
 
+/**
+ * FIX: Centralized Layout Weight Configuration
+ * This should be the single source of truth for runtime layout selection.
+ */
+const PERSONA_LAYOUT_WEIGHTS: Record<string, LayoutWeight[]> = {
+    'english_vocab_builder': [
+        { layout: 'mcq', weight: 40 },           
+        { layout: 'simplified_word', weight: 20 },
+        { layout: 'quick_fix', weight: 10 },
+        { layout: 'usage_demo', weight: 10 },
+        { layout: 'common_mistake', weight: 10 } // Ensuring common mistake is included
+    ],
+    'brain_health_tips': [
+        { layout: 'mcq', weight: 60 },           
+        { layout: 'quick_tip', weight: 40 },     
+    ],
+    'eye_health_tips': [
+        { layout: 'mcq', weight: 60 },
+        { layout: 'quick_tip', weight: 40 },
+    ],
+    'ssc_shots': [
+        { layout: 'mcq', weight: 70 },            
+        { layout: 'quick_tip', weight: 30 },      
+    ],
+    'space_facts_quiz': [
+        { layout: 'mcq', weight: 80 },           
+        { layout: 'quick_tip', weight: 20 }
+    ],
+    'default': [
+        { layout: 'mcq', weight: 70 },           
+        { layout: 'quick_tip', weight: 30 }
+    ]
+};
+
 function getLayoutDistributionForPersona(persona: string): LayoutWeight[] {
-  // English vocabulary - balanced format distribution matching prompt router
-  if (persona === 'english_vocab_builder') {
-    return [
-      { layout: 'mcq', weight: 40 },           // 60% MCQ (best engagement)
-      { layout: 'simplified_word', weight: 20 }, // 20% vocabulary format
-      { layout: 'quick_fix', weight: 10 },      // 10% quick fixes
-      { layout: 'usage_demo', weight: 10 }      // 10% usage examples
-    ];
-  }
-
-  // Health content - mix of tips and quizzes matching prompt router
-  if (persona === 'brain_health_tips' || persona === 'eye_health_tips') {
-    return [
-      { layout: 'mcq', weight: 60 },           // 60% MCQ
-      { layout: 'quick_tip', weight: 25 },     // 25% tips (proven format)
-    ];
-  }
-
-  // SSC exam content - variety matching prompt router
-  if (persona === 'ssc_shots') {
-    return [
-      { layout: 'mcq', weight: 50 },            // 50% MCQ (exam focus)
-      { layout: 'quick_tip', weight: 15 },      // 15% study tips
-      { layout: 'common_mistake', weight: 15 },  // 15% common mistakes
-      { layout: 'usage_demo', weight: 10 },      // 10% usage demos
-    ];
-  }
-
-  // Astronomy/space content - limited variety matching prompt router
-  if (persona === 'space_facts_quiz') {
-    return [
-      { layout: 'mcq', weight: 80 },           // 80% MCQ (quiz focus)
-      { layout: 'quick_tip', weight: 20 }      // 20% space facts
-    ];
-  }
-
-  // Default distribution for any other personas
-  return [
-    { layout: 'mcq', weight: 70 },           // 70% MCQ (safest bet)
-    { layout: 'quick_tip', weight: 30 }      // 30% tips
-  ];
+  return PERSONA_LAYOUT_WEIGHTS[persona] || PERSONA_LAYOUT_WEIGHTS.default;
 }
 
 function selectWeightedRandomLayout(weights: LayoutWeight[]): LayoutType {
@@ -163,7 +153,6 @@ function selectLayoutForPersona(persona: string, preferredLayout?: LayoutType): 
 
   const weightInfo = layoutWeights.find(w => w.layout === selectedLayout)?.weight || 0;
   console.log(`✅ Randomly selected ${selectedLayout} layout for ${persona} (${weightInfo}% weight)`);
-  console.log(`🔄 Layout will be passed as preferredLayout to promptGenerator`);
 
   return selectedLayout;
 }
@@ -186,7 +175,6 @@ const AI_TIMEOUT = 30000; // 30 seconds
 
 /**
  * The main service function that orchestrates the generation and storage of content.
- * Enhanced with analytics-driven optimization for improved performance.
  */
 export async function generateAndStoreContent(
   jobConfig: GenerationJobConfig
@@ -202,10 +190,9 @@ export async function generateAndStoreContent(
     // Get account configuration using the provided accountId
     const account = await getAccountConfig(jobConfig.accountId);
 
-    // Get analytics insights for this persona (with proper timeout handling)
+    // Get analytics insights for this persona
     let analyticsInsights: any | undefined;
     try {
-      // Add 10-second timeout for analytics queries
       const analyticsPromise = analyticsService.analyzePerformanceWithAI(jobConfig.accountId, jobConfig.persona);
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Analytics query timeout')), 10000)
@@ -221,7 +208,6 @@ export async function generateAndStoreContent(
     }
 
     // Determine upload timing for prompt optimization
-    // Check schedule for specific account
     const now = new Date();
     const istDateString = now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
     const istTime = new Date(istDateString);
@@ -229,7 +215,6 @@ export async function generateAndStoreContent(
     const uploadHour = istTime.getHours();
 
     // Select appropriate layout for this persona
-    // If preferredFormat is specified, use it as preferredLayout
     const preferredLayout = jobConfig.preferredLayout || jobConfig.preferredFormat as LayoutType;
     const selectedLayout: LayoutType = selectLayoutForPersona(jobConfig.persona, preferredLayout);
 
@@ -280,7 +265,6 @@ export async function generateAndStoreContent(
       // Try one more time with different variation markers
       const retryPromptResult = await generatePrompt({
         ...jobConfig
-        // generatePrompt will create new markers internally for variation
       });
 
       const retryResponse = await deepseekClient.chat.completions.create({
@@ -326,7 +310,7 @@ export async function generateAndStoreContent(
     const personaData = MasterPersonas[jobConfig.persona];
     const topicData = personaData?.subCategories?.find(sub => sub.key === topicKey);
 
-    // FIX 2: Explicitly set the frame sequence based on the selected layout
+    // FIX: Explicitly set the frame sequence based on the selected layout
     const layoutDefinition = getLayout(selectedLayout);
     const frameSequence = layoutDefinition.frames; 
 
@@ -343,7 +327,7 @@ export async function generateAndStoreContent(
       account_id: account.id,
 
       // Layout tracking fields
-      format_type: selectedLayout, // Keep for compatibility
+      format_type: selectedLayout, 
       frame_sequence: frameSequence, // <-- NOW CORRECTLY SET
       layout_metadata: {
         layoutType: selectedLayout,
@@ -369,7 +353,7 @@ export async function generateAndStoreContent(
       topic: jobPayload.topic,
       status: jobPayload.status,
       step: jobPayload.step,
-      frame_sequence: jobPayload.frame_sequence // Logging to confirm the fix
+      frame_sequence: jobPayload.frame_sequence
     });
 
     const jobId = await createQuizJob(jobPayload);

@@ -14,6 +14,7 @@ import type {
 
 // Re-export types for convenience
 export type { VariationMarkers, PromptConfig, RandomizationElements, ContextInjection, TopicGuideline };
+export type QuestionFormatType = 'multiple_choice' | 'true_false' | 'assertion_reason' | string;
 
 /**
  * Generates unique variation markers for content diversity
