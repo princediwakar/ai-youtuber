@@ -1,3 +1,4 @@
+// lib/types.ts
 /**
  * Defines all shared TypeScript interfaces and types for the application.
  * This ensures data consistency from generation to database storage.

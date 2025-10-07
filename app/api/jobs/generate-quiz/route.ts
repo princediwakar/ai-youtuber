@@ -1,4 +1,3 @@
-// app/api/jobs/generate-quiz/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { MasterPersonas } from '@/lib/personas';
 import { generateAndStoreContent } from '@/lib/generation/core/generationService';
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
     try {
       const body = await request.json();
       accountId = body.accountId || accountId;
-      preferredFormat = body.format;
+      preferredFormat = body.format; // Restored to use 'format'
     } catch {
       // No body or invalid JSON - use default
     }

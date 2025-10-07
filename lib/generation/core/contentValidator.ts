@@ -401,7 +401,7 @@ function validateSimplifiedWordFormat(data: any): ValidationResult {
  * Validates Common Mistake format structure
  */
 function validateCommonMistakeFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'mistake', 'correct', 'practice', 'cta'];
+  const requiredFields = ['hook', 'mistake', 'correct', 'practice', 'explanation', 'cta'];
   const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
   
   if (missingFields.length > 0) {

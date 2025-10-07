@@ -54,13 +54,19 @@ async function makeRequest(path, method = 'POST', body = null) {
   });
 }
 
-async function runPipeline(accountId = 'english_shots') {
-  console.log(`🚀 Starting Multi-Account Educational Quiz Pipeline for ${accountId}...\n`);
+async function runPipeline(accountId = 'english_shots', layout = null) {
+  console.log(`🚀 Starting Educational Quiz Pipeline for ${accountId} (Layout: ${layout || 'Default'})...\n`);
 
   try {
-    // Step 1: Generate Quiz with account ID
+    // Step 1: Generate Quiz with account ID and optional layout
     console.log(`📝 Step 1: Generating quiz questions for ${accountId}...`);
-    const step1 = await makeRequest('/api/jobs/generate-quiz', 'POST', { accountId });
+    
+    const step1Body = { accountId };
+    if (layout) {
+      step1Body.format = layout; // FIX: Using 'format' key to match the restored API route
+    }
+    
+    const step1 = await makeRequest('/api/jobs/generate-quiz', 'POST', step1Body);
     console.log(`Status: ${step1.status}`);
     console.log(`Response: ${JSON.stringify(step1.data, null, 2)}\n`);
 
@@ -88,15 +94,15 @@ async function runPipeline(accountId = 'english_shots') {
       throw new Error(`Step 3 failed with status ${step3.status}`);
     }
 
-    // Step 4: Upload to YouTube with account ID
-    console.log(`📺 Step 4: Uploading to YouTube for ${accountId}...`);
-    const step4 = await makeRequest('/api/jobs/upload-quiz-videos', 'POST', { accountId });
-    console.log(`Status: ${step4.status}`);
-    console.log(`Response: ${JSON.stringify(step4.data, null, 2)}\n`);
+    // // Step 4: Upload to YouTube with account ID
+    // console.log(`📺 Step 4: Uploading to YouTube for ${accountId}...`);
+    // const step4 = await makeRequest('/api/jobs/upload-quiz-videos', 'POST', { accountId });
+    // console.log(`Status: ${step4.status}`);
+    // console.log(`Response: ${JSON.stringify(step4.data, null, 2)}\n`);
 
-    if (step4.status !== 200) {
-      throw new Error(`Step 4 failed with status ${step4.status}`);
-    }
+    // if (step4.status !== 200) {
+    //   throw new Error(`Step 4 failed with status ${step4.status}`);
+    // }
 
     console.log(`✅ Pipeline completed successfully for ${accountId}!`);
 
@@ -107,21 +113,21 @@ async function runPipeline(accountId = 'english_shots') {
 }
 
 // Define available accounts
-// const ACCOUNTS = ['astronomy_shots'];
-const ACCOUNTS = ['english_shots', 'health_shots', 'ssc_shots', 'astronomy_shots'];
+const ACCOUNTS = ['english_shots', 'ssc_shots', 'health_shots','astronomy_shots'];
 
-// Allow account ID to be passed as command line argument, or randomize by default
+// Get arguments: process.argv[2] is accountId, process.argv[3] is layout
 let accountId = process.argv[2];
+let layout = process.argv[3]; // New argument for preferred layout/format
 
 if (accountId) {
   if (!ACCOUNTS.includes(accountId)) {
-    console.error('❌ Invalid account ID. Use "english_shots" or "health_shots" or "ssc_shots" or "astronomy_shots"');
+    console.error('❌ Invalid account ID. Use one of:', ACCOUNTS.join(', '));
     process.exit(1);
   }
 } else {
-  // Randomize account selection
+  // Randomize account selection if no ID is provided
   accountId = ACCOUNTS[Math.floor(Math.random() * ACCOUNTS.length)];
   console.log(`🎲 Randomly selected account: ${accountId}\n`);
 }
 
-runPipeline(accountId);
+runPipeline(accountId, layout);

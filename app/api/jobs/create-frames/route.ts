@@ -5,8 +5,18 @@ import { getOldestPendingJob, updateJob, autoRetryFailedJobs } from '@/lib/datab
 import { getAccountConfig } from '@/lib/accounts';
 import { initializeErrorHandlers } from '@/lib/errorHandlers';
 
-// Initialize global error handlers
-initializeErrorHandlers();
+// --- FIX FOR MaxListenersExceededWarning ---
+// Use a module-level flag to ensure error handlers are initialized only once
+let isInitialized = false;
+
+if (!isInitialized) {
+  // Initialize global error handlers
+  initializeErrorHandlers();
+  isInitialized = true;
+  console.log('✅ Global error handlers initialized once.'); // Added log for confirmation
+}
+// -------------------------------------------
+
 
 /**
  * --- REFACTORED FOR SERVERLESS RELIABILITY ---

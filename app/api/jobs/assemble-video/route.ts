@@ -14,6 +14,21 @@ import {
 import { QuizJob } from '@/lib/types';
 import { config } from '@/lib/config';
 
+// --- TIME LOGGING UTILITY ---
+const timeMap: Record<string, number> = {};
+function timeStart(key: string) {
+  timeMap[key] = Date.now();
+}
+function timeEnd(key: string) {
+  const start = timeMap[key];
+  if (!start) return;
+  const duration = ((Date.now() - start) / 1000).toFixed(3); // Log in seconds, 3 decimal places
+  console.log(`${key}: ${duration}s`);
+  delete timeMap[key];
+  return duration;
+}
+// ----------------------------
+
 // Helper functions for video assembly
 function getFFmpegPath(): string {
   const { existsSync } = require('fs');
@@ -84,7 +99,6 @@ function getFrameDuration(questionData: any, frameNumber: number, layoutType?: s
       return 4.0; // Increased to 4.0s
       
     case 4: // Deep Content / Explanation / Practice
-      // Time to read the explanation/practice attempt
       return 7.0; // Increased to 7.0s
       
     case 5: // CTA Frame (Final prompt/call to action)
@@ -97,9 +111,11 @@ function getFrameDuration(questionData: any, frameNumber: number, layoutType?: s
 
 
 export async function POST(request: NextRequest) {
+  timeStart('POST /assemble-video');
   try {
     const authHeader = request.headers.get('Authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      timeEnd('POST /assemble-video');
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
@@ -113,18 +129,20 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting single video assembly for account: ${accountId || 'all'}`);
 
-    // --- FIX: The main logic now runs directly in the request. ---
-    // This is more robust for serverless environments as it finds and processes ONE job.
-    
     // 1. Auto-retry previously failed jobs (this is a quick check)
+    timeStart('autoRetryFailedJobs');
     await autoRetryFailedJobs();
+    timeEnd('autoRetryFailedJobs');
       
     // 2. Fetch the single oldest job pending assembly (Step 3)
+    timeStart('getOldestPendingJob');
     const job = await getOldestPendingJob(3, accountId);
+    timeEnd('getOldestPendingJob');
     
     if (!job) {
       const message = `No jobs pending video assembly for account: ${accountId || 'all'}.`;
       console.log(message);
+      timeEnd('POST /assemble-video');
       return NextResponse.json({ success: true, message });
     }
 
@@ -132,29 +150,39 @@ export async function POST(request: NextRequest) {
 
     // 3. Process the single job within a try/catch block
     try {
+      timeStart(`processJob ${job.id}`);
       await processJob(job);
+      timeEnd(`processJob ${job.id}`);
       console.log(`[Video Assembly] Successfully completed job ${job.id}.`);
+      timeEnd('POST /assemble-video');
       return NextResponse.json({ success: true, processedJobId: job.id });
     } catch (error) {
        // This catch block is critical. It marks the job as failed in the database,
        // preventing an infinite loop of failures.
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[Video Assembly] CRITICAL ERROR processing job ${job.id}:`, error);
+      
+      timeStart(`updateJob-fail ${job.id}`);
       await updateJob(job.id, {
         status: 'failed',
         error_message: `Video assembly failed: ${errorMessage.substring(0, 500)}`
       });
+      timeEnd(`updateJob-fail ${job.id}`);
+      
+      timeEnd('POST /assemble-video');
       return NextResponse.json({ success: false, error: errorMessage, failedJobId: job.id }, { status: 500 });
     }
 
   } catch (error) {
     console.error('❌ Video assembly endpoint failed:', error);
+    timeEnd('POST /assemble-video');
     return NextResponse.json({ success: false, error: 'Video assembly endpoint failed' }, { status: 500 });
   }
 }
 
 async function processJob(job: QuizJob) {
   const tempDir = path.join(tmpdir(), `quiz-video-${job.id}-${Date.now()}`);
+  const jobKey = `Job ${job.id}`; // Base key for all job-specific timings
   try {
     console.log(`[Job ${job.id}] Assembling video...`);
     const frameUrls = job.data.frameUrls;
@@ -162,14 +190,21 @@ async function processJob(job: QuizJob) {
       throw new Error('No frame URLs found in job data');
     }
 
+    timeStart(`${jobKey} - Make temp dir`);
     await fs.mkdir(tempDir, { recursive: true });
-    const { videoUrl, videoSize, audioFile } = await assembleVideoWithConcat(frameUrls, job, tempDir);
+    timeEnd(`${jobKey} - Make temp dir`);
     
+    timeStart(`${jobKey} - assembleVideoWithConcat`);
+    const { videoUrl, videoSize, audioFile } = await assembleVideoWithConcat(frameUrls, job, tempDir);
+    timeEnd(`${jobKey} - assembleVideoWithConcat`);
+    
+    timeStart(`${jobKey} - updateJob-success`);
     await updateJob(job.id, {
       step: 4,
       status: 'upload_pending',
       data: { ...job.data, videoUrl, videoSize, audioFile }
     });
+    timeEnd(`${jobKey} - updateJob-success`);
     
     console.log(`[Job ${job.id}] ✅ Video assembly successful: ${videoUrl}`);
 
@@ -179,12 +214,17 @@ async function processJob(job: QuizJob) {
     throw error;
   } finally {
     // Cleanup the temporary directory regardless of success or failure
+    timeStart(`${jobKey} - Cleanup temp dir`);
     await fs.rm(tempDir, { recursive: true, force: true }).catch(e => console.warn(`Failed to cleanup temp dir ${tempDir}:`, e));
+    timeEnd(`${jobKey} - Cleanup temp dir`);
   }
 }
 
 async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDir: string): Promise<{videoUrl: string, videoSize: number, audioFile: string | null}> {
   const ffmpegPath = getFFmpegPath();
+  const jobKey = `Job ${job.id}`;
+  
+  timeStart(`${jobKey} - Download frames`);
   const framePaths = await Promise.all(
     frameUrls.map(async (url, index) => {
       const frameBuffer = await downloadImageFromCloudinary(url);
@@ -193,75 +233,101 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
       return framePath;
     })
   );
+  timeEnd(`${jobKey} - Download frames`);
 
   const durations = Array.from({ length: framePaths.length }, (_, index) => {
+    // Get duration for each frame. Default to 4 seconds.
     return getFrameDuration(job.data.content || {}, index + 1, job.data.layoutType) || 4;
   });
 
   const outputVideoPath = path.join(tempDir, `quiz-${job.id}.mp4`);
   const audioPath = getRandomAudioFile();
   const audioFileName = audioPath ? path.basename(audioPath) : null;
-  const clipPaths: string[] = [];
+
+  // --- START OPTIMIZATION: Replacing the clip-by-clip loop ---
+  timeStart(`${jobKey} - Single FFmpeg assembly`);
+
+  // 1. Build the input arguments
+  const inputArgs: string[] = [];
+  for (const framePath of framePaths) {
+    inputArgs.push('-i', framePath);
+  }
+  
+  // 2. Build the filter_complex graph
+  let filterComplex = '';
+  let concatInputs = '';
+  let totalDuration = 0;
 
   for (let i = 0; i < framePaths.length; i++) {
-    const framePath = framePaths[i];
-    const duration = durations[i] || 4;
-    const clipPath = path.join(tempDir, `clip-${i}.mp4`);
+    const duration = durations[i];
+    totalDuration += duration;
     
-    const clipArgs = [
-      '-loop', '1', '-i', framePath, '-t', String(duration), '-c:v', 'libx264',
-      '-preset', 'ultrafast', '-crf', '30', '-pix_fmt', 'yuv420p',
-      '-vf', 'scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black',
-      '-threads', '2', '-y', clipPath
-    ];
+    // Scale and Pad filter (same as your clip generation step)
+    const scalePadFilter = 
+      `scale=1080:1920:force_original_aspect_ratio=decrease,` + 
+      `pad=1080:1920:(ow-iw)/2:(oh-ih)/2:black`;
+
+    // Process each image: scale, pad, and use tpad to hold the frame for 'duration' seconds
+    filterComplex += 
+      `[${i}:v]${scalePadFilter},` + 
+      `setpts=N/FRAME_RATE/TB,` + 
+      `tpad=stop_mode=clone:stop_duration=${duration}[v${i}];`; // Hold frame for duration
     
-    await new Promise<void>((resolve, reject) => {
-      const process = spawn(ffmpegPath, clipArgs, { cwd: tempDir });
-      let stderr = '';
-      const timeoutId = setTimeout(() => {
-        process.kill('SIGKILL');
-        reject(new Error(`Frame ${i} processing timed out after 40 seconds`));
-      }, 40000); // 40 second timeout per frame
-      
-      process.stderr?.on('data', (d) => { stderr += d.toString(); });
-      process.on('close', (code) => {
-        clearTimeout(timeoutId);
-        if (code === 0) resolve();
-        else reject(new Error(`Frame ${i} failed with code ${code}: ${stderr.slice(-300)}`));
-      });
-      process.on('error', (err) => {
-        clearTimeout(timeoutId);
-        reject(err);
-      });
-    });
-    
-    clipPaths.push(clipPath);
+    concatInputs += `[v${i}]`; // Add processed video stream to the final concatenation list
   }
 
-  const concatContent = clipPaths.map(p => `file '${path.basename(p)}'`).join('\n');
-  const concatFilePath = path.join(tempDir, 'concat.txt');
-  await fs.writeFile(concatFilePath, concatContent);
+  // Final concatenation of all video streams
+  filterComplex += `${concatInputs}concat=n=${framePaths.length}:v=1:a=0[v_out]`;
 
-  const ffmpegArgs = audioPath ? [
-      '-f', 'concat', '-safe', '0', '-i', concatFilePath, '-i', audioPath,
-      '-c:v', 'copy', '-c:a', 'aac', '-filter:a', 'volume=0.3', '-shortest', '-y', outputVideoPath
-    ] : [
-      '-f', 'concat', '-safe', '0', '-i', concatFilePath, '-c:v', 'copy', '-y', outputVideoPath
-    ];
+  // 3. Build the full FFmpeg command arguments
+  const videoOutputArgs = [
+    // Input files (images)
+    ...inputArgs,
+    
+    // Audio input (if present)
+    ...(audioPath ? ['-i', audioPath] : []),
+    
+    // Filter complex graph (The core of the assembly)
+    '-filter_complex', filterComplex,
+    
+    // Video encoding
+    '-map', '[v_out]',
+    '-c:v', 'libx264',
+    '-preset', 'ultrafast',
+    '-crf', '30',
+    '-pix_fmt', 'yuv420p',
+
+    // Audio encoding and mapping
+    ...(audioPath ? [
+        '-map', `${frameUrls.length}:a`, // The audio input index will be the last one
+        '-c:a', 'aac',
+        '-filter:a', 'volume=0.3', 
+        '-shortest', // Stop video stream when audio ends 
+    ] : []),
+    
+    '-threads', '2',
+    '-y',
+    outputVideoPath,
+  ];
 
   await new Promise<void>((resolve, reject) => {
-    const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs, { cwd: tempDir });
+    const ffmpegProcess = spawn(ffmpegPath, videoOutputArgs, { cwd: tempDir });
     let stderr = '';
+    
+    // Adjusted timeout based on expected total video length + buffer (e.g., total duration + 20s)
+    const processTimeout = (totalDuration * 1000) + 20000; 
+    console.log(`[Job ${job.id}] Total video duration: ${totalDuration.toFixed(1)}s. Setting FFmpeg timeout to ${Math.min(processTimeout, 120000)}ms.`);
+    
     const timeoutId = setTimeout(() => {
       ffmpegProcess.kill('SIGKILL');
-      reject(new Error('FFmpeg final assembly timed out after 30 seconds'));
-    }, 30000);
-    
+      reject(new Error(`FFmpeg single assembly timed out after ${Math.min(processTimeout, 120000) / 1000} seconds`));
+    }, Math.min(processTimeout, 120000)); // Cap the timeout at 120 seconds
+
     ffmpegProcess.stderr?.on('data', (d) => { stderr += d.toString(); });
     ffmpegProcess.on('close', (code) => {
       clearTimeout(timeoutId);
       if (code === 0) resolve();
-      else reject(new Error(`FFmpeg exited with code ${code}. Stderr: ${stderr.slice(-500)}`));
+      else reject(new Error(`FFmpeg exited with code ${code}. Stderr: ${stderr.slice(-1000)}`));
     });
     ffmpegProcess.on('error', (err) => {
       clearTimeout(timeoutId);
@@ -269,8 +335,13 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     });
   });
 
+  timeEnd(`${jobKey} - Single FFmpeg assembly`);
+  // --- END OPTIMIZATION ---
+
   const videoBuffer = await fs.readFile(outputVideoPath);
-  await saveDebugVideo(videoBuffer, job.id, job.data.themeName, job.persona);
+  
+  timeStart(`${jobKey} - Debug save/Upload`);
+  // await saveDebugVideo(videoBuffer, job.id, job.data.themeName, job.persona); 
   
   if (!job.account_id) throw new Error(`Job ${job.id} is missing account_id`);
   
@@ -280,10 +351,10 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
     public_id: publicId,
     resource_type: 'video',
   });
+  timeEnd(`${jobKey} - Debug save/Upload`);
 
   return { videoUrl: result.secure_url, videoSize: videoBuffer.length, audioFile: audioFileName };
 }
-
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;

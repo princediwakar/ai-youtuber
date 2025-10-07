@@ -1,3 +1,4 @@
+// lib/generation/core/promptGenerator.ts
 /**
  * Prompt generation service
  * Orchestrates the creation of AI prompts for different content types
@@ -15,7 +16,8 @@ import {
   addJsonFormatInstructions,
   type PromptConfig
 } from '../routing/promptRouter';
-import type { AIAnalyticsInsights } from '../../analytics/types';
+// FIX: Import AnalyticsDataForAI, which contains the raw data needed for optimization functions.
+import type { AIAnalyticsInsights, AnalyticsDataForAI } from '../../analytics/types';
 import { 
   generateTopicWeights, 
   getTimingContext, 
@@ -36,6 +38,9 @@ export interface JobConfig {
   // Layout support
   preferredLayout?: string;
   // Analytics enhancement
+  // FIX: Reverting type to AIAnalyticsInsights. The optimization functions 
+  // in analyticsOptimizer.ts currently consume the AI's textual recommendations 
+  // (AIAnalyticsInsights), not the raw data structure (AnalyticsDataForAI).
   analyticsInsights?: AIAnalyticsInsights;
   uploadHour?: number; // IST hour for timing-aware prompts
 }
