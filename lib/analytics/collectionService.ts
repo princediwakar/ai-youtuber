@@ -1,3 +1,4 @@
+// lib/analytics/collectionService.ts
 import { google } from 'googleapis';
 import { getOAuth2Client } from '../googleAuth';
 // Assuming the 'query' function handles database interaction.

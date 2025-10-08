@@ -234,7 +234,7 @@ export function generateEnglishPrompt(config: PromptConfig): string {
 TOPIC: "${topicData.displayName}" - **DRAMATICALLY** improve English fluency via ${guidelines?.focus || 'Essential English vocabulary mastery'}
 
 ${timingPrefix} STRATEGY:
-• HOOK: Generate a **SINGLE-LINE, HYPER-CURIOUS, CONTEXTUAL QUESTION** (15-25 chars, use emojis like '🤯', '🔥', '🤔', '🚨'). The hook must create an immediate sense of **"I MUST KNOW THIS ANSWER."**
+• HOOK: Generate a **SINGLE-LINE, HYPER-CURIOUS, CONTEXTUAL QUESTION** (15-25 chars). The hook must create an immediate sense of **"I MUST KNOW THIS ANSWER."**
 • PSYCHOLOGY: Leverage **FOMO (Fear of Missing Out)** + the competitive nature of a quiz. Guarantee a quick fix that feels like a cheat code.
 • SCENARIOS: Apply to high-stakes moments like **JOB INTERVIEWS or UNIVERSITY ESSAYS**.
 • ENGAGEMENT: **FORCE THE VIEWER TO PAUSE AND GUESS**. ${guidelines?.engagement || 'Create immediate vocabulary upgrade opportunities'}
