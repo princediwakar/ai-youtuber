@@ -16,7 +16,6 @@ export const MasterPersonas: PersonaConfig = {
     displayName: '@EnglishShotsDaily',
     subCategories: [
       // --- High-Engagement Quick Wins ---
-      { key: 'eng_pronunciation_fails', displayName: '90% Say This WRONG 🗣️' },
       { key: 'eng_common_mistakes', displayName: 'Stop Making This Mistake ❌' },
       { key: 'eng_vocab_word_meaning', displayName: 'You Use This Word Wrong 📖' },
       { key: 'eng_vocab_fill_blanks', displayName: 'Fill the Blank Challenge ✍️' },
@@ -28,7 +27,6 @@ export const MasterPersonas: PersonaConfig = {
       
       // --- Quick Grammar Fixes ---
       { key: 'eng_grammar_hacks', displayName: '5-Second Grammar Fix ⚡' },
-      { key: 'eng_spelling_tricks', displayName: 'Spelling Trick That Works 🎯' },
     ],
   },
 

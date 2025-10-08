@@ -15,12 +15,6 @@ import {
  */
 const ENGLISH_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // English Learning - Optimized for 15s Videos
-  eng_pronunciation_fails: {
-    focus: 'One commonly mispronounced word with correct pronunciation and memory trick',
-    hook: '90% of people say this word wrong (are you one of them?)',
-    scenarios: ['job interviews', 'presentations', 'daily conversations'],
-    engagement: 'Say the word out loud right now'
-  },
   eng_common_mistakes: {
     focus: 'One grammar/usage mistake that sounds right but is wrong',
     hook: 'Stop embarrassing yourself with this common mistake',
