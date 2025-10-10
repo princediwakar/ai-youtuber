@@ -214,71 +214,51 @@ CRITICAL: Return EXACTLY ONE JSON object as shown above. Do NOT return an array.
 
 /**
  * Generates main English vocabulary prompt for MCQ format
+ * SIMPLIFIED & BEGINNER-FRIENDLY - Based on "90% Say This WRONG" (176 views - best performer)
  */
 export function generateEnglishPrompt(config: PromptConfig): string {
-  const { topicData, topic, markers, timingContext, analyticsInsights } = config;
+  const { topicData, topic, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getEnglishTopicGuidelines(topic);
-  
-  const primaryAudience = 'English learners';
-  const timingPrefix = timingContext ? `${timingContext.timeOfDay.toUpperCase()} LEARNING` : 'VIRAL LEARNING';
-  const audienceContext = timingContext?.audience || primaryAudience;
-  
-  // ANALYTICS INTEGRATION: Suggest testing the best performing format if available
-  const bestFormatHint = analyticsInsights?.formatInsights?.bestFormat && analyticsInsights.formatInsights.bestFormat !== 'mcq' ?
-    ` (NOTE: Your audience strongly prefers the **${analyticsInsights.formatInsights.bestFormat.toUpperCase()}** format - tailor the tone for maximum engagement).` : '';
 
   if (topicData) {
-    return `You are a **HYPER-ENGAGING VOCABULARY QUIZ MASTER** creating highly viral, 15-second multiple-choice challenges for YouTube Shorts. Your goal is to maximize shares and comments.
+    return `You are a friendly English teacher creating fun vocabulary quizzes for YouTube Shorts.
 
-TOPIC: "${topicData.displayName}" - **DRAMATICALLY** improve English fluency via ${guidelines?.focus || 'Essential English vocabulary mastery'}
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Common English mistakes and word usage'}
 
-${timingPrefix} STRATEGY:
-• HOOK: Generate a **SINGLE-LINE, HYPER-CURIOUS, CONTEXTUAL QUESTION** (15-25 chars). The hook must create an immediate sense of **"I MUST KNOW THIS ANSWER."**
-• PSYCHOLOGY: Leverage **FOMO (Fear of Missing Out)** + the competitive nature of a quiz. Guarantee a quick fix that feels like a cheat code.
-• SCENARIOS: Apply to high-stakes moments like **JOB INTERVIEWS or UNIVERSITY ESSAYS**.
-• ENGAGEMENT: **FORCE THE VIEWER TO PAUSE AND GUESS**. ${guidelines?.engagement || 'Create immediate vocabulary upgrade opportunities'}
-• PATTERN: **DRAMA HOOK** + challenging question + quick confidence fix.
-• TIMING: Maximize **INTERACTION**. ${timingContext?.timeOfDay || 'daily'} learning sessions.
+TONE: Curious, inviting, beginner-friendly (NO shame, NO "stop sounding basic", focus on LEARNING)
 
-Generate a question that targets ${audienceContext} who want to **stop sounding basic** and start sounding **fluent and authoritative**:
+WINNING HOOK STYLE - "90% Say This WRONG" (176 views - #1 video):
+• Use curiosity: "90% Say This WRONG 🚨" (inviting, not attacking)
+• Simple and direct: "This word is a lie! 🤯" (curious discovery)
+• Question format: "Pronounce 'Epitome'? 🤯" (challenge, not judgment)
 
-QUESTION CRAFTING:
-• PRECISION: Direct, clear questions that test **HIGH-VALUE, NUANCED** usage.
-• RELEVANCE: Focus on words that are common pitfalls or **STATUS SYMBOLS** in English.
-• DIFFICULTY: Must feel challenging, but the explanation should be a massive "aha!" moment.
-• DISTRACTORS: Include extremely plausible errors (the mistakes 90% of educated people make).
-• IMPACT: Provide vocabulary that immediately **ELEVATES THE VIEWER'S SOCIAL STATUS**.
+CONTENT STYLE:
+• Make it feel like learning a fun fact, not fixing embarrassment
+• Focus on common mistakes everyone makes
+• Use simple explanations
+• Make people want to share because it's interesting, not because they're scared
 
-MANDATORY OUTPUT:
-• "hook": Generate a **HYPER-ENGAGING HOOK** (15-25 chars, use emojis, reference actual word/concept). Examples: "Affect or Effect? The TRUE Test! 🔥", "This word is a lie! 🤯", "The 1% know this... 🤫"
-• "question": Clear, practical vocabulary question that tests real-world usage (NO hook text in question)
-• "options": Object with "A", "B", "C", "D" - one perfect answer, three **SMART, PLAUSIBLE** distractors based on common errors
-• "answer": Single letter "A", "B", "C", or "D"
-• "explanation": **The ultimate mic-drop explanation.** Explain *why* the answer is correct and *how* using it correctly makes the speaker sound superior (under 120 characters)
-• "cta": Generate an engaging, **URGENT** English learning CTA (under 80 chars - make it compelling and action-oriented, e.g., "Hit FOLLOW to stop sounding basic!").
+QUESTION REQUIREMENTS:
+• "hook": Simple, curious hook (15-25 chars, use emojis, reference word/concept)
+• "question": Clear vocab question anyone can understand (MAX 120 chars, NO hook text)
+• "options": A, B, C, D - short, clear options (each MAX 45 chars)
+• "answer": Correct letter (A, B, C, or D)
+• "explanation": Why this matters in simple terms (MAX 120 chars)
+• "cta": Friendly learning CTA under 80 chars
 • "content_type": "multiple_choice"
 
-Create vocabulary content that makes learners feel like they've just unlocked an English superpower. ${bestFormatHint} [${timeMarker}-${tokenMarker}]`;
+TARGET: English learners who want to improve without feeling judged
+
+Create content that makes learners feel smart and curious. [${timeMarker}-${tokenMarker}]`;
   } else {
-    return `You are an expert English educator creating viral vocabulary content for YouTube Shorts.
+    return `You are a friendly English teacher creating vocabulary quizzes for YouTube Shorts.
 
-Generate a question for ${primaryAudience} on "${topic}" that challenges while building confidence.
+TOPIC: "${topic}" - Common English mistakes and word usage
 
-REQUIREMENTS:
-• HOOK: Generate a **HIGH-IMPACT, CONTEXTUAL HOOK** (15-25 chars, reference actual word/concept)
-• QUESTION: Present vocabulary that separates intermediate from **ADVANCED, HIGH-STATUS** speakers (NO hook text in question)
-• PRACTICAL: Focus on words used in **professional and academic contexts**
-• DISTRACTORS: Include common learner mistakes and plausible alternatives
-• ENGAGEMENT: Create immediate "vocabulary upgrade" value
-• EXPLANATION: Provide **high-value usage insight** that elevates communication (under 120 characters)
-• CTA: Generate an engaging vocabulary CTA that **demands a follow** (under 80 chars - make it compelling and action-oriented)
+TONE: Curious, inviting, beginner-friendly
 
-OUTPUT FORMAT:
-• "hook": Contextual hook referencing the specific word/concept being tested
-• "question": Clean vocabulary question without hook elements
-
-Make learners feel accomplished and eager to share their new knowledge. [${timeMarker}-${tokenMarker}]`;
+Make questions that feel like fun discoveries, not tests. [${timeMarker}-${tokenMarker}]`;
   }
 }
 

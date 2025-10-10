@@ -97,73 +97,53 @@ function getAstronomyTopicGuidelines(topic: string): TopicGuideline | undefined 
 
 /**
  * Generates main astronomy prompt for MCQ format
+ * SIMPLIFIED & BEGINNER-FRIENDLY - Based on "Sun's true color!" (172 views - #2 video)
  */
 export function generateAstronomyPrompt(config: PromptConfig): string {
   const { topicData, topic, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getAstronomyTopicGuidelines(topic);
-  
-  // Generate randomization elements for variety
-  const randomization = generateRandomizationElements();
-  const contextInjection = generateContextInjections();
-  const promptVariation = getPromptVariation();
-  const { expertRole, contentStrategy } = createBasePromptStructure(randomization, contextInjection, promptVariation);
 
   let basePrompt: string;
 
   if (topicData) {
-    basePrompt = `${expertRole} creating mind-blowing space content for YouTube Shorts.
+    basePrompt = `You are a friendly space enthusiast creating fun space quizzes for YouTube Shorts.
 
-TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Mind-bending facts about the cosmos'}
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Cool facts about space'}
 
-VIRAL LEARNING STRATEGY:
-• HOOK: Create personal space hooks like mind-blowing space hooks - under 25 chars, personal connection + familiar comparison
-• PSYCHOLOGY: Bridge abstract space facts to personal experience and familiar scale references
-• SCENARIOS: Apply to ${guidelines?.scenarios?.join(', ') || 'space exploration, cosmic phenomena, and universal mysteries'}
-• ENGAGEMENT: ${guidelines?.engagement || 'Create "this will blow your mind" moments'}
-• PATTERN: "This happens to YOU" + familiar comparison + mind-blowing reveal
-• CONTENT STRATEGY: ${contentStrategy}
+TONE: Curious, exciting, beginner-friendly (NO complex jargon, focus on WONDER and FUN)
 
-Generate a question that targets space enthusiasts and curious learners who love mind-bending facts about the universe:
+WINNING HOOK STYLE - "Sun's true color!" (172 views - #2 video):
+• Simple exclamations: "Sun's true color! ☀️" (exciting discovery)
+• Direct comparisons: "Moon vs Sun! 🌙☀️" (simple, visual)
+• Short facts: "Space is COLD! ❄️" (direct, surprising)
 
-CONTENT APPROACH:
-• Lead with wonder-building ("This will blow your mind!")
-• Present facts that sound impossible but are scientifically accurate
-• Include specific numbers, comparisons, and shocking discoveries
-• Create "wow!" moments that boost sharing motivation
+CONTENT STYLE:
+• Make it feel like discovering cool space trivia
+• Use simple, everyday comparisons (Earth, Moon, Sun - things people know)
+• Focus on "wow" facts that are fun to share
+• Keep it short and punchy - no complicated science terms
 
-QUESTION CRAFTING:
-• PRECISION: Direct, clear questions that test amazing space knowledge
-• RELEVANCE: Focus on facts that make people rethink their understanding of space
-• DIFFICULTY: Mind-blowing enough to amaze but understandable for curious minds
-• DISTRACTORS: Include plausible but incorrect facts, common misconceptions, and close alternatives
-• IMPACT: Provide knowledge that immediately changes how people view the cosmos
-• FORMAT: All options must be SHORT (max 6 words) to fit YouTube Shorts video frames
+QUESTION REQUIREMENTS:
+• "hook": Simple, exciting hook (15-25 chars) about the space fact
+• "content": Clear space question anyone can understand (MAX 120 chars, NO hook text)
+• "options": A, B, C, D - VERY short answers (max 6 words each)
+• "answer": Correct letter (A, B, C, or D)
+• "explanation": Why this is cool in simple terms (MAX 120 chars)
+• "cta": Fun space CTA under 80 chars
+• "content_type": "${questionFormat}"
 
-MANDATORY OUTPUT:
-• "hook": Generate contextual hook based on the specific space fact being tested (15-25 chars, reference actual cosmic phenomenon/object). Examples: "Solar system speed! 🌌", "Black hole facts! 🕳️", "Universe scale! ⭐"
-• "content": Clear, mind-blowing space question that tests incredible cosmic facts (NO hook text in question)
-• "options": Object with "A", "B", "C", "D" - KEEP OPTIONS VERY SHORT (max 6 words each) for YouTube Shorts video frame - one perfect answer, three smart distractors based on misconceptions
-• "answer": Single letter "A", "B", "C", or "D"
-• "explanation": Why this fact is mind-blowing + cosmic context (under 120 characters)
-• "cta": Use engaging cosmic wonder CTA (under 80 chars - make it compelling and action-oriented)
+TARGET: Space-curious beginners who love fun facts
 
-Create astronomy content that makes viewers feel amazed about the universe and eager to share. [${timeMarker}-${tokenMarker}]`;
+Create content that makes people say "wow, that's cool!" and want to share. [${timeMarker}-${tokenMarker}]`;
   } else {
-    basePrompt = `${expertRole} creating viral space content for YouTube Shorts.
+    basePrompt = `You are a friendly space enthusiast creating fun space trivia for YouTube Shorts.
 
-Generate a mind-blowing astronomy question on "${topic}" that amazes viewers with incredible cosmic facts.
+TOPIC: "${topic}" - Cool space facts
 
-CONTENT STRATEGY: ${contentStrategy}
+TONE: Curious, exciting, beginner-friendly
 
-REQUIREMENTS:
-• HOOK: Present facts that sound impossible but are scientifically true
-• PRACTICAL: Focus on phenomena that reshape understanding of space and time
-• DISTRACTORS: Include common space misconceptions and plausible alternatives
-• ENGAGEMENT: Create immediate "wow factor" and sharing value
-• EXPLANATION: Provide cosmic insight that expands perspective (under 120 characters)
-
-Make viewers feel amazed about the universe and eager to share incredible knowledge. [${timeMarker}-${tokenMarker}]`;
+Make questions that feel like discovering cool space secrets. [${timeMarker}-${tokenMarker}]`;
   }
 
   // Add JSON format instructions based on question format

@@ -286,65 +286,53 @@ Make aspirants feel updated and ready for their SSC current affairs section. [${
 
 /**
  * Generates main SSC exam preparation prompt for MCQ format
+ * SIMPLIFIED & BEGINNER-FRIENDLY - Focus on helpful learning, not competition/fear
  */
 export function generateSSCMCQPrompt(config: PromptConfig): string {
   const { topicData, topic, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getSSCTopicGuidelines(topic);
-  
-  // Use shared demographics from contentComponents
+
   const primaryAudience = 'SSC exam aspirants';
 
   if (topicData) {
-    return `You are an **SSC TOPPER STRATEGIST** creating viral exam preparation content for YouTube Shorts. You specialize in giving candidates a competitive edge.
+    return `You are a helpful SSC exam coach creating simple quiz content for YouTube Shorts.
 
-TOPIC: "${topicData.displayName}" - **MASTER** ${guidelines?.focus || 'Essential SSC exam concepts for government job preparation'}
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Important SSC exam topics'}
 
-EXAM STRATEGY:
-• HOOK: Create competitive achievement hooks (15-25 chars). **Focus on Marks and Speed.**
-• PSYCHOLOGY: Use **ACHIEVEMENT MOTIVATION** + contrast "successful candidates" vs "average aspirants."
-• SCENARIOS: Focus on **HIGH-PROBABILITY** topics from ${guidelines?.scenarios?.join(', ')}
-• ENGAGEMENT: **DEMAND** immediate attention and memorization. ${guidelines?.engagement || 'Create immediate exam advantage for serious aspirants'}
-• PATTERN: "**Toppers know this shortcut**" + success differentiation + strategic advantage
+TONE: Helpful, encouraging, beginner-friendly (NO pressure tactics, NO "you'll fail", focus on LEARNING)
 
-Generate a question that targets ${primaryAudience} preparing for government jobs:
+WINNING HOOK EXAMPLES:
+• "SSC History Trick! 📚" (helpful, not scary)
+• "Geography Fact Flash! 🌍" (educational, inviting)
+• "SSC 2025 Alert! ⚡" (informative, not stressful)
 
-CONTENT APPROACH:
-• Present concepts that appear **FREQUENTLY** in SSC exams.
-• Include practical application in **high-pressure exam contexts**.
-• Create "This could be in my exam" moments that boost preparation focus.
+CONTENT STYLE:
+• Make it feel like learning a useful exam tip
+• Focus on frequently asked topics
+• Use simple, clear explanations
+• Make people feel more prepared, not anxious
 
-QUESTION CRAFTING:
-• PRECISION: Direct, exam-style questions matching **exact SSC patterns**.
-• RELEVANCE: Focus on topics with **highest probability** in actual exams.
-• DIFFICULTY: Challenging enough to teach, but the explanation must be a **game-changer**.
-• DISTRACTORS: Include common exam mistakes, **plausible but incorrect** alternatives.
-• IMPACT: Provide knowledge that immediately **IMPROVES EXAM PERFORMANCE AND SPEED**.
-
-MANDATORY OUTPUT:
-• "hook": Generate contextual hook based on the specific SSC topic being tested (15-25 chars, reference actual subject/strategy/fact). Examples: "SSC History trick! 📚", "Geography hack! 🌍", "Math shortcut! ⚡"
-• "question": Clear, exam-style question that tests real SSC concepts (NO hook text in question)
-• "options": Object with "A", "B", "C", "D" - one correct answer, three **EXAM-PLAUISIBLE** distractors
-• "answer": Single letter "A", "B", "C", or "D"
-• "explanation": **The secret exam logic.** Why this answer is correct + strategic exam relevance tip (under 120 characters)
-• "cta": Use engaging exam preparation CTA (under 80 chars - e.g., "Follow for instant mark-boosting tricks!").
+QUESTION REQUIREMENTS:
+• "hook": Simple, helpful hook (15-25 chars) about the SSC topic
+• "question": Clear exam-style question (MAX 120 chars, NO hook text)
+• "options": A, B, C, D - short, clear options (each MAX 45 chars)
+• "answer": Correct letter (A, B, C, or D)
+• "explanation": Why this is important for SSC (MAX 120 chars)
+• "cta": Encouraging study CTA under 80 chars
 • "content_type": "multiple_choice"
 
-Create exam content that makes aspirants feel more confident and prepared for success. [${timeMarker}-${tokenMarker}]`;
+TARGET: SSC aspirants who want helpful study content
+
+Create content that makes aspirants feel more prepared and confident. [${timeMarker}-${tokenMarker}]`;
   } else {
-    return `You are an expert SSC exam coach creating viral preparation content for YouTube Shorts.
+    return `You are a helpful SSC exam coach creating simple quiz content for YouTube Shorts.
 
-Generate an SSC exam question for ${primaryAudience} on "${topic}" that challenges while building exam confidence.
+TOPIC: "${topic}" - Important SSC exam topics
 
-REQUIREMENTS:
-• HOOK: Present concepts that separate successful candidates from average ones
-• PRACTICAL: Focus on topics frequently tested in SSC exams
-• DISTRACTORS: Include common exam mistakes and plausible alternatives
-• ENGAGEMENT: Create immediate "exam preparation upgrade" value
-• EXPLANATION: Provide insight that improves exam performance (under 120 characters)
-• CTA: Use engaging SSC exam CTA (under 80 chars - make it compelling and action-oriented)
+TONE: Helpful, encouraging, beginner-friendly
 
-Make aspirants feel accomplished and ready to tackle their government job exam. [${timeMarker}-${tokenMarker}]`;
+Make questions that feel like useful study tips, not pressure tests. [${timeMarker}-${tokenMarker}]`;
   }
 }
 
@@ -355,44 +343,50 @@ Make aspirants feel accomplished and ready to tackle their government job exam. 
 
 /**
  * Generates Quick Tip format prompt (SSC)
+ * SIMPLIFIED & BEGINNER-FRIENDLY - Based on "CRACK SSC 2X FASTER" (118 views + 1 like - ONLY video with engagement!)
  */
 export function generateSSCQuickTipPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
 
-  return `You are an **SSC SPEED HACKER** creating viral "Quick Tip" content for YouTube Shorts. Your focus is on **strategic time-saving** techniques for the Indian SSC exams.
+  return `You are a helpful SSC study coach creating simple study tips for YouTube Shorts.
 
-TOPIC: "${topicData.displayName}" - **INSTANT** exam performance upgrades and time hacks.
+TOPIC: "${topicData.displayName}" - Easy study shortcuts for SSC exams
 
-FORMAT: Quick Tip (4 frames - Hook, Traditional, Shortcut, CTA)
-Frame 1 (Hook): "CRACK SSC 2X FASTER with this trick!"
-Frame 2 (Before): "Traditional Approach: [Time-consuming method]"
-Frame 3 (After): "Smart Shortcut: [Faster, more effective method]"
-Frame 4 (CTA): "Follow for more..."
+TONE: Helpful, encouraging, beginner-friendly (NO pressure, focus on MAKING STUDY EASIER)
+
+WINNING HOOK - "CRACK SSC 2X FASTER with this trick!" (118 views + 1 like - best engagement):
+• Promise to make study easier/faster
+• Use actionable language ("crack", "faster", "trick")
+• Be specific about the benefit
+
+CONTENT STYLE:
+• Share a simple study tip that actually saves time
+• Make it feel achievable and practical
+• Focus on helping, not creating pressure
 
 CONTENT REQUIREMENTS:
-• The tip MUST be a **concrete, repeatable study or problem-solving shortcut** for the given SSC topic.
-• HOOK: Promise a **massive advantage in speed and marks**.
-• TRADITIONAL_APPROACH: Describe the time-consuming method most aspirants use.
-• SMART_SHORTCUT: Provide an **efficient, alternative strategy that saves time and improves accuracy**.
-• APPLICATION_EXAMPLE: Show exactly how to apply the shortcut in an SSC context.
-• EXPLANATION: Explain the **psychological/logical reason** the shortcut works (e.g., "Your brain prefers patterns...").
+• HOOK: Promise a simple, helpful study improvement (under 60 chars)
+• TRADITIONAL_APPROACH: Show the common (slower) way most students study
+• SMART_SHORTCUT: Share an easier, faster way to learn the same thing
+• APPLICATION_EXAMPLE: Give a specific SSC exam example
+• EXPLANATION: Explain why the shortcut is better in simple terms
 
-TARGET: SSC aspirants who want to **study smarter, save time, and score higher**.
+TARGET: SSC aspirants who want to study smarter, not harder
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
-  "hook": "promise_of_quick_exam_advantage_under_60_chars",
-  "traditional_approach": "time_consuming_method_most_use_for_ssc_topic",
-  "smart_shortcut": "efficient_alternative_strategy_for_ssc_topic",
-  "application_example": "specific_SSC_exam_context_example",
-  "explanation": "why_shortcut_works_better_under_120_chars",
-  "cta": "engaging_SSC_exam_study_improvement_CTA_under_80_chars",
+  "hook": "helpful_study_improvement_promise_under_60_chars",
+  "traditional_approach": "common_slower_study_method",
+  "smart_shortcut": "easier_faster_learning_method",
+  "application_example": "specific_SSC_exam_example",
+  "explanation": "why_shortcut_is_better_simple_terms_under_120_chars",
+  "cta": "encouraging_study_tip_CTA_under_80_chars",
   "format_type": "quick_tip"
 }
 
 IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
-Create content that makes aspirants immediately feel more strategic about their preparation. [${timeMarker}-${tokenMarker}]`;
+Create content that makes studying feel easier and more achievable. [${timeMarker}-${tokenMarker}]`;
 }
 

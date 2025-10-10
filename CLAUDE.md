@@ -99,25 +99,50 @@ app/
 
 ## Active Accounts
 
-**ANALYTICS UPDATE (2025-09-10):** Based on engagement analysis, all content now uses MCQ format only.
+**CONTENT STRATEGY OVERHAUL (2025-10-10):** Simplified to beginner-friendly, curiosity-driven content based on actual performance data.
 
-**English Shots:** `english_vocab_builder` persona (1.26% engagement rate - best performing)
-**Health Shots:** `brain_health_tips`, `eye_health_tips` personas (0.18% engagement - needs optimization)
-**SSC Shots:** `ssc_shots` persona (paused - 0% engagement)
-**Astronomy:** `space_facts_quiz` persona (paused - 0% engagement)
+**All Channels Active:**
+- **English Shots:** `english_vocab_builder` (Best single video: 176 views, avg: 51.57)
+- **Health Shots:** `brain_health_tips`, `eye_health_tips` (Best performer: 72 avg views)
+- **Space Facts:** `space_facts_quiz` (Strong performer: 172 views #2 video, 65.5 avg)
+- **SSC Shots:** `ssc_shots` (ONLY video with engagement: 118 views + 1 like)
 
-### Format Performance Analysis
-- **MCQ Format:** 1.26% engagement rate (ONLY format that works)
-- **Complex Formats:** 0% engagement rate (quick_fix, common_mistake, usage_demo, quick_tip)
-- **73% of videos** have zero engagement - complex formats are the primary cause
+### Performance Analysis (24 videos, 1-2 days old)
+**Format Performance:**
+- **Quick Tip Format:** 80 avg views (4 videos) - 37% better than MCQ
+- **MCQ Format:** 54 avg views (20 videos)
+- **Removed Formats:** common_mistake, quick_fix, usage_demo, simplified_word (no data, removed from rotation)
 
-### Content Optimization (2025-09-10)
-**Analytics-Driven Changes:**
-- Forced MCQ format across all personas (prompt router updated)
-- Disabled complex layout detection (layout selector simplified)
-- Added hook effectiveness tracking based on high-performing patterns
-- Priority focus on English vocabulary content (proven 1.26% engagement)
-- Paused low-performing personas (SSC, Astronomy) until format is proven
+**Top 3 Videos:**
+1. "90% Say This WRONG 🚨" - 176 views (English, MCQ) - #1
+2. "Sun's true color! ☀️" - 172 views (Space, MCQ) - #2
+3. "CRACK SSC 2X FASTER with this trick!" - 118 views + 1 like (SSC, Quick Tip) - ONLY engagement
+
+**Critical Insights:**
+- Videos are too new (1-2 days) for confident conclusions
+- Quick tip format showing promise (80 vs 54 avg)
+- Engagement is 0% across board (only 1 like total)
+- Beginner-friendly, curious hooks work better than aggressive/shameful tones
+
+### Content Strategy Changes (2025-10-10)
+**Prompt Simplification:**
+- Removed aggressive language ("STOP EMBARRASSING YOURSELF", "STOP SOUNDING BASIC")
+- Changed tone to curious, inviting, beginner-friendly
+- Focus on LEARNING and DISCOVERY, not fear/shame
+- Simplified prompts from 200+ lines to 50 lines
+- Format rotation limited to: MCQ + Quick Tip only
+
+**Winning Hook Patterns:**
+- Curiosity: "90% Say This WRONG 🚨" (not attacking)
+- Simple exclamations: "Sun's true color! ☀️" (exciting)
+- Helpful promises: "CRACK SSC 2X FASTER" (actionable)
+
+**Format Rotation (Updated):**
+- `english_vocab_builder`: MCQ, Quick Tip
+- `brain_health_tips`: Quick Tip, MCQ (quick tip priority)
+- `eye_health_tips`: Quick Tip, MCQ (quick tip priority)
+- `ssc_shots`: MCQ, Quick Tip
+- `space_facts_quiz`: MCQ, Quick Tip
 
 ## Development
 
@@ -131,29 +156,3 @@ curl -X POST http://localhost:3000/api/jobs/assemble-video \
 
 **Production:** https://aiyoutuber.vercel.app/
 
-## MCP Integrations
-
-The project uses Model Context Protocol (MCP) for enhanced development capabilities:
-
-**Neon Database MCP:**
-- `mcp__Neon__run_sql` - Execute SQL queries
-- `mcp__Neon__get_connection_string` - Database connections
-- `mcp__Neon__describe_table_schema` - Schema inspection
-- `mcp__Neon__list_projects` - Project management
-
-**Vercel MCP:**
-- `mcp__vercel__list_deployments` - Deployment monitoring
-- `mcp__vercel__get_deployment_build_logs` - Build diagnostics
-
-**Playwright MCP:**
-- `mcp__playwright__browser_*` - Automated browser testing and screenshots
-
-**IDE MCP:**
-- `mcp__ide__getDiagnostics` - Language diagnostics
-- `mcp__ide__executeCode` - Jupyter code execution
-
-
-
-
-
-curl -X POST https://aiyoutuber.vercel.app/api/jobs/generate-quiz -H "Authorization: Bearer tdD0pkJYJM0Ozj4f1jPuLBybMXLx3lqfnTqJf0tFx7c=" -H "Content-Type: application/json"  -d '{"accountId": "english_shots"}'

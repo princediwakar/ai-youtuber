@@ -103,14 +103,15 @@ const PROMPT_ROUTE_CONFIG: Record<FormatType, Partial<Record<PersonaType, Prompt
 };
 
 /**
-* FIX: Centralized Format Rotation Strategy
-* This strategy must be consistent with the layout weights in generationService.ts.
+* SIMPLIFIED Format Rotation Strategy - ONLY formats that work
+* Based on analytics: quick_tip (80 avg views) and mcq (54 avg views)
+* Removed: common_mistake, quick_fix, usage_demo, simplified_word (zero engagement)
 */
 const FORMAT_ROTATION: Record<PersonaType, FormatType[]> = {
-  english_vocab_builder: ['mcq', 'simplified_word', 'quick_fix', 'usage_demo', 'common_mistake'], // Added common_mistake for full variety
-  brain_health_tips: ['mcq', 'quick_tip'],
-  eye_health_tips: ['mcq', 'quick_tip'],
-  ssc_shots: ['mcq', 'quick_tip', 'common_mistake', 'usage_demo'],
+  english_vocab_builder: ['mcq', 'quick_tip'],
+  brain_health_tips: ['quick_tip', 'mcq'], // Quick tip performs better
+  eye_health_tips: ['quick_tip', 'mcq'], // Quick tip performs better
+  ssc_shots: ['mcq', 'quick_tip'],
   space_facts_quiz: ['mcq', 'quick_tip']
 };
 

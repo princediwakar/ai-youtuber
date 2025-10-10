@@ -121,219 +121,127 @@ function getHealthTopicGuidelines(topic: string): TopicGuideline | undefined {
 
 /**
  * Generates brain health content prompt
+ * SIMPLIFIED & BEGINNER-FRIENDLY - Focus on curious learning, not fear/shame
  */
 export function generateBrainHealthPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getHealthTopicGuidelines(config.topic);
 
-  // Generate randomization elements
-  const randomization = generateRandomizationElements();
-  const contextInjection = generateContextInjections();
-  const promptVariation = getPromptVariation();
+  const basePrompt = `You are a friendly brain health coach creating fun quiz content for YouTube Shorts.
 
-  let expertRole = '';
-  let contentStrategy = '';
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Simple brain health tips'}
 
-  // Prompt structure variation based on time
-  switch (promptVariation) {
-    case 0:
-      expertRole = `You are a ${randomization.perspective} brain health coach with a ${randomization.tone} approach`;
-      contentStrategy = `Take a ${randomization.approach} angle focusing on ${contextInjection.demographic}`;
-      break;
-    case 1:
-      expertRole = `As a mental health expert specializing in ${randomization.perspective} communication`;
-      contentStrategy = `Use ${randomization.tone} language with ${randomization.approach} tips for ${contextInjection.timeContext}`;
-      break;
-    case 2:
-      expertRole = `You're a brain fitness trainer with ${randomization.tone} presentation style`;
-      contentStrategy = `Frame content as ${randomization.approach} insights targeting ${contextInjection.demographic} during ${contextInjection.timeContext}`;
-      break;
-  }
+TONE: Curious, friendly, beginner-friendly (NO aggressive language, NO fear tactics, NO "you're doing it wrong")
 
-  const basePrompt = `${expertRole} creating viral brain health content for YouTube Shorts.
+WINNING HOOK EXAMPLES:
+• "Brain fog? Zap it! ⚡" (simple, inviting)
+• "Memory hack alert! 🧠" (curious, not scary)
+• "Focus in 3 seconds? ⚡" (question-based, achievable)
 
-CREATIVE SEED: [${randomization.creativeSeed}] - Use this to ensure unique creative direction
-TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Advanced brain health concepts'}
+CONTENT STYLE:
+• Make it feel like discovering a fun life hack, not fixing a problem
+• Use simple, everyday language
+• Focus on what TO DO, not what NOT to do
+• Keep explanations short and actionable
 
-RANDOMIZED APPROACH:
-• CONTENT STYLE: ${randomization.approach} with ${randomization.tone} tone from ${randomization.perspective} perspective
-• CONTEXT: Target ${contextInjection.demographic} in ${contextInjection.timeContext} scenarios
-• URGENCY: Position as ${contextInjection.urgency} simple brain tip
-
-VIRAL CONTENT STRATEGY:
-• HOOK: Generate contextual hooks based on the specific brain health tip being tested (15-25 chars, reference actual technique/food/habit)
-• PSYCHOLOGY: Use moderate concern + high self-efficacy (people believe they can easily do this)
-• SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'relatable daily brain health challenges'}  
-• ENGAGEMENT: ${guidelines?.engagement || 'Create immediate practical value for viewers'}
-• PATTERN: Body signal/symptom + "Here's the 10-second fix" + achievable action
-
-ANTI-REPETITION CONSTRAINTS:
-• AVOID these overused phrases: "30-second habit", "this simple trick", "boost your brain"
-• AVOID generic openings: "Did you know", "Most people don't realize"
-• CREATE unique hooks using the creative seed and randomization elements above
-• VARY action instructions - don't repeat common patterns like "try this now"
-
-Generate a ${questionFormat === 'multiple_choice' ? 'multiple choice' : 'true/false'} question that:
-
-TARGET AUDIENCE: Health-conscious adults (25-55) who want a sharper memory and better focus
-CONTENT APPROACH:
-• Lead with ${randomization.tone} ${randomization.approach} insights
-• Present evidence-based information tailored to ${contextInjection.demographic}
-• Include ${contextInjection.urgency} practical applications
-• Create "I need to share this with ${contextInjection.demographic}" moments
-
-QUESTION STRUCTURE (${questionFormat}):
-${questionFormat === 'multiple_choice'
-    ? `• STEM: Present scenario using ${randomization.approach} angle for ${contextInjection.demographic}\n• CORRECT ANSWER: The scientifically accurate response with ${contextInjection.urgency} practical value\n• SMART DISTRACTORS: Common misconceptions, partially correct answers, believable alternatives\n• DIFFICULTY: Challenging enough to educate but achievable for motivated viewers`
-    : `• STATEMENT: Present ${randomization.approach} brain health fact targeting ${contextInjection.demographic}\n• DESIGN: Create statements that reveal ${randomization.tone} truths or challenge assumptions\n• IMPACT: Ensure the answer provides ${contextInjection.urgency} practical value`}
-
-CRITICAL LENGTH REQUIREMENTS:
-• "question": MAXIMUM 120 characters - be concise and punchy
-• "options": Each option MAXIMUM 45 characters - short, clear answers only
-• "explanation": MAXIMUM 120 characters - brief but valuable insight
-• "cta": MAXIMUM 80 characters - short action phrase (avoid repetitive CTAs)
-
-MANDATORY OUTPUT:
-• "hook": Generate contextual hook based on the specific brain health tip being tested (15-25 chars, reference actual technique/food/habit). Examples: "Memory hack alert! 🧠", "Focus in 3 seconds? ⚡", "Brain food reveal! 🥜"
-• "question": ${questionFormat === 'multiple_choice' ? 'Engaging scenario-based or fact-testing multiple choice question (MAX 120 chars, NO hook text)' : 'Surprising or myth-busting true/false statement (MAX 120 chars, NO hook text)'} 
-• "options": ${questionFormat === 'multiple_choice' ? 'Object with "A", "B", "C", "D" - one correct answer, three clever distractors (each MAX 45 chars)' : 'Object with "A": "True", "B": "False"'}
-• "answer": ${questionFormat === 'multiple_choice' ? 'Single letter "A", "B", "C", or "D"' : 'Either "A" or "B"'}
-• "explanation": Why this matters + practical application (MAX 120 characters)
-• "cta": Action-oriented CTA (MAX 80 chars) - use creative seed to avoid repetitive phrases
+QUESTION REQUIREMENTS:
+• "hook": Simple, curious hook (15-25 chars) referencing the actual tip
+• "question": Clear question anyone can understand (MAX 120 chars)
+• "options": A, B, C, D - short answers (each MAX 45 chars)
+• "answer": Correct letter (A, B, C, or D)
+• "explanation": Why this helps in simple terms (MAX 120 chars)
+• "cta": Friendly CTA under 80 chars
 • "content_type": "${questionFormat}"
 
-Create content so valuable and surprising that ${contextInjection.demographic} immediately share it. [${timeMarker}-${tokenMarker}-${randomization.creativeSeed}]`;
+TARGET: Busy adults who want simple brain health wins
+
+Create content that feels like a helpful friend sharing a cool tip. [${timeMarker}-${tokenMarker}]`;
 
   return basePrompt;
 }
 
 /**
  * Generates eye health content prompt
+ * SIMPLIFIED & BEGINNER-FRIENDLY - Focus on helpful tips, not scare tactics
  */
 export function generateEyeHealthPrompt(config: PromptConfig): string {
   const { topicData, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getHealthTopicGuidelines(config.topic);
 
-  // Generate randomization elements
-  const randomization = generateRandomizationElements();
-  const contextInjection = generateContextInjections();
-  const promptVariation = getPromptVariation();
+  const basePrompt = `You are a friendly eye health coach creating helpful quiz content for YouTube Shorts.
 
-  let expertRole = '';
-  let contentStrategy = '';
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Simple eye care tips'}
 
-  // Prompt structure variation based on time
-  switch (promptVariation) {
-    case 0:
-      expertRole = `You are a ${randomization.perspective} eye health expert with ${randomization.tone} communication style`;
-      contentStrategy = `Deliver ${randomization.approach} vision tips for ${contextInjection.demographic}`;
-      break;
-    case 1:
-      expertRole = `As a vision wellness coach focusing on ${randomization.perspective} education`;
-      contentStrategy = `Present ${randomization.tone} ${randomization.approach} guidance targeting ${contextInjection.timeContext}`;
-      break;
-    case 2:
-      expertRole = `You're an eye care specialist with ${randomization.tone} presentation approach`;
-      contentStrategy = `Frame insights as ${randomization.approach} tips for ${contextInjection.demographic} in ${contextInjection.timeContext}`;
-      break;
-  }
+TONE: Helpful, encouraging, beginner-friendly (NO scare tactics, NO "your eyes are damaged", focus on PROTECTION)
 
-  const basePrompt = `${expertRole} creating viral eye health content for YouTube Shorts.
+WINNING HOOK EXAMPLES:
+• "Eye strain fix! ✨" (solution-focused)
+• "Screen damage test! 📱" (educational, not scary)
+• "20-20-20 rule works! 👁️" (positive, actionable)
 
-CREATIVE SEED: [${randomization.creativeSeed}] - Use this to ensure unique creative direction
-TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Advanced eye health and vision protection strategies'}
+CONTENT STYLE:
+• Focus on simple eye protection tips anyone can do
+• Use positive language about protecting vision
+• Make it feel achievable and practical
+• Avoid doom and gloom - focus on prevention
 
-RANDOMIZED APPROACH:
-• CONTENT STYLE: ${randomization.approach} with ${randomization.tone} tone from ${randomization.perspective} perspective
-• CONTEXT: Target ${contextInjection.demographic} during ${contextInjection.timeContext} scenarios
-• URGENCY: Position as ${contextInjection.urgency} eye care tip
-
-VIRAL CONTENT STRATEGY:
-• HOOK: Generate contextual hooks based on the specific eye care tip being tested (15-25 chars, reference actual screen habit/exercise/protection method)
-• PSYCHOLOGY: Use moderate concern + high self-efficacy (people believe they can easily protect their vision)
-• SCENARIOS: Focus on ${guidelines?.scenarios?.join(', ') || 'modern vision challenges and digital eye strain'}
-• ENGAGEMENT: ${guidelines?.engagement || 'Provide immediate eye health improvements viewers can implement'}
-• PATTERN: Eye symptom/habit + "This simple adjustment" + achievable protection
-
-ANTI-REPETITION CONSTRAINTS:
-• AVOID overused phrases: "20-20-20 rule", "30-second habit", "boost your eyes", "save your vision"
-• AVOID generic hooks: "What happens to your eyes when", "This simple trick"
-• CREATE unique vision-specific hooks using the creative seed and randomization elements
-• VARY eye exercise instructions - don't repeat common patterns like "look away from screen"
-
-Generate a ${questionFormat === 'multiple_choice' ? 'multiple choice' : 'true/false'} question that:
-
-TARGET AUDIENCE: Working professionals and screen users (20-50) seeking vision protection and eye health optimization
-CONTENT APPROACH:
-• Start with ${randomization.tone} ${randomization.approach} eye health revelations
-• Address challenges specific to ${contextInjection.demographic}
-• Provide ${contextInjection.urgency} actionable prevention strategies tailored to ${contextInjection.timeContext}
-• Create urgency about vision protection using ${randomization.perspective} credibility
-
-QUESTION STRUCTURE (${questionFormat}):
-${questionFormat === 'multiple_choice'
-    ? `• STEM: Present eye health scenario using ${randomization.approach} angle for ${contextInjection.demographic}\n• CORRECT ANSWER: Evidence-based solution with ${contextInjection.urgency} practical application\n• SMART DISTRACTORS: Common eye care myths, partially correct advice, believable misconceptions\n• RELEVANCE: Focus on digital age challenges specific to ${contextInjection.timeContext}`
-    : `• STATEMENT: Present ${randomization.approach} eye health fact that challenges ${contextInjection.demographic} assumptions\n• IMPACT: Create "I had no idea my ${contextInjection.timeContext} habits were hurting my eyes" moments\n• URGENCY: Highlight ${contextInjection.urgency} actions viewers can take to protect their vision`}
-
-CRITICAL LENGTH REQUIREMENTS:
-• "question": MAXIMUM 120 characters - be concise and punchy
-• "options": Each option MAXIMUM 45 characters - short, clear answers only
-• "explanation": MAXIMUM 120 characters - brief but valuable insight
-• "cta": MAXIMUM 80 characters - short action phrase (avoid repetitive CTAs)
-
-MANDATORY OUTPUT:
-• "hook": Generate contextual hook based on the specific eye care tip being tested (15-25 chars, reference actual screen habit/exercise/protection method). Examples: "20-20-20 rule works! 👁️", "Screen damage test! 📱", "Eye strain fix! ✨"
-• "question": ${questionFormat === 'multiple_choice' ? 'Scenario-based multiple choice addressing modern vision challenges (MAX 120 chars, NO hook text)'
-    : 'Eye-opening true/false statement about vision health (MAX 120 chars, NO hook text)'}
-• "options": ${questionFormat === 'multiple_choice' ? 'Object with "A", "B", "C", "D" - practical solution + three plausible alternatives (each MAX 45 chars)' : 'Object with "A": "True", "B": "False"'}
-• "answer": ${questionFormat === 'multiple_choice' ? 'Single letter "A", "B", "C", or "D"' : 'Either "A" or "B"'}
-• "explanation": Why this protects vision + immediate action step (MAX 120 characters)
-• "cta": Urgent action CTA (MAX 80 chars) - use creative seed to create unique phrases
+QUESTION REQUIREMENTS:
+• "hook": Simple, helpful hook (15-25 chars) about eye care
+• "question": Clear question about eye protection (MAX 120 chars)
+• "options": A, B, C, D - short, clear answers (each MAX 45 chars)
+• "answer": Correct letter (A, B, C, or D)
+• "explanation": Why this protects your eyes (MAX 120 chars)
+• "cta": Encouraging CTA under 80 chars
 • "content_type": "${questionFormat}"
 
-Create content that makes ${contextInjection.demographic} immediately concerned about their eye health during ${contextInjection.timeContext} and motivated to take action. [${timeMarker}-${tokenMarker}-${randomization.creativeSeed}]`;
+TARGET: Screen users who want to protect their vision
+
+Create content that feels like helpful advice from a caring friend. [${timeMarker}-${tokenMarker}]`;
 
   return basePrompt;
 }
 
 /**
  * Generates Quick Tip format prompt (Health)
+ * SIMPLIFIED & BEGINNER-FRIENDLY - Based on 80 avg views performance
  */
 export function generateQuickTipPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
   const { timeMarker, tokenMarker } = markers;
   const guidelines = getHealthTopicGuidelines(config.topic);
 
-  return `You are a health expert creating viral "Quick Tip" content for YouTube Shorts.
+  return `You are a friendly health coach creating simple, helpful tips for YouTube Shorts.
 
-TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Immediate health improvements'}
+TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Simple health improvements anyone can do'}
 
-FORMAT: Quick Tip (3 frames)
-Frame 1 (Hook): "This 30-second habit will boost your [brain/eyes]"
-Frame 2 (Action): "Here's exactly what to do: [step by step]"  
-Frame 3 (Result): "Why it works + science behind it"
+TONE: Friendly, encouraging, beginner-friendly (NO aggressive language, NO shame, NO "stop doing X")
+
+WINNING HOOK STYLE:
+• Use curious, inviting language: "This 30-second habit will boost your..." (NOT "STOP doing X")
+• Promise a specific, achievable benefit
+• Keep it simple and approachable
 
 CONTENT REQUIREMENTS:
-• HOOK: Promise specific timeframe and health benefit
-• ACTION: Clear, actionable steps anyone can do immediately
-• RESULT: Scientific explanation + motivating outcome
-• Focus on immediate practical value
+• HOOK: Friendly promise with specific timeframe (e.g., "This 30-second habit will boost your sleep quality")
+• ACTION: Super simple steps anyone can do right now (max 2-3 steps)
+• RESULT: Quick explanation of why it helps (keep it simple, not overly scientific)
+• Make it feel easy and achievable, not scary or complicated
 
-TARGET: Health-conscious adults seeking quick wins
+TARGET: Beginners who want easy health wins
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
-  "hook": "specific_promise_with_timeframe_under_60_chars",
-  "action": "2_3_specific_steps_combined_into_one_actionable_instruction",
-  "result": "scientific_reason_plus_immediate_benefit_combined",
-  "cta": "engaging_health_action_CTA_under_80_chars"
+  "hook": "friendly_specific_promise_under_60_chars",
+  "action": "simple_clear_steps_anyone_can_do",
+  "result": "why_it_helps_in_simple_terms",
+  "cta": "encouraging_health_CTA_under_80_chars"
 }
 
 IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
-Create content that viewers immediately want to try. [${timeMarker}-${tokenMarker}]`;
+Create content that makes viewers feel motivated and capable. [${timeMarker}-${tokenMarker}]`;
 }
 
 
