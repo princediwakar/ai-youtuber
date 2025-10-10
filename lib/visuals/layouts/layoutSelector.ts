@@ -4,12 +4,10 @@ import { QuizJob } from '@/lib/types';
 import { Theme } from '@/lib/visuals/themes';
 import * as mcqLayout from './mcqLayout';
 import * as quickTipLayout from './quickTipLayout';
-import * as commonMistakeLayout from './commonMistakeLayout';
 import * as quickFixLayout from './quickFixLayout';
-import * as usageDemoLayout from './usageDemoLayout';
 import * as simplifiedWordLayout from './simplifiedWordLayout';
 
-export type LayoutType = 'mcq' | 'quick_tip' | 'common_mistake' | 'quick_fix' | 'usage_demo' | 'simplified_word';
+export type LayoutType = 'mcq' | 'quick_tip' | 'quick_fix' | 'simplified_word';
 
 export interface LayoutDefinition {
     type: LayoutType;
@@ -51,20 +49,6 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
             cta: mcqLayout.renderCtaFrame,
         },
     },
-    common_mistake: {
-        type: 'common_mistake',
-        // Flow: Hook -> Mistake -> Correct -> Practice -> Explanation -> CTA
-        frames: ['hook', 'mistake', 'correct', 'practice', 'explanation', 'cta'],
-        renderers: {
-            hook: commonMistakeLayout.renderHookFrame,
-            mistake: commonMistakeLayout.renderMistakeFrame,
-            correct: commonMistakeLayout.renderCorrectFrame,
-            // ASSUMPTION: A renderPracticeFrame exists in commonMistakeLayout
-            practice: commonMistakeLayout.renderPracticeFrame,
-            explanation: mcqLayout.renderExplanationFrame,
-            cta: mcqLayout.renderCtaFrame,
-        },
-    },
     quick_fix: {
         type: 'quick_fix',
         // Flow: Hook -> Basic -> Advanced -> CTA
@@ -76,19 +60,6 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
             cta: mcqLayout.renderCtaFrame,
         },
     },
-    usage_demo: {
-        type: 'usage_demo',
-        // Flow: Hook -> Wrong -> Right -> Practice -> CTA
-        frames: ['hook', 'wrong_example', 'right_example', 'practice', 'cta'],
-        renderers: {
-            hook: usageDemoLayout.renderHookFrame,
-            wrong_example: usageDemoLayout.renderWrongExampleFrame,
-            right_example: usageDemoLayout.renderRightExampleFrame,
-            practice: usageDemoLayout.renderPracticeFrame,
-            cta: mcqLayout.renderCtaFrame,
-        },
-    },
-
 };
 
 /**
@@ -106,14 +77,6 @@ export function detectLayoutType(contentData: any): LayoutType {
     if (contentData.format_type && layouts[contentData.format_type as LayoutType]) {
         const layoutType = contentData.format_type as LayoutType;
         // Verify structure against keys for robust detection
-        if (layoutType === 'common_mistake' && detectedKeys.includes('mistake') && detectedKeys.includes('correct')) {
-            console.log(`✅ Detected common_mistake layout via format_type key.`);
-            return layoutType;
-        }
-        if (layoutType === 'usage_demo' && detectedKeys.includes('wrong_example') && detectedKeys.includes('right_example')) {
-            console.log(`✅ Detected usage_demo layout via format_type key.`);
-            return layoutType;
-        }
         if (layoutType === 'simplified_word' && detectedKeys.includes('word') && detectedKeys.includes('definition')) {
             console.log(`✅ Detected simplified_word layout via format_type key.`);
             return layoutType;

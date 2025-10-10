@@ -17,9 +17,7 @@ import {
 import {
   generateEnglishPrompt,
   generateSimplifiedWordPrompt,
-  generateCommonMistakePrompt,
-  generateQuickFixPrompt,
-  generateUsageDemoPrompt
+  generateQuickFixPrompt
 } from '../personas/english/prompts';
 
 import {
@@ -50,9 +48,7 @@ export {
   generateBrainHealthPrompt,
   generateEyeHealthPrompt,
   generateEnglishPrompt,
-  generateCommonMistakePrompt,
   generateQuickFixPrompt,
-  generateUsageDemoPrompt,
   generateQuickTipPrompt,
 };
 
@@ -65,19 +61,10 @@ const PROMPT_ROUTE_CONFIG: Record<FormatType, Partial<Record<PersonaType, Prompt
       english_vocab_builder: generateSimplifiedWordPrompt,
       default: generateSimplifiedWordPrompt
   },
-  common_mistake: {
-      english_vocab_builder: generateCommonMistakePrompt,
-      default: generateCommonMistakePrompt
-  },
   quick_fix: {
       english_vocab_builder: generateQuickFixPrompt,
       default: generateQuickFixPrompt
   },
-  usage_demo: {
-      english_vocab_builder: generateUsageDemoPrompt,
-      default: generateUsageDemoPrompt
-  },
-
   quick_tip: {
       brain_health_tips: generateQuickTipPrompt,
       eye_health_tips: generateQuickTipPrompt,
@@ -105,7 +92,7 @@ const PROMPT_ROUTE_CONFIG: Record<FormatType, Partial<Record<PersonaType, Prompt
 /**
 * SIMPLIFIED Format Rotation Strategy - ONLY formats that work
 * Based on analytics: quick_tip (80 avg views) and mcq (54 avg views)
-* Removed: common_mistake, quick_fix, usage_demo, simplified_word (zero engagement)
+* Removed unused formats with zero engagement
 */
 const FORMAT_ROTATION: Record<PersonaType, FormatType[]> = {
   english_vocab_builder: ['mcq', 'quick_tip'],

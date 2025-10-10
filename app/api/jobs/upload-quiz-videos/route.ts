@@ -174,32 +174,65 @@ async function processUpload(job: QuizJob, youtube: youtube_v3.Youtube, playlist
 }
 
 function generateVideoMetadata(job: QuizJob, playlistId?: string) {
-    const { content, topic, topic_display_name, account_id } = { ...job.data, ...job };
+    const { content, topic, topic_display_name, account_id, question_format } = { ...job.data, ...job };
 
-    // --- FIX: More robust title generation ---
     const finalTopic = topic_display_name || content?.topic || topic || 'Quiz';
-    const title = (content?.hook || finalTopic).substring(0, 100);
 
-    const hashtags: { [key: string]: string } = {
-        'english_shots': '#shorts #viral #learnenglish #english #vocabulary #quiz',
-        'health_shots': '#shorts #viral #health #wellness #tips #education',
-        'ssc_shots': '#shorts #viral #ssc #exam #government #study #education',
-        'astronomy_shots': '#shorts #viral #space #astronomy #science #facts #education'
+    // --- ENHANCED: Include #Shorts in title for algorithm recognition ---
+    let rawTitle = content?.hook || finalTopic;
+    // Ensure title ends with #Shorts for discovery
+    const title = rawTitle.includes('#Shorts') ? rawTitle.substring(0, 100) : `${rawTitle} #Shorts`.substring(0, 100);
+
+    // --- ENHANCED: Niche-specific + broad hashtags (3-8 optimal) ---
+    const hashtagMap: { [key: string]: string } = {
+        'english_shots': '#Shorts #LearnEnglish #Vocabulary #EnglishTips #LanguageLearning #FYP #Viral',
+        'health_shots': '#Shorts #HealthTips #Wellness #BrainHealth #HealthyLiving #FYP #Viral',
+        'ssc_shots': '#Shorts #SSC #GovernmentExam #CompetitiveExams #StudyTips #SSCPreparation #FYP',
+        'astronomy_shots': '#Shorts #Space #Astronomy #ScienceFacts #SpaceFacts #Universe #FYP #Viral'
     };
-    const finalHashtags = hashtags[account_id!] || '#shorts #viral #trending #fyp #education';
+    const finalHashtags = hashtagMap[account_id!] || '#Shorts #Education #Quiz #FYP #Viral #Learning';
 
-    const playlistLink = playlistId ? `📺 More ${finalTopic} questions: https://www.youtube.com/playlist?list=${playlistId}\n\n` : '';
-    const description = `${title}\n\n${playlistLink}🔔 Subscribe for daily quizzes!\n\n${finalHashtags}`;
+    // --- ENHANCED: Include full content in description for SEO ---
+    let contentDetails = '';
+    if (content) {
+        const parts: string[] = [];
+        if (content.question) parts.push(`❓ ${content.question}`);
+        if (content.options && typeof content.options === 'object') {
+            const optionsArray = Object.values(content.options);
+            const optionsText = optionsArray.map((opt: any, i: number) =>
+                `${String.fromCharCode(65 + i)}) ${opt}`
+            ).join('\n');
+            parts.push(optionsText);
+        }
+        if (content.answer) parts.push(`\n✅ Answer: ${content.answer}`);
+        if (content.explanation) parts.push(`\n💡 ${content.explanation}`);
+        contentDetails = parts.join('\n');
+    }
 
+    const playlistLink = playlistId ? `\n\n📺 More ${finalTopic} videos: https://www.youtube.com/playlist?list=${playlistId}` : '';
+    const ctaSection = '\n\n🔔 Subscribe for daily educational shorts!\n💬 Drop your answer in comments!\n🔁 Share with friends who need this!';
+
+    const description = contentDetails
+        ? `${contentDetails}${playlistLink}${ctaSection}\n\n${finalHashtags}`
+        : `${title}${playlistLink}${ctaSection}\n\n${finalHashtags}`;
+
+    // --- ENHANCED: 8-15 tags with niche-specific + trending keywords ---
     const tagMap: { [key: string]: string[] } = {
-        'english_shots': ['english', 'vocabulary', 'learn english'],
-        'health_shots': ['health', 'wellness', 'tips'],
-        'ssc_shots': ['ssc', 'government exam', 'study'],
-        'astronomy_shots': ['space', 'astronomy', 'science']
+        'english_shots': ['english', 'vocabulary', 'learn english', 'english grammar', 'spoken english', 'english words', 'language learning', 'esl', 'english tips', 'improve english', 'daily english'],
+        'health_shots': ['health', 'wellness', 'health tips', 'brain health', 'eye health', 'healthy lifestyle', 'wellness tips', 'mental health', 'fitness', 'healthcare', 'medical advice'],
+        'ssc_shots': ['ssc', 'government exam', 'ssc cgl', 'ssc chsl', 'competitive exams', 'exam preparation', 'study tips', 'government jobs', 'upsc', 'banking', 'ssc gk'],
+        'astronomy_shots': ['space', 'astronomy', 'science', 'space facts', 'universe', 'planets', 'nasa', 'cosmos', 'astrophysics', 'science education', 'space exploration']
     };
-    const specificTags = tagMap[account_id!] || [finalTopic.toLowerCase()];
+    const specificTags = tagMap[account_id!] || [finalTopic.toLowerCase(), 'education', 'learning'];
 
-    return { title, description, tags: ['shorts', 'education', 'quiz', ...specificTags] };
+    // Add format-specific tags
+    const formatTags = question_format === 'quick_tip' ? ['tips', 'life hacks', 'did you know'] : ['quiz', 'trivia', 'test yourself'];
+
+    return {
+        title,
+        description,
+        tags: ['shorts', 'short', 'youtube shorts', 'education', ...formatTags, ...specificTags].slice(0, 15)
+    };
 }
 
 

@@ -16,7 +16,6 @@ export const MasterPersonas: PersonaConfig = {
     displayName: '@EnglishShotsDaily',
     subCategories: [
       // --- High-Engagement Quick Wins ---
-      { key: 'eng_common_mistakes', displayName: 'Stop Making This Mistake ❌' },
       { key: 'eng_vocab_word_meaning', displayName: 'You Use This Word Wrong 📖' },
       { key: 'eng_vocab_fill_blanks', displayName: 'Fill the Blank Challenge ✍️' },
       

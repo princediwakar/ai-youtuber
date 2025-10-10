@@ -147,19 +147,7 @@ export const themes: Record<string, Theme> = {
   },
 
 
-  // 8. Electric Purple ⚡ - Bold and attention-grabbing
-  ElectricPurple: {
-    name: 'ElectricPurple',
-    fontFamily: 'Poppins',
-    page: { background: ['#4776e6', '#8e54e9'] },
-    header: { background: 'rgba(255, 255, 255, 0.1)', text: '#ffffff' },
-    text: { primary: '#ffffff', secondary: 'rgba(255, 255, 255, 0.85)', onAccent: '#2d1b69' },
-    button: { background: ['#ff4081', '#ff6ec7'], text: '#ffffff', shadow: 'rgba(255, 64, 129, 0.4)' },
-    feedback: { 
-        correct: ['#00e676', '#69f0ae'],
-        incorrect: ['#ff1744', '#f50057'] // Added
-    },
-  },
+
 
   // 9. Golden Hour 🌟 - Premium, luxurious feel
   GoldenHour: {
@@ -183,9 +171,70 @@ export const themes: Record<string, Theme> = {
     header: { background: 'rgba(52, 73, 94, 0.08)', text: '#34495e' },
     text: { primary: '#2c3e50', secondary: 'rgba(44, 62, 80, 0.7)', onAccent: '#ffffff' },
     button: { background: ['#3498db', '#2980b9'], text: '#ffffff', shadow: 'rgba(52, 152, 219, 0.3)' },
-    feedback: { 
+    feedback: {
         correct: ['#1abc9c', '#16a085'],
         incorrect: ['#e67e22', '#d35400'] // Added
+    },
+  },
+
+  // --- 🎯 2025 EDUCATIONAL RETENTION-OPTIMIZED THEMES ---
+  // Research: Avoid pure black/white, reduce blue light, avoid neon saturation
+  // Focus: Readability + Eye comfort for 30-60 sec watch time
+
+  // 11. FocusBlue 🎓 - Soft blue reduces eye strain, boosts concentration
+  FocusBlue: {
+    name: 'FocusBlue',
+    fontFamily: 'Poppins',
+    page: { background: ['#E8F4F8', '#D6EAF8'] }, // Soft blue backdrop (not harsh)
+    header: { background: 'rgba(52, 73, 94, 0.06)', text: '#2C3E50' },
+    text: { primary: '#2C3E50', secondary: 'rgba(44, 62, 80, 0.7)', onAccent: '#FFFFFF' }, // Dark gray, not black
+    button: { background: ['#FF8C42', '#FF6F3C'], text: '#FFFFFF', shadow: 'rgba(255, 140, 66, 0.3)' }, // Orange for CTA
+    feedback: {
+        correct: ['#27AE60', '#2ECC71'], // Green
+        incorrect: ['#E74C3C', '#C0392B'] // Red
+    },
+  },
+
+  // 12. LearnGreen 📚 - Green promotes calm, boosts focus, easy on eyes
+  LearnGreen: {
+    name: 'LearnGreen',
+    fontFamily: 'Poppins',
+    page: { background: ['#E8F8F5', '#D5F4E6'] }, // Soft green (low wavelength, natural calm)
+    header: { background: 'rgba(22, 160, 133, 0.06)', text: '#16A085' },
+    text: { primary: '#1E3A32', secondary: 'rgba(30, 58, 50, 0.7)', onAccent: '#FFFFFF' },
+    button: { background: ['#F39C12', '#E67E22'], text: '#FFFFFF', shadow: 'rgba(243, 156, 18, 0.3)' }, // Orange energy
+    feedback: {
+        correct: ['#27AE60', '#2ECC71'],
+        incorrect: ['#E74C3C', '#C0392B']
+    },
+  },
+
+
+  // 14. SoftYellow 💡 - Muted yellow for alertness without eye strain
+  SoftYellow: {
+    name: 'SoftYellow',
+    fontFamily: 'Poppins',
+    page: { background: ['#FFFDE7', '#FFF9C4'] }, // Soft yellow (not neon)
+    header: { background: 'rgba(251, 192, 45, 0.1)', text: '#F57C00' },
+    text: { primary: '#4E342E', secondary: 'rgba(78, 52, 46, 0.7)', onAccent: '#FFFFFF' },
+    button: { background: ['#FF6F00', '#E65100'], text: '#FFFFFF', shadow: 'rgba(255, 111, 0, 0.3)' }, // Orange CTA
+    feedback: {
+        correct: ['#388E3C', '#4CAF50'],
+        incorrect: ['#D32F2F', '#C62828']
+    },
+  },
+
+  // 15. DeepPurple 🎯 - Authoritative for exam prep, high contrast but readable
+  DeepPurple: {
+    name: 'DeepPurple',
+    fontFamily: 'Poppins',
+    page: { background: ['#F3E5F5', '#E1BEE7'] }, // Soft purple
+    header: { background: 'rgba(123, 31, 162, 0.08)', text: '#6A1B9A' },
+    text: { primary: '#4A148C', secondary: 'rgba(74, 20, 140, 0.7)', onAccent: '#FFFFFF' },
+    button: { background: ['#FF6F00', '#F57C00'], text: '#FFFFFF', shadow: 'rgba(255, 111, 0, 0.3)' },
+    feedback: {
+        correct: ['#4CAF50', '#66BB6A'],
+        incorrect: ['#E53935', '#C62828']
     },
   },
 };

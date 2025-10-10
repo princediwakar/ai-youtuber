@@ -240,7 +240,7 @@ CONTENT STYLE:
 • Make people want to share because it's interesting, not because they're scared
 
 QUESTION REQUIREMENTS:
-• "hook": Simple, curious hook (15-25 chars, use emojis, reference word/concept)
+• "hook": Simple, curious hook (15-25 chars, reference word/concept)
 • "question": Clear vocab question anyone can understand (MAX 120 chars, NO hook text)
 • "options": A, B, C, D - short, clear options (each MAX 45 chars)
 • "answer": Correct letter (A, B, C, or D)
@@ -263,48 +263,7 @@ Make questions that feel like fun discoveries, not tests. [${timeMarker}-${token
 }
 
 /**
- * Generates Common Mistake format prompt (English)
- */
-export function generateCommonMistakePrompt(config: PromptConfig): string {
-  const { topicData, markers } = config;
-  const { timeMarker, tokenMarker } = markers;
-
-  return `You are a native English speaker creating viral "Common Mistake" content for YouTube Shorts.
-
-TOPIC: "${topicData.displayName}" - Focus on mistakes that **99% of learners make and sound unprofessional**
-
-FORMAT: Common Mistake (4 frames)
-Frame 1 (Hook): "**STOP EMBARRASSING YOURSELF** with this word!"  
-Frame 2 (Mistake): "99% say: [incorrect pronunciation/usage] (Sounds Basic)"
-Frame 3 (Correct): "**Natives say:** [correct version] (Sound Fluent)"
-Frame 4 (Practice): "Try it now! Repeat after me..."
-
-CONTENT REQUIREMENTS:
-• HOOK: Create **MAXIMUM URGENCY** about a common error most learners make.
-• MISTAKE: Show the wrong way that sounds natural but isn't correct—label it as 'Basic' or 'Unprofessional'.
-• CORRECT: Provide the native speaker version with clear difference—label it as 'Fluent' or 'Expert'.
-• PRACTICE: Give **immediate practice opportunity for confidence boost**.
-
-TARGET: Intermediate English learners who want to sound **more native and less clumsy**.
-
-RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
-{
-  "hook": "contextual_hook_based_on_mistake_under_25_chars",
-  "mistake": "incorrect_version_most_learners_use",
-  "correct": "native_speaker_version",
-  "practice": "practice_instruction_with_correct_form",
-  "explanation": "why_natives_use_this_version_under_100_chars",
-  "cta": "engaging_English_learning_CTA_under_80_chars",
-  "format_type": "common_mistake"
-}
-
-IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
-
-Create content that makes learners feel embarrassed about their mistake but **excited to fix it and gain social status**. [${timeMarker}-${tokenMarker}]`;
-}
-
-/**
- * Generates Quick Fix format prompt (English)  
+ * Generates Quick Fix format prompt (English)
  */
 export function generateQuickFixPrompt(config: PromptConfig): string {
   const { topicData, markers } = config;
@@ -316,7 +275,7 @@ TOPIC: "${topicData.displayName}" - **Instant Vocabulary Status Upgrades**
 
 FORMAT: Quick Fix (3 frames)
 Frame 1 (Hook): "**STOP SOUNDING BASIC** - Upgrade now!"
-Frame 2 (Before): "Instead of saying [basic word] (The Basic Way)..."  
+Frame 2 (Before): "Instead of saying [basic word] (The Basic Way)..."
 Frame 3 (After): "**SOUND SMARTER** with [advanced word] (The Expert Way)"
 
 CONTENT REQUIREMENTS:
@@ -341,48 +300,4 @@ RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
 
 Create content that makes learners immediately feel **empowered and superior**. [${timeMarker}-${tokenMarker}]`;
-}
-
-/**
- * Generates Usage Demo format prompt (English)
- */
-export function generateUsageDemoPrompt(config: PromptConfig): string {
-  const { topicData, markers } = config;
-  const { timeMarker, tokenMarker } = markers;
-
-  return `You are an English fluency expert creating viral "Usage Demo" content for YouTube Shorts.
-
-TOPIC: "${topicData.displayName}" - **Mastering the Contextual Nuances of High-Value Words**
-
-FORMAT: Usage Demo (4 frames)
-Frame 1 (Hook): "**STOP GUESSING** - Use this word like a native."
-Frame 2 (Wrong): "❌ **NOPE** Don't use it here: [wrong example]"
-Frame 3 (Right): "✅ **EXPERT** Perfect usage: [correct example]"  
-Frame 4 (Practice): "Your turn to try!"
-
-CONTENT REQUIREMENTS:
-• HOOK: Promise to show **CONTEXTUAL MASTERY** of an advanced, tricky word.
-• WRONG: Common misuse that sounds plausible but is incorrect—clearly marked with '❌ NOPE'.
-• RIGHT: Perfect contextual usage that sounds natural and professional—clearly marked with '✅ EXPERT'.
-• PRACTICE: Interactive challenge for viewer engagement.
-
-TARGET: Advanced learners who want **contextual precision and zero mistakes**.
-
-RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
-{
-  "hook": "contextual_hook_based_on_word_usage_under_25_chars",
-  "target_word": "advanced_vocabulary_word_to_demonstrate",
-  "wrong_example": "sentence_showing_incorrect_contextual_usage",
-  "wrong_context": "brief_explanation_why_wrong_under_80_chars",
-  "right_example": "sentence_showing_perfect_contextual_usage",
-  "right_context": "brief_explanation_why_correct_under_80_chars",
-  "practice": "practice_instruction_with_scenario",
-  "practice_scenario": "specific_context_for_learner_to_practice",
-  "cta": "engaging_vocabulary_mastery_CTA_under_80_chars",
-  "format_type": "usage_demo"
-}
-
-IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
-
-Create content that makes learners **confident and detail-oriented** about contextual word usage. [${timeMarker}-${tokenMarker}]`;
 }

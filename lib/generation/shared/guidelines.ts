@@ -32,13 +32,6 @@ export const TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
     engagement: 'Try this tip right now'
   },
 
-  common_mistake_generic: {
-    focus: 'One common error most people make without realizing',
-    hook: 'Stop making this mistake everyone else makes',
-    scenarios: ['daily habits', 'common situations', 'repeated actions'],
-    engagement: 'Check if you make this mistake too'
-  },
-
   myth_buster_generic: {
     focus: 'One popular belief that is actually completely wrong',
     hook: 'This "fact" everyone believes is totally false',

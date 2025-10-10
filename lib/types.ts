@@ -17,17 +17,10 @@ export interface Question {
   question_type?: 'multiple_choice' | 'true_false' | 'assertion_reason';
   content_type?: 'multiple_choice' | 'true_false' | 'assertion_reason'; // AI responses use this field
   cta: string; // For the call-to-action frame
-  
+
   // Format-specific properties for new layouts
-  // Common Mistake Format
   hook?: string;
-  mistake?: string;
-  incorrect_usage?: string;
-  mistake_percentage?: string;
-  correct?: string;
-  correct_usage?: string;
-  practice?: string;
-  
+
   // Quick Fix Format
   basic_word?: string;
   advanced_word?: string;
@@ -36,19 +29,6 @@ export interface Question {
   after?: string;
   context?: string;
   definition?: string;
-  
-  // Usage Demo Format
-  target_word?: string;
-  wrong_example?: string;
-  wrong_context?: string;
-  right_example?: string;
-  right_context?: string;
-  practice_scenario?: string;
-  
-  // SSC Usage Demo Format
-  target_concept?: string;
-  wrong_scenario?: string;
-  right_scenario?: string;
   
   
   // SSC Quick Tip Format
@@ -118,7 +98,7 @@ export interface QuizJob {
   account_id: string; // Account identifier for multi-account support
   
   // Format tracking fields (new)
-  format_type?: string; // Format type (mcq, common_mistake, quick_fix, etc.)
+  format_type?: string; // Format type (mcq, quick_tip, quick_fix, simplified_word)
   frame_sequence?: any[]; // Sequence and type of frames for this format
   format_metadata?: {
     frameCount?: number;

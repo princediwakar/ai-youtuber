@@ -92,11 +92,8 @@ interface LayoutWeight {
  */
 const PERSONA_LAYOUT_WEIGHTS: Record<string, LayoutWeight[]> = {
     'english_vocab_builder': [
-        { layout: 'mcq', weight: 40 },           
-        { layout: 'simplified_word', weight: 20 },
-        { layout: 'quick_fix', weight: 10 },
-        { layout: 'usage_demo', weight: 10 },
-        { layout: 'common_mistake', weight: 10 } // Ensuring common mistake is included
+        { layout: 'mcq', weight: 60 },
+        { layout: 'quick_tip', weight: 40 },
     ],
     'brain_health_tips': [
         { layout: 'mcq', weight: 60 },           

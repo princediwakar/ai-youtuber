@@ -276,13 +276,8 @@ function validateAstronomyContent(data: any, format?: string): ValidationResult 
  */
 function validateEnglishContent(data: any, format?: string): ValidationResult {
   // Format-specific validation for English content
-  if (format === 'common_mistake') {
-    return validateCommonMistakeFormat(data);
-  } else if (format === 'quick_fix') {
+  if (format === 'quick_fix') {
     return validateQuickFixFormat(data);
-  } else if (format === 'usage_demo') {
-    return validateUsageDemoFormat(data);
-  
   } else if (format === 'simplified_word' || data.format_type === 'simplified_word') {
     return validateSimplifiedWordFormat(data);
   }
@@ -393,23 +388,6 @@ function validateSimplifiedWordFormat(data: any): ValidationResult {
  */
 
 /**
- * Validates Common Mistake format structure
- */
-function validateCommonMistakeFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'mistake', 'correct', 'practice', 'explanation', 'cta'];
-  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
-  
-  if (missingFields.length > 0) {
-    return {
-      success: false,
-      error: `Common Mistake format missing required fields: ${missingFields.join(', ')}`
-    };
-  }
-
-  return { success: true, data };
-}
-
-/**
  * Validates Quick Fix format structure
  */
 function validateQuickFixFormat(data: any): ValidationResult {
@@ -420,23 +398,6 @@ function validateQuickFixFormat(data: any): ValidationResult {
     return {
       success: false,
       error: `Quick Fix format missing required fields: ${missingFields.join(', ')}`
-    };
-  }
-
-  return { success: true, data };
-}
-
-/**
- * Validates Usage Demo format structure
- */
-function validateUsageDemoFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'target_word', 'wrong_example', 'right_example', 'practice', 'cta'];
-  const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
-  
-  if (missingFields.length > 0) {
-    return {
-      success: false,
-      error: `Usage Demo format missing required fields: ${missingFields.join(', ')}`
     };
   }
 
@@ -547,10 +508,8 @@ function validateMathematicalAccuracy(content: string): string[] {
 export function generateContentHash(content: ContentData): string {
   const contentString = JSON.stringify({
     // Primary content identifiers - prioritize the main word/concept
-    main: content.question || content.hook || content.target_word || content.target_concept || 
-           content.traditional_approach || content.content,
-    answer: content.answer || content.correct || content.advanced_word || content.smart_shortcut || 
-             content.result,
+    main: content.question || content.hook || content.traditional_approach || content.content,
+    answer: content.answer || content.advanced_word || content.smart_shortcut || content.result,
     content_type: content.question_type || content.content_type || 'format_based',
     // For simplified word format, include definition to ensure uniqueness
     definition: content.definition,

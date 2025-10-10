@@ -94,7 +94,7 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
 
     // Apply JSON format instructions only if the persona is one that historically required
     // JSON output, which typically corresponds to MCQ-based content.
-    const formatsRequiringJson = ['mcq', 'multiple_choice', 'quick_fix', 'usage_demo', 'common_mistake'];
+    const formatsRequiringJson = ['mcq', 'multiple_choice', 'quick_fix'];
     const currentFormat = jobConfig.preferredFormat || jobConfig.preferredLayout || 'mcq';
     
     if (formatsRequiringJson.includes(currentFormat as string) || 

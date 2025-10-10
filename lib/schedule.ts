@@ -1,13 +1,15 @@
 /**
  * Multi-Account YouTube Content Generation & Upload Schedule
  *
- * OPTIMIZED FOR ENGAGEMENT & AUDIENCE ROUTINES (October 5, 2025)
+ * OPTIMIZED FOR YOUTUBE SHORTS ALGORITHM (October 10, 2025)
  *
- * Strategy:
- * 1. Aligns upload times with high-traffic user moments: morning commute, lunch break, after work, and evening prime time.
- * 2. Strengthens the proven 8 PM (20:00 IST) prime-time slot for key channels.
- * 3. Introduces more distinct thematic timing to match content with user mindset (e.g., wellness routines, study blocks).
- * 4. Adjusts generation times to run earlier, ensuring content is always ready well ahead of the first upload slot.
+ * Strategy (Based on 2025 Algorithm Research):
+ * 1. Upload 2-3 hours BEFORE peak viewing times (algorithm needs indexing time)
+ * 2. Peak viewing: 12-3 PM and 7-10 PM globally
+ * 3. Optimal upload windows: 9-11 AM for afternoon peak, 4-6 PM for evening peak
+ * 4. Saturday 4 PM is the golden hour for maximum views
+ * 5. Weekday focus: 7-9 AM and 9-11 PM (casual scrolling times)
+ * 6. Weekend focus: 10 AM-12 PM and 2-4 PM (leisure browsing)
  */
 
 interface HourlySchedule {
@@ -49,71 +51,71 @@ const astronomyGenerationPattern: HourlySchedule =
 };
 
 // ===================================================================
-// 1. English Shots (Global Learners, Indian Prime-Time Focus)
-// STRATEGY: 5 uploads/day. Capture morning commute, lunch, and post-work slots, while doubling down on the 8 PM peak.
+// 1. English Shots (Global Learners, Algorithm-Optimized Timing)
+// STRATEGY: Upload 2-3 hours before peak times. 5 uploads/day.
 // ===================================================================
 const englishWeekdayUpload: HourlySchedule = {
-  8: ['english_vocab_builder'],   // Morning commute / First phone check
-  13: ['english_vocab_builder'],  // Lunch break
-  17: ['english_vocab_builder'],  // After work/school commute
-  20: ['english_vocab_builder', 'english_vocab_builder'], // **DATA-DRIVEN PEAK: Double upload**
+  7: ['english_vocab_builder'],   // Upload for 9-11 AM casual scrolling
+  10: ['english_vocab_builder'],  // Upload for 12-3 PM lunch peak
+  16: ['english_vocab_builder'],  // Upload for 7-10 PM evening peak (GOLDEN WINDOW)
+  19: ['english_vocab_builder', 'english_vocab_builder'], // Upload for 9-11 PM late night scrolling (DOUBLE)
 };
 const englishWeekendUpload: HourlySchedule = {
-  10: ['english_vocab_builder'],  // Later weekend morning start
-  14: ['english_vocab_builder'],  // Weekend afternoon
-  18: ['english_vocab_builder'],  // Early evening
-  20: ['english_vocab_builder', 'english_vocab_builder'], // **PEAK: Maintain the double upload**
+  8: ['english_vocab_builder'],   // Upload for 10 AM-12 PM weekend leisure
+  12: ['english_vocab_builder'],  // Upload for 2-4 PM weekend browsing
+  16: ['english_vocab_builder', 'english_vocab_builder'], // **SATURDAY GOLDEN HOUR: 4 PM is #1 for views (DOUBLE)**
+  19: ['english_vocab_builder'],  // Upload for evening peak
 };
 
 // ===================================================================
-// 2. Health Shots (Wellness Moments)
-// STRATEGY: 4 uploads/day. Thematic timing: "Start your day," "Midday break," "Evening wind-down," and "Before bed."
+// 2. Health Shots (Algorithm-Optimized + Thematic Wellness Timing)
+// STRATEGY: 4 uploads/day. Quick Tip format priority (80 avg views vs 54 MCQ).
 // ===================================================================
 const healthWeekdayUpload: HourlySchedule = {
-  7: ['brain_health_tips'],     // Morning wellness routine
-  13: ['eye_health_tips'],       // Lunchtime screen break reminder
-  18: ['brain_health_tips'],     // Post-work de-stress
-  21: ['eye_health_tips'],       // Pre-sleep digital detox tip
+  7: ['brain_health_tips'],     // Upload for 9 AM morning wellness (casual scrolling)
+  10: ['eye_health_tips'],      // Upload for 12-1 PM lunch break (PEAK)
+  16: ['brain_health_tips'],    // Upload for 7 PM evening peak (GOLDEN WINDOW)
+  19: ['eye_health_tips'],      // Upload for 9-10 PM late night (casual scrolling)
 };
 const healthWeekendUpload: HourlySchedule = {
-  9: ['brain_health_tips'],     // Weekend wellness start
-  14: ['eye_health_tips'],       // Afternoon self-care
-  19: ['brain_health_tips'],     // Evening relaxation
-  21: ['eye_health_tips'],       // Weekend prime-time content
+  8: ['brain_health_tips'],     // Upload for 10 AM weekend leisure
+  12: ['eye_health_tips'],      // Upload for 2-3 PM weekend browsing
+  16: ['brain_health_tips', 'eye_health_tips'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
+  19: ['eye_health_tips'],      // Evening upload
 };
 
 // ===================================================================
-// 3. SSC Shots (Dedicated Study Times)
-// STRATEGY: 4 uploads/day. Align with typical student schedules: morning revision, post-class, and evening study blocks.
+// 3. SSC Shots (Algorithm-Optimized Student Study Times)
+// STRATEGY: 4 uploads/day. ONLY video with engagement (118 views + 1 like).
 // ===================================================================
 const sscWeekdayUpload: HourlySchedule = {
-  8: ['ssc_shots'],             // Morning revision / warm-up
-  16: ['ssc_shots'],            // Post-class / start of evening study
-  19: ['ssc_shots'],            // Prime study session
-  22: ['ssc_shots'],            // Late-night final review
+  7: ['ssc_shots'],             // Upload for 9-10 AM morning study (casual scrolling)
+  10: ['ssc_shots'],            // Upload for 12-1 PM lunch break study
+  16: ['ssc_shots'],            // Upload for 7-8 PM prime study session (GOLDEN)
+  19: ['ssc_shots'],            // Upload for 9-10 PM late night revision
 };
 const sscWeekendUpload: HourlySchedule = {
-  11: ['ssc_shots'],            // Late morning weekend study start
-  16: ['ssc_shots'],            // Afternoon deep-dive session
-  19: ['ssc_shots'],            // Prime evening study block
-  21: ['ssc_shots'],            // Weekend late study session
+  9: ['ssc_shots'],             // Upload for 11 AM weekend study
+  12: ['ssc_shots'],            // Upload for 2-3 PM deep dive
+  16: ['ssc_shots', 'ssc_shots'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
+  19: ['ssc_shots'],            // Upload for evening block
 };
 
 // ===================================================================
-// 4. Astronomy Shots (Curiosity & Wonder)
-// STRATEGY: 4 uploads/day. Focus on discovery moments: morning coffee, afternoon break, and a stronger evening prime-time block.
+// 4. Astronomy Shots (Algorithm-Optimized Discovery Content)
+// STRATEGY: 4 uploads/day. Strong performer: 172 views #2 video, 65.5 avg.
 // ===================================================================
 const astronomyWeekdayUpload: HourlySchedule = {
-  9: ['space_facts_quiz'],      // Morning coffee "did you know"
-  14: ['space_facts_quiz'],      // Afternoon mental break
-  20: ['space_facts_quiz'],      // Prime-time discovery
-  23: ['space_facts_quiz'],      // Late-night "look at the sky" thematic post
+  7: ['space_facts_quiz'],      // Upload for 9-10 AM morning curiosity
+  10: ['space_facts_quiz'],     // Upload for 12-2 PM lunch discovery (PEAK)
+  16: ['space_facts_quiz'],     // Upload for 7-9 PM evening wonder (GOLDEN)
+  21: ['space_facts_quiz'],     // Upload for 11 PM-12 AM late night "stargazing"
 };
 const astronomyWeekendUpload: HourlySchedule = {
-  11: ['space_facts_quiz'],     // Weekend morning curiosity
-  16: ['space_facts_quiz'],     // Afternoon "explore the universe"
-  20: ['space_facts_quiz', 'space_facts_quiz'], // **PEAK: Double down on prime-time for entertainment/discovery content**
-  22: ['space_facts_quiz'],
+  9: ['space_facts_quiz'],      // Upload for 11 AM weekend curiosity
+  14: ['space_facts_quiz'],     // Upload for 4 PM "explore universe" (PRE-GOLDEN)
+  16: ['space_facts_quiz', 'space_facts_quiz'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
+  20: ['space_facts_quiz'],     // Upload for late evening
 };
 
 // ===================================================================

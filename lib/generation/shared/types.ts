@@ -54,12 +54,10 @@ export type PersonaType =
   | 'ssc_shots'
   | 'space_facts_quiz';
 
-export type FormatType = 
+export type FormatType =
   | 'simplified_word'
   | 'mcq'
-  | 'common_mistake'
   | 'quick_fix'
-  | 'usage_demo'
   | 'quick_tip'
 
   export type PromptGenerator = (config: PromptConfig) => string | Promise<string>;
