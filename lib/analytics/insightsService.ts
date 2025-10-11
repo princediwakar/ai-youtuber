@@ -348,12 +348,23 @@ class AnalyticsInsightsService {
   /**
    * Get format performance analytics
    */
-  public async getFormatAnalytics(accountId: string, persona?: string) {
-    const personaFilter = persona ? 'AND qj.persona = $2' : '';
-    const params = persona ? [accountId, persona] : [accountId];
+  public async getFormatAnalytics(accountId?: string, persona?: string) {
+    const params: any[] = [];
+    const conditions: string[] = [];
+
+    if (accountId) {
+      params.push(accountId);
+      conditions.push(`va.account_id = $${params.length}`);
+    }
+    if (persona) {
+      params.push(persona);
+      conditions.push(`qj.persona = $${params.length}`);
+    }
+
+    const whereClause = conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '';
 
     const formatData = await query<FormatDataRow>(`
-      SELECT 
+      SELECT
         va.question_format as format,
         ROUND(AVG(va.engagement_rate), 2) as avg_engagement_rate,
         ROUND(AVG(va.views), 0) as avg_views,
@@ -361,9 +372,9 @@ class AnalyticsInsightsService {
         ROUND(STDDEV(va.engagement_rate), 2) as engagement_stddev
       FROM video_analytics va
       JOIN quiz_jobs qj ON va.job_id = qj.id
-      WHERE va.account_id = $1 ${personaFilter}
-        AND va.question_format IS NOT NULL
+      WHERE va.question_format IS NOT NULL
         AND va.collected_at > NOW() - INTERVAL '60 days'
+        ${whereClause}
       GROUP BY va.question_format
       HAVING COUNT(*) >= 3
       ORDER BY avg_engagement_rate DESC

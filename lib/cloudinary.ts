@@ -309,37 +309,9 @@ export async function deleteVideoFromCloudinary(publicId: string, accountId: str
   }
 }
 
-// Legacy functions for backward compatibility (default to english_shots account)
 
-/**
- * @deprecated Use uploadImageToCloudinary(buffer, accountId, options) instead
- */
-export async function legacyUploadImageToCloudinary(
-  buffer: Buffer,
-  options: {
-    folder?: string;
-    public_id?: string;
-    resource_type?: 'image' | 'video' | 'raw' | 'auto';
-    format?: string;
-  } = {}
-): Promise<CloudinaryUploadResult> {
-  return uploadImageToCloudinary(buffer, 'english_shots', options);
-}
 
-/**
- * @deprecated Use uploadVideoToCloudinary(buffer, accountId, options) instead
- */
-export async function legacyUploadVideoToCloudinary(
-  buffer: Buffer,
-  options: { 
-    resource_type?: "video"; 
-    folder?: string; 
-    public_id?: string; 
-    format?: string; 
-  } = {}
-): Promise<CloudinaryUploadResult> {
-  return uploadVideoToCloudinary(buffer, 'english_shots', options);
-}
+
 
 /**
  * Cleanup all Cloudinary assets for a completed job

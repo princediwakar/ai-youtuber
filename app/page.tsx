@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Database, Youtube, CheckCircle, Video, X } from 'lucide-react';
-import { AnalyticsStats, ChannelStats, PersonaStats } from '@/lib/types';
+import { AnalyticsStats, ChannelStats, PersonaStats, ThemeStats, FormatStats } from '@/lib/types';
 
 
 
@@ -104,6 +104,30 @@ export default function QuizDashboard() {
           </div>
         )}
 
+        {/* Theme Performance Section */}
+        {stats?.themes && stats.themes.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-4">Theme Performance</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {stats.themes.map((theme) => (
+                <ThemeCard key={theme.themeName} theme={theme} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Format Performance Section */}
+        {stats?.formats && stats.formats.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-4">Format Performance</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {stats.formats.map((format) => (
+                <FormatCard key={format.format} format={format} />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="bg-gray-800/50 rounded-lg shadow-lg border border-gray-700 p-6 text-center">
           <div className="flex items-center justify-center">
             <button onClick={fetchDashboardData} className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors">
@@ -188,7 +212,7 @@ const PersonaCard = ({ persona }: { persona: PersonaStats }) => {
   return (
     <div className="bg-gray-800/50 rounded-lg shadow-lg p-4 border border-gray-700">
       <h4 className="text-md font-semibold text-white mb-3">{formatPersonaName(persona.personaName)}</h4>
-      
+
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-400">Videos:</span>
@@ -201,6 +225,79 @@ const PersonaCard = ({ persona }: { persona: PersonaStats }) => {
         <div className="flex justify-between">
           <span className="text-gray-400">Last Video:</span>
           <span className="text-white font-medium text-xs">{formatDate(persona.lastVideo)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ThemeCard = ({ theme }: { theme: ThemeStats }) => {
+  const formatThemeName = (name: string) => {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  return (
+    <div className="bg-gray-800/50 rounded-lg shadow-lg p-4 border border-gray-700">
+      <h4 className="text-md font-semibold text-white mb-3">{formatThemeName(theme.themeName)}</h4>
+
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-400">Videos:</span>
+          <span className="text-white font-medium">{theme.videoCount}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Avg Views:</span>
+          <span className="text-white font-medium">{theme.avgViews.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Engagement:</span>
+          <span className="text-white font-medium">{theme.avgEngagementRate}%</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Total Views:</span>
+          <span className="text-white font-medium">{theme.totalViews.toLocaleString()}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FormatCard = ({ format }: { format: FormatStats }) => {
+  const formatFormatName = (name: string) => {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const getConsistencyColor = (consistency: 'high' | 'medium' | 'low') => {
+    switch (consistency) {
+      case 'high': return 'text-green-400';
+      case 'medium': return 'text-yellow-400';
+      case 'low': return 'text-red-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  return (
+    <div className="bg-gray-800/50 rounded-lg shadow-lg p-4 border border-gray-700">
+      <h4 className="text-md font-semibold text-white mb-3">{formatFormatName(format.format)}</h4>
+
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-400">Videos:</span>
+          <span className="text-white font-medium">{format.videoCount}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Avg Views:</span>
+          <span className="text-white font-medium">{format.avgViews.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Engagement:</span>
+          <span className="text-white font-medium">{format.avgEngagementRate}%</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-400">Consistency:</span>
+          <span className={`font-medium capitalize ${getConsistencyColor(format.consistency)}`}>
+            {format.consistency}
+          </span>
         </div>
       </div>
     </div>

@@ -373,10 +373,3 @@ export async function generateAndStoreContent(
   }
 }
 
-/**
- * Legacy wrapper function for backward compatibility
- * @deprecated Use generateAndStoreContent instead
- */
-export async function generateAndStoreQuiz(jobConfig: GenerationJobConfig): Promise<GenerationResult | null> {
-  return generateAndStoreContent(jobConfig);
-}

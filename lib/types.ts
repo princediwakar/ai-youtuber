@@ -148,6 +148,24 @@ export interface PersonaStats {
   lastVideo: string | null;
 }
 
+export interface ThemeStats {
+  themeName: string;
+  avgEngagementRate: number;
+  avgViews: number;
+  videoCount: number;
+  totalViews: number;
+  avgLikes: number;
+}
+
+export interface FormatStats {
+  format: string;
+  avgEngagementRate: number;
+  avgViews: number;
+  videoCount: number;
+  engagementStddev: number;
+  consistency: 'high' | 'medium' | 'low';
+}
+
 export interface AnalyticsStats {
   videosPublished: number;
   totalViews: number;
@@ -155,4 +173,6 @@ export interface AnalyticsStats {
   bestChannel: string;
   channels: ChannelStats[];
   personas: PersonaStats[];
+  themes: ThemeStats[];
+  formats: FormatStats[];
 }

@@ -234,6 +234,3 @@ export function getScheduledAccountIds(): string[] {
   return Object.keys(ACCOUNT_SCHEDULES);
 }
 
-// Legacy exports for backward compatibility (will be deprecated)
-export const GenerationSchedule: DailySchedule = getGenerationSchedule('english_shots');
-export const UploadSchedule: DailySchedule = getUploadSchedule('english_shots');

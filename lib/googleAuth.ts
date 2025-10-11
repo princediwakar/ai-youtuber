@@ -26,10 +26,3 @@ export async function getOAuth2Client(accountId: string) {
   return oauth2Client;
 }
 
-/**
- * Legacy function for backward compatibility - defaults to english_shots account
- * @deprecated Use getOAuth2Client(accountId) instead
- */
-export function getLegacyOAuth2Client() {
-  return getOAuth2Client('english_shots');
-}
