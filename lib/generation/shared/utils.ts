@@ -1,9 +1,10 @@
+// lib/generation/shared/utils.ts
+
 /**
  * Shared utilities for prompt generation across all personas
  * Common functions, interfaces, and JSON formatting
  */
 
-import { TOPIC_GUIDELINES } from './guidelines';
 import type {
   VariationMarkers,
   PromptConfig,
@@ -28,12 +29,33 @@ export function generateVariationMarkers(): VariationMarkers {
 
 /**
  * Generates randomization elements for prompt variation
+ * --- MODIFIED: Now aware of all personas for safe tones/approaches ---
  */
-export function generateRandomizationElements(): RandomizationElements {
+export function generateRandomizationElements(persona?: string): RandomizationElements {
   const creativeSeed = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const approaches = ['scientific', 'practical', 'surprising', 'urgent', 'interactive'];
-  const tones = ['authoritative', 'conversational', 'alarming', 'encouraging', 'investigative'];
-  const perspectives = ['expert', 'researcher', 'practitioner', 'educator', 'investigator'];
+
+  // --- Default Lists ---
+  let approaches = ['scientific', 'practical', 'surprising', 'counter-intuitive', 'interactive', 'historical', 'quick-hack'];
+  let tones = ['authoritative', 'conversational', 'friendly', 'encouraging', 'investigative', 'curious', 'surprised'];
+  let perspectives = ['expert', 'researcher', 'practitioner', 'educator', 'investigator', 'a-helpful-friend'];
+
+  // --- Persona-Specific Overrides ---
+  if (persona?.includes('health')) {
+    // GUARDRAIL: Remove "alarming" or "urgent" styles for health.
+    approaches = ['scientific', 'practical', 'surprising', 'counter-intuitive', 'interactive', 'mindfulness-based', 'habit-stacking'];
+    tones = ['friendly', 'encouraging', 'curious', 'calm', 'supportive', 'conversational'];
+    perspectives = ['health-coach', 'nutritionist', 'researcher', 'practitioner', 'a-helpful-friend', 'educator'];
+  } else if (persona?.includes('ssc')) {
+    // GUARDRAIL: Focus on exam success, shortcuts, and authority.
+    approaches = ['shortcut-based', 'exam-focused', 'practical', 'memory-trick', 'counter-intuitive', 'surprising-fact', 'historical-link'];
+    tones = ['authoritative', 'encouraging', 'direct', 'results-oriented', 'motivational', 'investigative'];
+    perspectives = ['expert-topper', 'exam-coach', 'educator', 'subject-matter-expert', 'investigator'];
+  } else if (persona?.includes('astronomy') || persona?.includes('space')) {
+     // GUARDRAIL: Focus on wonder, scale, and curiosity.
+    approaches = ['scientific', 'surprising', 'counter-intuitive', 'scale-comparison', 'myth-busting', 'historical', 'observational'];
+    tones = ['curious', 'awestruck', 'enthusiastic', 'investigative', 'surprised', 'conversational'];
+    perspectives = ['astronomer', 'enthusiast', 'researcher', 'educator', 'science-communicator', 'stargazer'];
+  }
 
   const randomApproach = approaches[Math.floor(Math.random() * approaches.length)];
   const randomTone = tones[Math.floor(Math.random() * tones.length)];
@@ -57,10 +79,10 @@ export function generateContextInjections(persona?: string): ContextInjection {
 
   if (persona?.includes('astronomy') || persona?.includes('space')) {
     standardizedPersona = 'space_facts_quiz';
-  } else if (persona?.includes('health') || persona?.includes('brain')) {
-    standardizedPersona = 'brain_health_tips';
-  } else if (persona?.includes('eye')) {
-    standardizedPersona = 'eye_health_tips';
+  } else if (persona?.includes('mental') || persona?.includes('brain')) {
+    standardizedPersona = 'mental_health_tips';
+  } else if (persona?.includes('health')) { // Catches 'general_health_tips'
+    standardizedPersona = 'general_health_tips';
   } else if (persona?.includes('english') || persona?.includes('vocab')) {
     standardizedPersona = 'english_vocab_builder';
   } else if (persona?.includes('ssc')) {
@@ -82,26 +104,19 @@ export function getPromptVariation(): number {
   return hour % 3; // Creates 3 different prompt structures
 }
 
-/**
- * Gets topic guidelines for a given topic
- */
-export function getTopicGuidelines(topic: string) {
-  return TOPIC_GUIDELINES[topic];
-}
 
 /**
  * Adds JSON format instructions based on question format
  */
 export function addJsonFormatInstructions(prompt: string, questionFormat: string): string {
   if (questionFormat === 'multiple_choice') {
-    return prompt + '\n\nCRITICAL JSON OUTPUT RULES:\n- Output ONLY a single JSON object. No prose, no code fences, no backticks, no prefixes/suffixes.\n- Keys MUST be exactly: "hook", "content", "options", "answer", "explanation", "cta", "content_type".\n- "options" MUST be an object with keys "A", "B", "C", "D".\n- "answer" MUST be one of "A", "B", "C", or "D".\n- "content_type" MUST be "multiple_choice".\n- Keep explanation under 120 characters.\n\nReturn the JSON only, like: {"hook":"...","content":"...","options":{"A":"...","B":"...","C":"...","D":"..."},"answer":"A","explanation":"...","cta":"...","content_type":"multiple_choice"}';
+    return prompt + '\n\nCRITICAL JSON OUTPUT RULES:\n- Output ONLY a single JSON object. No prose, no code fences, no backticks, no prefixes/suffixes.\n- Keys MUST be exactly: "content", "options", "answer", "explanation", "cta", "content_type".\n- "options" MUST be an object with keys "A", "B", "C", "D".\n- "answer" MUST be one of "A", "B", "C", or "D".\n- "content_type" MUST be "multiple_choice".\n- Keep explanation under 120 characters.\n\nReturn the JSON only, like: {"content":"...","options":{"A":"...","B":"...","C":"...","D":"..."},"answer":"A","explanation":"...","cta":"...","content_type":"multiple_choice"}';
   } else if (questionFormat === 'true_false') {
-    return prompt + '\n\nCRITICAL JSON OUTPUT RULES:\n- Output ONLY a single JSON object. No prose, no code fences, no backticks, no prefixes/suffixes.\n- Keys MUST be exactly: "hook", "content", "options", "answer", "explanation", "cta", "content_type".\n- "options" MUST be an object with keys "A":"True", "B":"False".\n- "answer" MUST be either "A" or "B".\n- "content_type" MUST be "true_false".\n- Keep explanation under 120 characters.\n\nReturn the JSON only, like: {"hook":"...","content":"...","options":{"A":"True","B":"False"},"answer":"A","explanation":"...","cta":"...","content_type":"true_false"}';
+    return prompt + '\n\nCRITICAL JSON OUTPUT RULES:\n- Output ONLY a single JSON object. No prose, no code fences, no backticks, no prefixes/suffixes.\n- Keys MUST be exactly: "content", "options", "answer", "explanation", "cta", "content_type".\n- "options" MUST be an object with keys "A":"True", "B":"False".\n- "answer" MUST be either "A" or "B".\n- "content_type" MUST be "true_false".\n- Keep explanation under 120 characters.\n\nReturn the JSON only, like: {"content":"...","options":{"A":"True","B":"False"},"answer":"A","explanation":"...","cta":"...","content_type":"true_false"}';
   } else if (questionFormat === 'assertion_reason') {
-    return prompt + `\n\nCRITICAL JSON OUTPUT RULES:\n- Output ONLY a single JSON object. No prose, no code fences, no backticks, no prefixes/suffixes.\n- Keys MUST be exactly: "hook", "assertion", "reason", "options", "answer", "explanation", "cta", "content_type".\n- "options" MUST be the standard A/B/C/D object.\n- "answer" MUST be one of "A", "B", "C", or "D".\n- "content_type" MUST be "assertion_reason".\n- Keep explanation under 120 characters.
+    return prompt + `\n\nCRITICAL JSON OUTPUT RULES:\n- Output ONLY a single JSON object. No prose, no code fences, no backticks, no prefixes/suffixes.\n- Keys MUST be exactly: "assertion", "reason", "options", "answer", "explanation", "cta", "content_type".\n- "options" MUST be the standard A/B/C/D object.\n- "answer" MUST be one of "A", "B", "C", or "D".\n- "content_type" MUST be "assertion_reason".\n- Keep explanation under 120 characters.
 
 MANDATORY JSON STRUCTURE:
-• "hook": A compelling hook to grab attention (under 25 characters).
 • "assertion": A statement of fact.
 • "reason": A statement explaining the assertion.
 • "options": Must be the standard A/B/C/D object.

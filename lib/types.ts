@@ -19,7 +19,6 @@ export interface Question {
   cta: string; // For the call-to-action frame
 
   // Format-specific properties for new layouts
-  hook?: string;
 
   // Quick Fix Format
   basic_word?: string;
@@ -98,7 +97,7 @@ export interface QuizJob {
   account_id: string; // Account identifier for multi-account support
   
   // Format tracking fields (new)
-  format_type?: string; // Format type (mcq, quick_tip, quick_fix, simplified_word)
+  format_type?: string; // Format type (mcq, quick_tip, simplified_word)
   frame_sequence?: any[]; // Sequence and type of frames for this format
   format_metadata?: {
     frameCount?: number;

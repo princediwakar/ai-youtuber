@@ -92,23 +92,6 @@ export async function generatePrompt(jobConfig: JobConfig): Promise<GeneratedPro
     // for legacy MCQ types like SSC and Health Quizzes in its internal routing table.
     let prompt = await generateFormatPrompt(promptConfig); 
 
-    // Apply JSON format instructions only if the persona is one that historically required
-    // JSON output, which typically corresponds to MCQ-based content.
-    const formatsRequiringJson = ['mcq', 'multiple_choice', 'quick_fix'];
-    const currentFormat = jobConfig.preferredFormat || jobConfig.preferredLayout || 'mcq';
-    
-    if (formatsRequiringJson.includes(currentFormat as string) || 
-        persona === 'brain_health_tips' || 
-        persona === 'eye_health_tips' || 
-        persona === 'english_vocab_builder' || 
-        persona === 'ssc_shots' || 
-        persona === 'space_facts_quiz') {
-        
-        // We use the analytics-driven questionFormat (e.g., 'multiple_choice') for the instructions
-        prompt = addJsonFormatInstructions(prompt, questionFormat);
-    }
-    // --- END FIX ---
-
 
     // Apply timing-aware enhancements to the generated prompt
     if (timingContext) {

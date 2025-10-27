@@ -228,7 +228,6 @@ class AnalyticsCollectionService {
         const topicCategory = this.extractTopicCategory(job.persona, job.topic_display_name);
         
         const content = jobDataParsed?.content || {};
-        const hookType = this.extractHookType(content.hook);
         const ctaType = this.extractCtaType(content.cta);
         
         // Perform the insertion concurrently
@@ -238,7 +237,7 @@ class AnalyticsCollectionService {
             engagement_rate, like_ratio, video_uploaded_at, collected_at,
             upload_hour, upload_day_of_week, question_format, topic_display_name,
             persona, theme_name, audio_file, total_duration, frame_durations,
-            question_type, topic_category, hook_type, cta_type
+            question_type, topic_category, cta_type
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
         `, [
           data.videoId, data.jobId, data.accountId, data.views, data.likes,
@@ -246,7 +245,7 @@ class AnalyticsCollectionService {
           data.videoUploadedAt, uploadHour, uploadDayOfWeek, job.question_format,
           job.topic_display_name, job.persona, themeName, audioFile, totalDuration,
           frameDurations ? JSON.stringify(frameDurations) : null,
-          questionType, topicCategory, hookType, ctaType
+          questionType, topicCategory, ctaType
         ]);
       } catch (error) {
         console.error(`[CollectionService] Error storing analytics for video ${data.videoId}:`, error);
@@ -448,17 +447,6 @@ class AnalyticsCollectionService {
     return 'Educational';
   }
 
-  private extractHookType(hook: string): string | null {
-    if (!hook || typeof hook !== 'string') return null;
-    const hookLower = hook.toLowerCase();
-    if (hookLower.includes('did you know')) return 'did_you_know';
-    if (hookLower.includes('test yourself') || hookLower.includes('quiz')) return 'challenge';
-    if (hookLower.includes('can you')) return 'question';
-    if (hookLower.includes('discover') || hookLower.includes('learn')) return 'educational';
-    if (hookLower.includes('mistake') || hookLower.includes('error')) return 'mistake_warning';
-    if (hookLower.includes('secret') || hookLower.includes('tip')) return 'secret_tip';
-    return 'general';
-}
 
   private extractCtaType(cta: string): string | null {
     if (!cta || typeof cta !== 'string') return null;

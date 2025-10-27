@@ -6,7 +6,7 @@
  */
 export const config = {
   // Job Processing Configuration - Optimized for 16 daily uploads
-  GENERATE_BATCH_SIZE: 2,              // Further reduced for production serverless stability
+  GENERATE_BATCH_SIZE: 1,              // Further reduced for production serverless stability
   CREATE_FRAMES_CONCURRENCY: 2,       // Increased for parallel frame creation
   ASSEMBLY_CONCURRENCY: 1,             // Increased for video assembly speed
   UPLOAD_CONCURRENCY: 1,               // Single upload to avoid rate limits

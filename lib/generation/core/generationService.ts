@@ -12,38 +12,6 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { config } from '@/lib/config';
 
-// ANALYTICS: Track hook patterns from highest-performing videos
-// FIX: Moving these outside the main logic block.
-const HIGH_ENGAGEMENT_HOOK_PATTERNS = [
-  'this 30-second habit will boost',
-  'you\'ve been using this word wrong',
-  '90% of people say this word wrong',
-  'stop embarrassing yourself',
-  'upgrade your vocabulary in 15 seconds',
-  'never misspell this tricky word again'
-];
-
-/**
- * ANALYTICS-DRIVEN: Extract hook effectiveness patterns
- */
-function analyzeHookEffectiveness(content: any): { hookPattern: string; estimatedEffectiveness: 'high' | 'medium' | 'low' } {
-  const hookText = content.hook || content.question || '';
-  const lowerHook = hookText.toLowerCase();
-
-  // Check against high-performing patterns
-  for (const pattern of HIGH_ENGAGEMENT_HOOK_PATTERNS) {
-    if (lowerHook.includes(pattern)) {
-      return { hookPattern: pattern, estimatedEffectiveness: 'high' };
-    }
-  }
-
-  // Simple heuristics for medium/low effectiveness
-  if (lowerHook.includes('did you know') || lowerHook.includes('which word')) {
-    return { hookPattern: 'standard_question', estimatedEffectiveness: 'medium' };
-  }
-
-  return { hookPattern: 'generic', estimatedEffectiveness: 'low' };
-}
 
 const deepseekClient = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
@@ -92,14 +60,13 @@ interface LayoutWeight {
  */
 const PERSONA_LAYOUT_WEIGHTS: Record<string, LayoutWeight[]> = {
     'english_vocab_builder': [
-        { layout: 'mcq', weight: 60 },
-        { layout: 'quick_tip', weight: 40 },
+        { layout: 'mcq', weight: 100 },
     ],
-    'brain_health_tips': [
+    'mental_health_tips': [
         { layout: 'mcq', weight: 60 },           
         { layout: 'quick_tip', weight: 40 },     
     ],
-    'eye_health_tips': [
+    'general_health_tips': [
         { layout: 'mcq', weight: 60 },
         { layout: 'quick_tip', weight: 40 },
     ],
@@ -291,14 +258,9 @@ export async function generateAndStoreContent(
       }
     }
 
-    // ANALYTICS: Track hook effectiveness for optimization
-    const hookAnalysis = analyzeHookEffectiveness(contentData);
-    console.log(`🎯 Hook analysis for ${jobConfig.persona}: ${hookAnalysis.hookPattern} (${hookAnalysis.estimatedEffectiveness} effectiveness)`);
 
-    // Add hook analysis to content data for future reference
     const enhancedContentData = {
       ...contentData,
-      hookAnalysis: hookAnalysis,
       layoutType: selectedLayout, // Ensure layout type is tracked
     };
 

@@ -173,7 +173,6 @@ class RefinementService {
     }
 
     if (avgEngagementRate < 0.5) {
-      recommendations.push('Consider improving titles with more engaging questions or emotional hooks');
       recommendations.push('Experiment with different visual styles or question formats');
     } else if (avgEngagementRate > 1.0) {
       recommendations.push('Great engagement rate! Scale successful content patterns to similar topics');

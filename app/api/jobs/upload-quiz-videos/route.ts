@@ -179,7 +179,7 @@ function generateVideoMetadata(job: QuizJob, playlistId?: string) {
     const finalTopic = topic_display_name || content?.topic || topic || 'Quiz';
 
     // --- ENHANCED: Include #Shorts in title for algorithm recognition ---
-    let rawTitle = content?.hook || finalTopic;
+    let rawTitle = finalTopic;
     // Ensure title ends with #Shorts for discovery
     const title = rawTitle.includes('#Shorts') ? rawTitle.substring(0, 100) : `${rawTitle} #Shorts`.substring(0, 100);
 

@@ -103,7 +103,7 @@ app/
 
 **All Channels Active:**
 - **English Shots:** `english_vocab_builder` (Best single video: 176 views, avg: 51.57)
-- **Health Shots:** `brain_health_tips`, `eye_health_tips` (Best performer: 72 avg views)
+- **Health Shots:** `mental_health_tips`, `general_health_tips` (Best performer: 72 avg views)
 - **Space Facts:** `space_facts_quiz` (Strong performer: 172 views #2 video, 65.5 avg)
 - **SSC Shots:** `ssc_shots` (ONLY video with engagement: 118 views + 1 like)
 
@@ -122,7 +122,6 @@ app/
 - Videos are too new (1-2 days) for confident conclusions
 - Quick tip format showing promise (80 vs 54 avg)
 - Engagement is 0% across board (only 1 like total)
-- Beginner-friendly, curious hooks work better than aggressive/shameful tones
 
 ### Content Strategy Changes (2025-10-10)
 **Prompt Simplification:**
@@ -132,15 +131,11 @@ app/
 - Simplified prompts from 200+ lines to 50 lines
 - Format rotation limited to: MCQ + Quick Tip only
 
-**Winning Hook Patterns:**
-- Curiosity: "90% Say This WRONG 🚨" (not attacking)
-- Simple exclamations: "Sun's true color! ☀️" (exciting)
-- Helpful promises: "CRACK SSC 2X FASTER" (actionable)
 
 **Format Rotation (Updated):**
 - `english_vocab_builder`: MCQ, Quick Tip
-- `brain_health_tips`: Quick Tip, MCQ (quick tip priority)
-- `eye_health_tips`: Quick Tip, MCQ (quick tip priority)
+- `mental_health_tips`: Quick Tip, MCQ (quick tip priority)
+- `general_health_tips`: Quick Tip, MCQ (quick tip priority)
 - `ssc_shots`: MCQ, Quick Tip
 - `space_facts_quiz`: MCQ, Quick Tip
 

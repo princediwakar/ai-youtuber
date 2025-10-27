@@ -1,16 +1,4 @@
-/**
- * Multi-Account YouTube Content Generation & Upload Schedule
- *
- * OPTIMIZED FOR YOUTUBE SHORTS ALGORITHM (October 10, 2025)
- *
- * Strategy (Based on 2025 Algorithm Research):
- * 1. Upload 2-3 hours BEFORE peak viewing times (algorithm needs indexing time)
- * 2. Peak viewing: 12-3 PM and 7-10 PM globally
- * 3. Optimal upload windows: 9-11 AM for afternoon peak, 4-6 PM for evening peak
- * 4. Saturday 4 PM is the golden hour for maximum views
- * 5. Weekday focus: 7-9 AM and 9-11 PM (casual scrolling times)
- * 6. Weekend focus: 10 AM-12 PM and 2-4 PM (leisure browsing)
- */
+//lib/schedule.ts
 
 interface HourlySchedule {
   [hour: number]: string[];
@@ -35,8 +23,8 @@ const englishGenerationPattern: HourlySchedule =
 };
 const healthGenerationPattern: HourlySchedule =
 {
-  2: ['brain_health_tips'],
-  6: ['eye_health_tips'],
+  2: ['mental_health_tips'],
+  6: ['general_health_tips'],
 };
 const sscGenerationPattern: HourlySchedule =
 {
@@ -58,12 +46,12 @@ const englishWeekdayUpload: HourlySchedule = {
   7: ['english_vocab_builder'],   // Upload for 9-11 AM casual scrolling
   10: ['english_vocab_builder'],  // Upload for 12-3 PM lunch peak
   16: ['english_vocab_builder'],  // Upload for 7-10 PM evening peak (GOLDEN WINDOW)
-  19: ['english_vocab_builder', 'english_vocab_builder'], // Upload for 9-11 PM late night scrolling (DOUBLE)
+  19: ['english_vocab_builder'], // Upload for 9-11 PM late night scrolling (DOUBLE)
 };
 const englishWeekendUpload: HourlySchedule = {
   8: ['english_vocab_builder'],   // Upload for 10 AM-12 PM weekend leisure
   12: ['english_vocab_builder'],  // Upload for 2-4 PM weekend browsing
-  16: ['english_vocab_builder', 'english_vocab_builder'], // **SATURDAY GOLDEN HOUR: 4 PM is #1 for views (DOUBLE)**
+  16: ['english_vocab_builder',], // **SATURDAY GOLDEN HOUR: 4 PM is #1 for views (DOUBLE)**
   19: ['english_vocab_builder'],  // Upload for evening peak
 };
 
@@ -72,16 +60,16 @@ const englishWeekendUpload: HourlySchedule = {
 // STRATEGY: 4 uploads/day. Quick Tip format priority (80 avg views vs 54 MCQ).
 // ===================================================================
 const healthWeekdayUpload: HourlySchedule = {
-  7: ['brain_health_tips'],     // Upload for 9 AM morning wellness (casual scrolling)
-  10: ['eye_health_tips'],      // Upload for 12-1 PM lunch break (PEAK)
-  16: ['brain_health_tips'],    // Upload for 7 PM evening peak (GOLDEN WINDOW)
-  19: ['eye_health_tips'],      // Upload for 9-10 PM late night (casual scrolling)
+  7: ['mental_health_tips'],     // Upload for 9 AM morning wellness (casual scrolling)
+  10: ['general_health_tips'],      // Upload for 12-1 PM lunch break (PEAK)
+  16: ['mental_health_tips'],    // Upload for 7 PM evening peak (GOLDEN WINDOW)
+  19: ['general_health_tips'],      // Upload for 9-10 PM late night (casual scrolling)
 };
 const healthWeekendUpload: HourlySchedule = {
-  8: ['brain_health_tips'],     // Upload for 10 AM weekend leisure
-  12: ['eye_health_tips'],      // Upload for 2-3 PM weekend browsing
-  16: ['brain_health_tips', 'eye_health_tips'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
-  19: ['eye_health_tips'],      // Evening upload
+  8: ['mental_health_tips'],     // Upload for 10 AM weekend leisure
+  12: ['general_health_tips'],      // Upload for 2-3 PM weekend browsing
+  16: ['mental_health_tips', 'general_health_tips'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
+  19: ['general_health_tips'],      // Evening upload
 };
 
 // ===================================================================

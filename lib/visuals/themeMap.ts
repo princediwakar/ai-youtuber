@@ -17,7 +17,7 @@ export const PersonaThemeMap: Record<string, string[]> = {
   ],
 
   // Brain health - Calm, trustworthy, easy on eyes
-  brain_health_tips: [
+  mental_health_tips: [
     'LearnGreen',       // 📚 Green promotes calm, boosts focus
     'FocusBlue',        // 🎓 Soft blue for concentration
     'MintyFresh',       // Fresh, clean medical
@@ -25,7 +25,7 @@ export const PersonaThemeMap: Record<string, string[]> = {
   ],
 
   // Eye health - Absolutely NO harsh colors for eye health content
-  eye_health_tips: [
+  general_health_tips: [
     'LearnGreen',       // 📚 Easiest on eyes, natural calm
     'FocusBlue',        // 🎓 Soft blue, comfortable reading
     'MintyFresh',       // Clean, soothing medical

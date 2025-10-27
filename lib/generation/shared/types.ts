@@ -41,7 +41,6 @@ export interface ContextInjection {
 
 export interface TopicGuideline {
   focus: string;
-  hook: string;
   scenarios: string[];
   engagement: string;
 }
@@ -49,15 +48,14 @@ export interface TopicGuideline {
 // Define strict types for routing
 export type PersonaType = 
   | 'english_vocab_builder'
-  | 'brain_health_tips' 
-  | 'eye_health_tips'
+  | 'mental_health_tips' 
+  | 'general_health_tips'
   | 'ssc_shots'
   | 'space_facts_quiz';
 
 export type FormatType =
   | 'simplified_word'
   | 'mcq'
-  | 'quick_fix'
   | 'quick_tip'
 
   export type PromptGenerator = (config: PromptConfig) => string | Promise<string>;

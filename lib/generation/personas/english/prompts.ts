@@ -6,30 +6,29 @@
 
 import { 
   PromptConfig,
-  TopicGuideline
+  TopicGuideline,
+  addJsonFormatInstructions // <-- FIX: IMPORT THIS
 } from '../../shared/utils';
 
 /**
  * English-specific topic guidelines
  * Moved from topicGuidelines.ts for better organization and reduced dependencies
  */
+// ... (ENGLISH_TOPIC_GUIDELINES remains the same) ...
 const ENGLISH_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // English Learning - Optimized for 15s Videos
   eng_common_mistakes: {
     focus: 'One grammar/usage mistake that sounds right but is wrong',
-    hook: 'Stop embarrassing yourself with this common mistake',
     scenarios: ['emails', 'texts', 'speaking'],
     engagement: 'Check if you make this mistake too'
   },
   eng_grammar_hacks: {
     focus: 'One simple grammar rule that fixes multiple mistakes instantly',
-    hook: 'This 5-second rule fixes your English forever',
     scenarios: ['writing', 'speaking', 'exams'],
     engagement: 'Use this rule in your next sentence'
   },
   eng_spelling_tricks: {
     focus: 'One memorable trick to spell difficult words correctly',
-    hook: 'Never misspell this tricky word again',
     scenarios: ['writing', 'texting', 'professional communication'],
     engagement: 'Try spelling it without looking'
   },
@@ -37,31 +36,26 @@ const ENGLISH_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // English Vocabulary - Quick Wins
   eng_vocab_word_meaning: {
     focus: 'One word that 90% of people use incorrectly with simple fix',
-    hook: 'You\'ve been using this word wrong your whole life',
     scenarios: ['daily conversations', 'texting', 'work emails'],
     engagement: 'Use the word correctly in your next sentence'
   },
   eng_vocab_fill_blanks: {
     focus: 'One perfect word that completes a tricky sentence',
-    hook: 'Can you fill this blank that stumps English experts?',
     scenarios: ['writing', 'speaking', 'exams'],
     engagement: 'Pause and guess before the reveal'
   },
   eng_vocab_synonyms: {
     focus: 'Two words that seem the same but have one crucial difference',
-    hook: 'These twin words are NOT the same (here\'s why)',
     scenarios: ['writing', 'speaking', 'exams'],
     engagement: 'Test if you know the difference'
   },
   eng_vocab_antonyms: {
     focus: 'One word pair with a surprising opposite that tricks everyone',
-    hook: 'The opposite of this word will shock you',
     scenarios: ['conversations', 'writing', 'vocabulary tests'],
     engagement: 'Guess the opposite before we reveal it'
   },
   eng_vocab_register: {
     focus: 'One word that changes meaning from formal to casual contexts',
-    hook: 'Using this word casually makes you sound unprofessional',
     scenarios: ['work emails', 'job interviews', 'presentations'],
     engagement: 'Check if you use this word correctly'
   }
@@ -78,6 +72,7 @@ function getEnglishTopicGuidelines(topic: string): TopicGuideline | undefined {
  * Generates simplified word format prompt for single-frame videos
  * ENHANCED: Added MCQ-style variability and topic-specific guidelines
  */
+// ... (generateSimplifiedWordPrompt remains the same) ...
 export function generateSimplifiedWordPrompt(config: PromptConfig): string {
   const { topicData, topic, markers, timingContext, analyticsInsights } = config;
   const { timeMarker, tokenMarker } = markers;
@@ -144,7 +139,6 @@ ${timingPrefix} STRATEGY:
 • PSYCHOLOGY: Leverage social proof (90% statistics) + **FEAR OF SOUNDING DUMB** + guarantee a quick confidence fix.
 • SCENARIOS: Make it immediately relevant to **CAREER ADVANCEMENT** in ${guidelines?.scenarios?.join(', ')}
 • ENGAGEMENT: **DEMAND** action: ${selectedPattern.engagement}
-• PATTERN: Use a **1-LINE, DRAMATIC HOOK** + immediate confidence fix.
 • TIMING: Perfect for **MAX SCROLL-STOPPING** during ${timingContext?.timeOfDay || 'daily'} learning sessions.
 • CATEGORY FOCUS: Prioritize **HIGH-VALUE, LOW-FREQUENCY** words in ${selectedCategory}${topTopicHint}
 
@@ -217,21 +211,18 @@ CRITICAL: Return EXACTLY ONE JSON object as shown above. Do NOT return an array.
  * SIMPLIFIED & BEGINNER-FRIENDLY - Based on "90% Say This WRONG" (176 views - best performer)
  */
 export function generateEnglishPrompt(config: PromptConfig): string {
-  const { topicData, topic, markers } = config;
+  const { topicData, topic, markers, questionFormat = 'multiple_choice' } = config; // <-- FIX: Added questionFormat
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getEnglishTopicGuidelines(topic);
+  const guidelines = getEnglishTopicGuidelines(topicData?.key || topic); // <-- FIX: Use topicData.key
+
+  let basePrompt: string; // <-- FIX: Declare basePrompt
 
   if (topicData) {
-    return `You are a friendly English teacher creating fun vocabulary quizzes for YouTube Shorts.
+    basePrompt = `You are a friendly English teacher creating fun vocabulary quizzes for YouTube Shorts.
 
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Common English mistakes and word usage'}
 
 TONE: Curious, inviting, beginner-friendly (NO shame, NO "stop sounding basic", focus on LEARNING)
-
-WINNING HOOK STYLE - "90% Say This WRONG" (176 views - #1 video):
-• Use curiosity: "90% Say This WRONG 🚨" (inviting, not attacking)
-• Simple and direct: "This word is a lie! 🤯" (curious discovery)
-• Question format: "Pronounce 'Epitome'? 🤯" (challenge, not judgment)
 
 CONTENT STYLE:
 • Make it feel like learning a fun fact, not fixing embarrassment
@@ -240,19 +231,18 @@ CONTENT STYLE:
 • Make people want to share because it's interesting, not because they're scared
 
 QUESTION REQUIREMENTS:
-• "hook": Simple, curious hook (15-25 chars, reference word/concept)
 • "question": Clear vocab question anyone can understand (MAX 120 chars, NO hook text)
 • "options": A, B, C, D - short, clear options (each MAX 45 chars)
 • "answer": Correct letter (A, B, C, or D)
 • "explanation": Why this matters in simple terms (MAX 120 chars)
 • "cta": Friendly learning CTA under 80 chars
-• "content_type": "multiple_choice"
+• "content_type": "${questionFormat}"
 
 TARGET: English learners who want to improve without feeling judged
 
 Create content that makes learners feel smart and curious. [${timeMarker}-${tokenMarker}]`;
   } else {
-    return `You are a friendly English teacher creating vocabulary quizzes for YouTube Shorts.
+    basePrompt = `You are a friendly English teacher creating vocabulary quizzes for YouTube Shorts.
 
 TOPIC: "${topic}" - Common English mistakes and word usage
 
@@ -260,44 +250,7 @@ TONE: Curious, inviting, beginner-friendly
 
 Make questions that feel like fun discoveries, not tests. [${timeMarker}-${tokenMarker}]`;
   }
-}
 
-/**
- * Generates Quick Fix format prompt (English)
- */
-export function generateQuickFixPrompt(config: PromptConfig): string {
-  const { topicData, markers } = config;
-  const { timeMarker, tokenMarker } = markers;
-
-  return `You are an English fluency coach creating viral "Quick Fix" content for YouTube Shorts.
-
-TOPIC: "${topicData.displayName}" - **Instant Vocabulary Status Upgrades**
-
-FORMAT: Quick Fix (3 frames)
-Frame 1 (Hook): "**STOP SOUNDING BASIC** - Upgrade now!"
-Frame 2 (Before): "Instead of saying [basic word] (The Basic Way)..."
-Frame 3 (After): "**SOUND SMARTER** with [advanced word] (The Expert Way)"
-
-CONTENT REQUIREMENTS:
-• HOOK: Promise **immediate vocabulary improvement and social status gain**.
-• BEFORE: Common basic word that sounds childish/unprofessional—label it clearly as the "Basic Way."
-• AFTER: Advanced alternative that sounds sophisticated—label it clearly as the "Expert Way."
-• Include **impactful usage example** in professional/academic context.
-
-TARGET: Intermediate learners who want to **sound more powerful and professional**.
-
-RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
-{
-  "hook": "contextual_hook_based_on_vocabulary_upgrade_under_25_chars",
-  "basic_word": "simple_word_to_replace",
-  "advanced_word": "sophisticated_alternative",
-  "usage_example": "professional_context_example",
-  "explanation": "why_advanced_word_is_better_under_100_chars",
-  "cta": "engaging_English_upgrade_CTA_under_80_chars",
-  "format_type": "quick_fix"
-}
-
-IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no additional content.
-
-Create content that makes learners immediately feel **empowered and superior**. [${timeMarker}-${tokenMarker}]`;
+  // --- FIX: Apply the JSON formatting instructions ---
+  return addJsonFormatInstructions(basePrompt, questionFormat);
 }

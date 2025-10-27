@@ -14,11 +14,7 @@ import {
     wrapText // Added import for wrapText if not already there, assumed from context
 } from '../drawingUtils';
 
-/**
- * Quick Tip Format Layout - Redesigned for Vertical Video (V2 - Card Style)
- * 3-frame structure: Hook → Action → Result
- * Purpose: Deliver concise, high-impact tips.
- */
+
 
 const HEADER_HEIGHT = 180;
 const FOOTER_HEIGHT = 180;
@@ -35,47 +31,7 @@ function drawFrameTitle(ctx: CanvasRenderingContext2D, text: string, y: number, 
     if (onAccent) ctx.globalAlpha = 1.0;
 }
 
-// Frame 1: Hook Frame
-export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
-    const ctx = canvas.getContext('2d');
-    drawBackground(ctx, canvas.width, canvas.height, theme);
-    drawHeader(ctx, canvas.width, theme, job);
-    
-    const hookText = job.data.content?.hook || "Here's a quick brain tip!";
-    
-    const availableHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT;
-    const textMaxWidth = canvas.width - (CONTENT_PADDING * 2);
 
-    drawFrameTitle(ctx, 'Quick Tip', HEADER_HEIGHT, canvas.width, theme);
-    const titleHeight = 80;
-
-    ctx.font = '120px sans-serif';
-    ctx.textAlign = 'center';
-    const iconY = HEADER_HEIGHT + titleHeight + 60;
-    ctx.fillText('💡', canvas.width / 2, iconY);
-
-    const textY = iconY + 80;
-    const availableHeightForText = availableHeight - (textY - HEADER_HEIGHT);
-    
-    const measurement = measureQuestionContent(
-        ctx, hookText, textMaxWidth, theme.fontFamily, 80, 48, availableHeightForText
-    );
-    
-    const unusedSpace = Math.max(0, availableHeightForText - measurement.height);
-    const startY = textY + (unusedSpace / 2);
-    
-    ctx.fillStyle = theme.text.primary;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.font = `bold ${measurement.fontSize}px ${theme.fontFamily}`;
-    
-    measurement.lines.forEach((line, index) => {
-        const lineHeight = measurement.fontSize * 1.4;
-        ctx.fillText(line, canvas.width / 2, startY + index * lineHeight);
-    });
-    
-    drawFooter(ctx, canvas.width, canvas.height, theme, job);
-}
 
 // Frame 2: Action Frame - The "how-to" part of the tip.
 export function renderActionFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {

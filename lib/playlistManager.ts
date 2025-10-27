@@ -16,7 +16,6 @@ const FORMAT_DISPLAY_NAMES: Record<LayoutType, string> = {
   quick_tip: 'Quick Tips',
   // Legacy formats (not in rotation but kept for old videos)
   simplified_word: 'Vocabulary',
-  quick_fix: 'Fixes',
 };
 
 interface ContentConfig {
@@ -35,20 +34,20 @@ const CONTENT_CONFIG: Record<string, ContentConfig> = {
       quick_tip: `Quick tips for {TOPIC} - improve your English fast.`,
     }
   },
-  brain_health_tips: {
-    prefix: 'Brain Health',
-    outro: `🧠 Science-backed brain health tips.\n🔔 New tips regularly!`,
+  mental_health_tips: {
+    prefix: 'Mental Health',
+    outro: `🧠 Simple tips for a healthier mind.\n🔔 New tips regularly!`,
     intros: {
-      mcq: `Test your {TOPIC} knowledge - brain health quiz.`,
-      quick_tip: `{TOPIC} tips for better brain health.`,
+      mcq: `Test your {TOPIC} knowledge - mental health quiz.`,
+      quick_tip: `{TOPIC} tips for better mental wellness.`,
     }
   },
-  eye_health_tips: {
-    prefix: 'Eye Health',
-    outro: `👁️ Eye care tips for screen users.\n🔔 Protect your vision!`,
+  general_health_tips: {
+    prefix: 'General Health',
+    outro: `💪 Simple tips for a healthy body.\n🔔 Stay healthy!`,
     intros: {
-      mcq: `Test your {TOPIC} knowledge - eye health quiz.`,
-      quick_tip: `{TOPIC} tips for healthy eyes.`,
+      mcq: `Test your {TOPIC} knowledge - general health quiz.`,
+      quick_tip: `{TOPIC} tips for your overall wellness.`,
     }
   },
   ssc_shots: {
@@ -118,8 +117,8 @@ function generateTags(accountId: string, persona: PersonaType, topicName: string
     // Persona-specific core hashtags (3-5 each)
     const personaHashtags: Partial<Record<PersonaType, string[]>> = {
         english_vocab_builder: ['#English', '#Vocabulary', '#LearnEnglish', '#IELTS'],
-        brain_health_tips: ['#BrainHealth', '#Memory', '#Wellness'],
-        eye_health_tips: ['#EyeHealth', '#Vision', '#EyeCare'],
+        mental_health_tips: ['#MentalHealth', '#Wellness', '#Mindfulness', '#StressRelief'],
+        general_health_tips: ['#HealthTips', '#GeneralHealth', '#Wellness', '#StayHealthy'],
         ssc_shots: ['#SSC', '#GovernmentExam', '#ExamPrep'],
         space_facts_quiz: ['#Space', '#Astronomy', '#Science']
     };

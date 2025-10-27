@@ -138,7 +138,7 @@ COMMENT ON COLUMN accounts.branding IS 'Account branding preferences (theme, aud
 
 COMMENT ON TABLE quiz_jobs IS 'Main pipeline jobs for video generation with analytics tracking';
 COMMENT ON COLUMN quiz_jobs.account_id IS 'Account identifier (english_shots, health_shots, etc.)';
-COMMENT ON COLUMN quiz_jobs.persona IS 'Content persona (english_vocab_builder, brain_health_tips, etc.)';
+COMMENT ON COLUMN quiz_jobs.persona IS 'Content persona (english_vocab_builder, mental_health_tips, etc.)';
 COMMENT ON COLUMN quiz_jobs.step IS 'Pipeline step: 1=generate, 2=frames, 3=assembly, 4=upload, 5=completed';
 COMMENT ON COLUMN quiz_jobs.data IS 'JSON data containing content, frameUrls, videoUrl, analytics data, etc.';
 

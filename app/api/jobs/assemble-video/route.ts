@@ -88,8 +88,8 @@ function getFrameDuration(questionData: any, frameNumber: number, layoutType?: s
   
   // Fixed, generous durations based on frame purpose:
   switch (frameNumber) {
-    case 1: // HOOK Frame (Short, attention grabber)
-      return 2.0; // 
+    case 1: 
+      return 8.0; // 
       
     case 2: // Main Question/Setup/Key Concept (CRITICAL for MCQ Question + Options)
       // This is the most complex reading frame, requiring the most time.
@@ -341,7 +341,7 @@ async function assembleVideoWithConcat(frameUrls: string[], job: QuizJob, tempDi
   const videoBuffer = await fs.readFile(outputVideoPath);
   
   timeStart(`${jobKey} - Debug save/Upload`);
-  // await saveDebugVideo(videoBuffer, job.id, job.data.themeName, job.persona); 
+  await saveDebugVideo(videoBuffer, job.id, job.data.themeName, job.persona); 
   
   if (!job.account_id) throw new Error(`Job ${job.id} is missing account_id`);
   

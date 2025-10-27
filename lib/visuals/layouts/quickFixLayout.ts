@@ -16,7 +16,7 @@ import {
 
 /**
  * Quick Fix Format Layout - Redesigned for Vertical Video (V2)
- * 3-frame structure: Hook → Basic Word → Advanced Word  
+ * 2-frame structure:  Basic Word → Advanced Word  
  * Purpose: Provide quick, high-impact vocabulary upgrades.
  */
 
@@ -35,44 +35,7 @@ function drawFrameTitle(ctx: CanvasRenderingContext2D, text: string, y: number, 
     if (onAccent) ctx.globalAlpha = 1.0;
 }
 
-// Frame 1: Hook Frame - "Upgrade your English in 15 seconds"
-export function renderHookFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {
-    const ctx = canvas.getContext('2d');
-    drawBackground(ctx, canvas.width, canvas.height, theme);
-    drawHeader(ctx, canvas.width, theme, job);
-    
-    const hookText = job.data.content?.hook || "Upgrade your English in 15 seconds!";
-    
-    // Content area
-    const availableHeight = canvas.height - HEADER_HEIGHT - FOOTER_HEIGHT;
-    const textMaxWidth = canvas.width - (CONTENT_PADDING * 2);
 
-    // Title remains outside on the hook frame for impact
-    drawFrameTitle(ctx, 'Quick Fix', HEADER_HEIGHT, canvas.width, theme);
-    
-    const titleHeight = 60;
-    const textY = HEADER_HEIGHT + titleHeight;
-    const availableHeightForText = availableHeight - titleHeight;
-    
-    const measurement = measureQuestionContent(
-        ctx, hookText, textMaxWidth, theme.fontFamily, 90, 48, availableHeightForText
-    );
-    
-    const unusedSpace = Math.max(0, availableHeightForText - measurement.height);
-    const startY = textY + (unusedSpace / 2);
-    
-    ctx.fillStyle = theme.text.primary;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.font = `bold ${measurement.fontSize}px ${theme.fontFamily}`;
-    
-    measurement.lines.forEach((line, index) => {
-        const lineHeight = measurement.fontSize * 1.4;
-        ctx.fillText(line, canvas.width / 2, startY + index * lineHeight);
-    });
-    
-    drawFooter(ctx, canvas.width, canvas.height, theme, job);
-}
 
 // Frame 2: Basic Word Frame - Presents the word to be replaced.
 export function renderBasicWordFrame(canvas: Canvas, job: QuizJob, theme: Theme): void {

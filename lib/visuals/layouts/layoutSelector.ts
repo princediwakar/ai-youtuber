@@ -4,10 +4,9 @@ import { QuizJob } from '@/lib/types';
 import { Theme } from '@/lib/visuals/themes';
 import * as mcqLayout from './mcqLayout';
 import * as quickTipLayout from './quickTipLayout';
-import * as quickFixLayout from './quickFixLayout';
 import * as simplifiedWordLayout from './simplifiedWordLayout';
 
-export type LayoutType = 'mcq' | 'quick_tip' | 'quick_fix' | 'simplified_word';
+export type LayoutType = 'mcq' | 'quick_tip' | 'simplified_word';
 
 export interface LayoutDefinition {
     type: LayoutType;
@@ -29,9 +28,8 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
     },
     mcq: {
         type: 'mcq',
-        frames: ['hook', 'question', 'answer', 'explanation', 'cta'],
+        frames: ['question', 'answer', 'explanation', 'cta'],
         renderers: {
-            hook: mcqLayout.renderHookFrame,
             question: mcqLayout.renderQuestionFrame,
             answer: mcqLayout.renderAnswerFrame,
             explanation: mcqLayout.renderExplanationFrame,
@@ -41,25 +39,14 @@ export const layouts: Record<LayoutType, LayoutDefinition> = {
     quick_tip: {
         type: 'quick_tip',
         // Complete video sequence
-        frames: ['hook', 'action', 'result', 'cta'],
+        frames: ['action', 'result', 'cta'],
         renderers: {
-            hook: quickTipLayout.renderHookFrame,
             action: quickTipLayout.renderActionFrame,
             result: quickTipLayout.renderResultFrame,
             cta: mcqLayout.renderCtaFrame,
         },
     },
-    quick_fix: {
-        type: 'quick_fix',
-        // Flow: Hook -> Basic -> Advanced -> CTA
-        frames: ['hook', 'basic_word', 'advanced_word', 'cta'],
-        renderers: {
-            hook: quickFixLayout.renderHookFrame,
-            basic_word: quickFixLayout.renderBasicWordFrame,
-            advanced_word: quickFixLayout.renderAdvancedWordFrame,
-            cta: mcqLayout.renderCtaFrame,
-        },
-    },
+
 };
 
 /**
@@ -90,8 +77,7 @@ export function detectLayoutType(contentData: any): LayoutType {
 
 
     // PRIORITY 2: Detect quick_tip structure for health content
-    const hasQuickTipStructure = detectedKeys.includes('hook') &&
-                                 detectedKeys.includes('action') &&
+    const hasQuickTipStructure = detectedKeys.includes('action') &&
                                  detectedKeys.includes('result') &&
                                  !detectedKeys.includes('question') &&
                                  !detectedKeys.includes('options');
@@ -153,11 +139,7 @@ export function createRenderFunctions(
 
     return finalLayout.frames.map(frameType => {
         const renderer = finalLayout.renderers[frameType];
-        if (!renderer) {
-            // Fallback to hook is safer than crashing, but logs a warning
-            console.warn(`No renderer found for frame type: ${frameType} in ${finalLayoutType} layout. Falling back to Hook.`);
-            return (canvas: Canvas) => finalLayout.renderers.hook(canvas, job, theme);
-        }
+       
         return (canvas: Canvas) => renderer(canvas, job, theme);
     });
 }

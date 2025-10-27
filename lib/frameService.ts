@@ -139,20 +139,20 @@ function calculateFrameDuration(questionData: any, frameNumber: number, layoutTy
   const MIN_DURATION = 1.5; // Minimum time to register visual content
   
   switch (frameNumber) {
-    case 1: // First Frame (Hook Frame - should be short and punchy, max 1.5s)
-      return MIN_DURATION; // 1.5s for hooks
+    case 1: // First Frame 
+      return 10; // 
       
     case 2: // Second Frame (varies by format)
-      return 10;
+      return 3;
       
     case 3: // Third Frame (if exists)
-      return 3;
+      return 4;
       
     case 4: // Fourth Frame (if exists)
       return 4;
       
     case 5: // Fifth Frame (if exists - rare, but possible for future formats)
-      return 4;
+      return 3;
       
     default:
       return 5; // Fallback

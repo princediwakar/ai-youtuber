@@ -1,3 +1,4 @@
+
 // lib/generation/core/contentValidator.ts
 /**
  * Content validation utilities
@@ -6,14 +7,7 @@
 
 import { ContentData } from '@/lib/types';
 
-// Length limits for different content elements
-const LENGTH_LIMITS = {
-  HOOK: 30,
-  QUESTION: 180,
-  OPTION: 70,
-  EXPLANATION: 150,
-  CTA: 80  // Increased from 35 to allow for more powerful, engaging CTAs
-} as const;
+
 
 export interface ValidationResult {
   success: boolean;
@@ -30,7 +24,7 @@ export function parseAndValidateResponse(content: string, persona: string, layou
     const data = JSON.parse(cleanedContent);
 
     // Health content validation (supports both true_false and multiple_choice)
-    if (persona === 'brain_health_tips' || persona === 'eye_health_tips') {
+    if (persona === 'mental_health_tips' || persona === 'general_health_tips') {
       return validateHealthContent(data, layout);
     }
 
@@ -73,25 +67,7 @@ function validateHealthContent(data: any, format?: string): ValidationResult {
   
   }
 
-  // Default MCQ validation for health content
-  // Check required fields - for MCQ format, we expect either 'question' or 'content' field
-  const hasHook = data.hook && typeof data.hook === 'string';
-  const hasQuestion = data.question && typeof data.question === 'string';
-  const hasContent = data.content && typeof data.content === 'string';
   
-  if (!hasHook ||
-      (!hasQuestion && !hasContent) ||
-      !data.options || typeof data.options !== 'object' ||
-      !data.answer || typeof data.answer !== 'string' ||
-      !data.explanation || typeof data.explanation !== 'string' ||
-      !data.cta || typeof data.cta !== 'string' ||
-      !data.content_type || 
-      (data.content_type !== 'true_false' && data.content_type !== 'multiple_choice')) {
-    return {
-      success: false,
-      error: 'Health question response missing required fields (including hook)'
-    };
-  }
   
   // Validate options structure based on question type
   if (data.content_type === 'true_false') {
@@ -152,23 +128,7 @@ function validateSSCContent(data: any, format?: string): ValidationResult {
     
   }
 
-  // Default MCQ validation for SSC content
-  // Check required fields - for MCQ format, we expect either 'question' or 'content' field
-  const hasHook = data.hook && typeof data.hook === 'string';
-  const hasQuestion = data.question && typeof data.question === 'string';
-  const hasContent = data.content && typeof data.content === 'string';
-  
-  if (!hasHook ||
-      (!hasQuestion && !hasContent) ||
-      !data.options || typeof data.options !== 'object' ||
-      !data.answer || typeof data.answer !== 'string' ||
-      !data.explanation || typeof data.explanation !== 'string' ||
-      !data.cta || typeof data.cta !== 'string') {
-    return {
-      success: false,
-      error: 'SSC exam question response missing required fields (including hook)'
-    };
-  }
+
   
   // Validate options structure based on question type
   // Check both question_type and content_type for compatibility
@@ -222,34 +182,17 @@ function validateSSCContent(data: any, format?: string): ValidationResult {
 function validateAstronomyContent(data: any, format?: string): ValidationResult {
   // Currently only MCQ format is supported for astronomy content
   // Check required fields - for MCQ format, we expect either 'question' or 'content' field
-  let hasHook = data.hook && typeof data.hook === 'string';
   const hasQuestion = data.question && typeof data.question === 'string';
   const hasContent = data.content && typeof data.content === 'string';
   
-  // Resilience: if hook is missing but content exists, synthesize a short hook
-  if (!hasHook && hasContent) {
-    const base = String(data.content).replace(/\s+/g, ' ').trim();
-    const synthesized = base.length > 25 ? base.slice(0, 25) : base;
-    data.hook = synthesized || 'Space fact!';
-    hasHook = true;
-  }
+
   
   // Ensure content_type defaults to multiple_choice for astronomy
   if (!data.content_type) {
     data.content_type = 'multiple_choice';
   }
   
-  if (!hasHook ||
-      (!hasQuestion && !hasContent) ||
-      !data.options || typeof data.options !== 'object' ||
-      !data.answer || typeof data.answer !== 'string' ||
-      !data.explanation || typeof data.explanation !== 'string' ||
-      !data.cta || typeof data.cta !== 'string') {
-    return {
-      success: false,
-      error: 'Astronomy question response missing required fields (including hook)'
-    };
-  }
+
   
   // Multiple choice validation - astronomy uses A, B, C, D format
   if (!data.options.A || !data.options.B || !data.options.C || !data.options.D) {
@@ -276,30 +219,11 @@ function validateAstronomyContent(data: any, format?: string): ValidationResult 
  */
 function validateEnglishContent(data: any, format?: string): ValidationResult {
   // Format-specific validation for English content
-  if (format === 'quick_fix') {
-    return validateQuickFixFormat(data);
-  } else if (format === 'simplified_word' || data.format_type === 'simplified_word') {
+  if (format === 'simplified_word' || data.format_type === 'simplified_word') {
     return validateSimplifiedWordFormat(data);
   }
 
-  // Default MCQ validation for English content
-  const hasHook = data.hook && typeof data.hook === 'string';
-  const hasQuestion = data.content && typeof data.content === 'string';
-  const hasAssertionReason = data.assertion && typeof data.assertion === 'string' && 
-                            data.reason && typeof data.reason === 'string';
-  const hasCta = data.cta && typeof data.cta === 'string';
 
-  if (!hasHook ||
-      (!hasQuestion && !hasAssertionReason) ||
-      !hasCta ||
-      !data.options || typeof data.options !== 'object' || Object.keys(data.options).length < 2 ||
-      !data.answer || typeof data.answer !== 'string' || !data.options[data.answer] ||
-      !data.explanation || typeof data.explanation !== 'string') {
-    return {
-      success: false,
-      error: 'English quiz response missing required JSON fields (including hook)'
-    };
-  }
   
   // Apply length limits to all content
   // enforceLengthLimits(data);
@@ -391,7 +315,7 @@ function validateSimplifiedWordFormat(data: any): ValidationResult {
  * Validates Quick Fix format structure
  */
 function validateQuickFixFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'basic_word', 'advanced_word', 'cta'];
+  const requiredFields = ['basic_word', 'advanced_word', 'cta'];
   const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
   
   if (missingFields.length > 0) {
@@ -408,7 +332,7 @@ function validateQuickFixFormat(data: any): ValidationResult {
  * Validates Quick Tip format structure (for health)
  */
 function validateQuickTipFormat(data: any): ValidationResult {
-  const requiredFields = ['hook', 'action', 'result', 'cta'];
+  const requiredFields = [ 'action', 'result', 'cta'];
   const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
   
   if (missingFields.length > 0) {
@@ -428,7 +352,7 @@ function validateQuickTipFormat(data: any): ValidationResult {
  */
 function validateSSCQuickTipFormat(data: any): ValidationResult {
   // FIX: Check for SSC-specific fields
-  const requiredFields = ['hook', 'traditional_approach', 'smart_shortcut', 'application_example', 'explanation', 'cta'];
+  const requiredFields = ['traditional_approach', 'smart_shortcut', 'application_example', 'explanation', 'cta'];
   const missingFields = requiredFields.filter(field => !data[field] || typeof data[field] !== 'string');
   
   if (missingFields.length > 0) {
@@ -508,7 +432,7 @@ function validateMathematicalAccuracy(content: string): string[] {
 export function generateContentHash(content: ContentData): string {
   const contentString = JSON.stringify({
     // Primary content identifiers - prioritize the main word/concept
-    main: content.question || content.hook || content.traditional_approach || content.content,
+    main: content.question || content.traditional_approach || content.content,
     answer: content.answer || content.advanced_word || content.smart_shortcut || content.result,
     content_type: content.question_type || content.content_type || 'format_based',
     // For simplified word format, include definition to ensure uniqueness

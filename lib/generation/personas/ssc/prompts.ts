@@ -6,31 +6,30 @@
 
 import { 
   PromptConfig,
-  TopicGuideline
+  TopicGuideline,
+  addJsonFormatInstructions, // <-- Ensure this is imported
+  generateRandomizationElements,
+  generateContextInjections,
+  getPromptVariation,
+  createBasePromptStructure
 } from '../../shared/utils';
 import { getDynamicContext } from '../../core/contentSource';
 
-/**
- * SSC-specific topic guidelines
- * Moved from topicGuidelines.ts for better organization and reduced dependencies
- */
+// ... (SSC_TOPIC_GUIDELINES and getSSCTopicGuidelines remain the same) ...
 const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // GENERAL AWARENESS - History
   ssc_ancient_history: {
     focus: 'One ancient Indian history fact with dynasty/period details',
-    hook: 'This ancient history fact appears in 90% of SSC papers',
     scenarios: ['SSC CGL Tier-1', 'CHSL', 'MTS General Awareness'],
     engagement: 'Memorize this for ancient history section'
   },
   ssc_medieval_history: {
     focus: 'One medieval period fact about rulers, battles, or architecture',
-    hook: 'This medieval fact is asked in every SSC exam',
     scenarios: ['Mughal period', 'Delhi Sultanate', 'architecture questions'],
     engagement: 'Remember this for medieval history questions'
   },
   ssc_modern_history: {
     focus: 'One modern Indian history fact about freedom struggle',
-    hook: 'This freedom struggle fact appears in all government exams',
     scenarios: ['independence movement', 'national leaders', 'important events'],
     engagement: 'Essential for modern history section'
   },
@@ -38,13 +37,11 @@ const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // GENERAL AWARENESS - Geography  
   ssc_physical_geography: {
     focus: 'One physical geography fact about landforms, climate, or rivers',
-    hook: 'This geography fact helps crack multiple questions',
     scenarios: ['Indian rivers', 'mountain ranges', 'climate zones'],
     engagement: 'Use this for geography section preparation'
   },
   ssc_indian_geography: {
     focus: 'One Indian geography fact about states, capitals, or boundaries',
-    hook: 'This trick helps remember 10+ geography facts instantly',
     scenarios: ['state capitals', 'boundaries', 'important locations'],
     engagement: 'Master this for static GK questions'
   },
@@ -52,13 +49,11 @@ const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // GENERAL AWARENESS - Polity
   ssc_constitution: {
     focus: 'One constitutional article, amendment, or fundamental right',
-    hook: 'This constitution fact appears in every SSC polity section',
     scenarios: ['fundamental rights', 'directive principles', 'constitutional articles'],
     engagement: 'Crucial for Indian polity questions'
   },
   ssc_government: {
     focus: 'One fact about government structure, posts, or procedures',
-    hook: 'This government fact is essential for all SSC exams',
     scenarios: ['constitutional posts', 'parliament procedures', 'government structure'],
     engagement: 'Remember this for polity section'
   },
@@ -66,7 +61,6 @@ const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // GENERAL AWARENESS - Current Affairs
   ssc_current_affairs: {
     focus: 'One 2024-2025 current affairs fact about appointments/schemes/summits',
-    hook: 'This 2025 update will definitely be in your SSC exam',
     scenarios: ['recent appointments', 'new schemes', 'international summits'],
     engagement: 'Note this down for current affairs preparation'
   },
@@ -74,19 +68,16 @@ const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // GENERAL AWARENESS - Science
   ssc_physics: {
     focus: 'One physics concept, formula, or unit with practical application',
-    hook: 'This physics fact appears in every SSC science section',
     scenarios: ['units and measurements', 'basic concepts', 'everyday physics'],
     engagement: 'Essential for general science questions'
   },
   ssc_chemistry: {
     focus: 'One chemistry fact about elements, compounds, or reactions',
-    hook: 'This chemistry fact helps solve multiple science questions',
     scenarios: ['chemical reactions', 'elements', 'everyday chemistry'],
     engagement: 'Remember this for chemistry section'
   },
   ssc_biology: {
     focus: 'One biology fact about human body, plants, or diseases',
-    hook: 'This biology fact is asked in all SSC science sections',
     scenarios: ['human body', 'plant biology', 'diseases and health'],
     engagement: 'Crucial for biology questions'
   },
@@ -94,13 +85,11 @@ const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // ENGLISH COMPREHENSION
   ssc_grammar: {
     focus: 'One grammar rule for tenses, voice, or error detection',
-    hook: 'Master this rule to crack SSC English section',
     scenarios: ['error spotting', 'sentence improvement', 'fill-in-blanks'],
     engagement: 'Apply this rule to practice questions immediately'
   },
   ssc_vocabulary: {
     focus: 'One SSC word with synonym, antonym, and one-word substitution',
-    hook: 'This word appears in every SSC vocabulary section',
     scenarios: ['synonyms', 'antonyms', 'one-word substitutions'],
     engagement: 'Practice using this word in context'
   },
@@ -108,13 +97,11 @@ const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // QUANTITATIVE APTITUDE
   ssc_number_system: {
     focus: 'One number system trick for divisibility, LCM, or HCF',
-    hook: 'This math trick saves 2 minutes per question',
     scenarios: ['number properties', 'divisibility rules', 'calculation shortcuts'],
     engagement: 'Practice this shortcut for faster calculations'
   },
   ssc_percentage: {
     focus: 'One percentage/ratio trick for quick mental calculation',
-    hook: 'This percentage trick works for 90% of SSC math questions',
     scenarios: ['percentage problems', 'profit-loss', 'ratio-proportion'],
     engagement: 'Use this trick in your next practice session'
   },
@@ -122,39 +109,45 @@ const SSC_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // GENERAL INTELLIGENCE & REASONING
   ssc_reasoning: {
     focus: 'One reasoning pattern for series, coding, or logical puzzles',
-    hook: 'This reasoning trick solves multiple question types',
     scenarios: ['number series', 'coding-decoding', 'pattern recognition'],
     engagement: 'Apply this pattern to solve similar questions'
   }
 };
 
-/**
- * Get SSC-specific topic guidelines with fallback
- */
 function getSSCTopicGuidelines(topic: string): TopicGuideline | undefined {
   return SSC_TOPIC_GUIDELINES[topic];
 }
 
-/**
- * Generates simplified SSC prompt for single-frame format
- * REIMPLEMENTED: Based on SSC MCQ format logic for better content generation
- */
+
+// ... (generateSimplifiedSSCPrompt remains the same) ...
 export function generateSimplifiedSSCPrompt(config: PromptConfig): string {
   const { topicData, topic, markers, timingContext, analyticsInsights } = config;
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getSSCTopicGuidelines(topic);
+  const guidelines = getSSCTopicGuidelines(topicData?.key || topic); // Use topicData.key
   
   const primaryAudience = 'SSC exam aspirants';
   const timingPrefix = timingContext ? `${timingContext.timeOfDay.toUpperCase()} STUDY` : 'VIRAL STUDY';
   const audienceContext = timingContext?.audience || primaryAudience;
+
+  // --- Dynamic Variation ---
+  const randomization = generateRandomizationElements(topic); // Pass persona
+  const { expertRole, contentStrategy } = createBasePromptStructure(
+    randomization, 
+    generateContextInjections(topic), 
+    getPromptVariation()
+  );
+  // --- End Dynamic Variation ---
+
+  // --- FIX: Create a stronger, combined novelty instruction ---
+  const noveltyInstruction = `• NOVELTY: MUST generate a *different* fact. Do NOT repeat common examples. The content MUST take a "${randomization.approach}" angle. Use this seed for variation: ${timeMarker}`;
   
   if (topicData) {
-    return `You are an **EXPERT SSC TOPPER COACH** creating addictive, high-value exam preparation content for YouTube Shorts. Your goal is to maximize study speed and confidence.
-
+    return `You are an **EXPERT SSC TOPPER COACH**. ${expertRole}.
+    
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential SSC exam concepts for government job preparation'}
 
 ${timingPrefix} STRATEGY:
-• HOOK: Create **HIGH-STAKES, COMPETITIVE** hooks (under 25 chars). Use words like 'Topper', 'Guarantee', 'Marks'.
+• ${contentStrategy}.
 • PSYCHOLOGY: Use **ACHIEVEMENT MOTIVATION** + contrast "successful candidates" vs "average aspirants."
 • SCENARIOS: Focus on **real SSC exam patterns** in ${guidelines?.scenarios?.join(', ')}
 • ENGAGEMENT: **DEMAND IMMEDIATE ACTION** related to exam success. ${guidelines?.engagement || 'Create immediate exam advantage for serious aspirants'}
@@ -174,7 +167,7 @@ FACT SELECTION CRITERIA:
 • RELEVANCE: Focus on information that **separates high scorers from the rest**.
 • DIFFICULTY: Important enough to be tested but easy to memorize with your tip.
 • IMPACT: Provide knowledge that immediately **IMPROVES EXAM SCORE**.
-• NOVELTY: MUST generate a *different* fact than previous requests. Do NOT repeat common examples. Use this seed for variation: ${timeMarker}
+${noveltyInstruction}
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -194,6 +187,7 @@ Target the specific challenge: ${guidelines?.engagement || 'Upgrade your exam pr
 
 [${timeMarker}-${tokenMarker}]`;
   } else {
+    // Fallback for missing topicData (should be rare)
     return `You are an expert SSC exam coach creating viral preparation content for YouTube Shorts.
 
 Generate exam content for ${primaryAudience} on "${topic}" that challenges while building exam confidence.
@@ -204,7 +198,7 @@ REQUIREMENTS:
 • ENGAGEMENT: Create immediate "exam preparation upgrade" value
 • DEFINITION: Provide clear explanation that improves exam readiness (under 100 characters)
 • USAGE: Include practical example that shows exam application (under 120 characters)
-• NOVELTY: MUST be a different fact than previous requests. Avoid common examples. Use this seed for variation: ${timeMarker}
+${noveltyInstruction}
 
 OUTPUT FORMAT:
 • "fact_title": Exam-relevant fact/concept specifically relevant to "${topic}"
@@ -218,13 +212,11 @@ Make aspirants feel accomplished and ready to tackle their government job exam. 
   }
 }
 
-/**
- * Generates SSC current affairs prompt with RSS content
- */
+// ... (generateSSCCurrentAffairsPrompt remains the same) ...
 export async function generateSSCCurrentAffairsPrompt(config: PromptConfig): Promise<string> {
-  const { topicData, topic, markers } = config;
+  const { topicData, topic, markers, questionFormat = 'multiple_choice' } = config; // Added questionFormat
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getSSCTopicGuidelines(topic);
+  const guidelines = getSSCTopicGuidelines(topicData?.key || topic); // Use topicData.key
   
   // Use shared demographics from contentComponents
   const primaryAudience = 'SSC exam aspirants';
@@ -233,13 +225,28 @@ export async function generateSSCCurrentAffairsPrompt(config: PromptConfig): Pro
   const dynamicContext = await getDynamicContext('ssc_current_affairs', topic);
   const contextSection = dynamicContext ? `\n\nRECENT DEVELOPMENTS:\n${dynamicContext}\n` : '';
 
+  // --- Dynamic Variation ---
+  const randomization = generateRandomizationElements(topic); // Pass persona
+  const { expertRole, contentStrategy } = createBasePromptStructure(
+    randomization, 
+    generateContextInjections(topic), 
+    getPromptVariation()
+  );
+  // --- End Dynamic Variation ---
+
+  // --- FIX: Create a stronger, combined novelty instruction ---
+  const noveltyInstruction = `• NOVELTY: Pick a *different* fact/angle from the RECENT DEVELOPMENTS. Do not repeat questions. The question MUST take a "${randomization.approach}" angle. Use this seed for variation: ${timeMarker}`;
+
+  let basePrompt: string;
+
   if (topicData) {
-    return `You are an **SSC CURRENT AFFAIRS GURU** creating hyper-relevant, viral updates for YouTube Shorts. Your focus is 100% on what will appear in the next exam.
+    basePrompt = `You are an **SSC CURRENT AFFAIRS GURU**. ${expertRole}.
+Your focus is 100% on what will appear in the next exam.
 
 TOPIC: "${topicData.displayName}" - **GUARANTEED** ${guidelines?.focus || 'Latest 2025 current affairs for SSC exam preparation'}${contextSection}
 
 EXAM STRATEGY:
-• HOOK: Create competitive achievement hooks (15-25 chars). Use **URGENT** words: 'Alert!', 'Must Watch!', 'Final Chance!'.
+• ${contentStrategy}.
 • PSYCHOLOGY: Use **FOMO** (Fear of Missing Out) on crucial exam marks. Contrast "successful candidates" vs "those who fail to update."
 • SCENARIOS: Focus on **latest government appointments, new schemes, major policy updates**.
 • ENGAGEMENT: **DEMAND** immediate attention and sharing. ${guidelines?.engagement || 'Create immediate current affairs advantage for exam success'}
@@ -258,20 +265,20 @@ QUESTION CRAFTING:
 • FACTUAL: Use **accurate, verified** information.
 • EXAM-FOCUSED: Frame questions in typical **SSC difficulty and pattern**.
 • IMPACT: Provide knowledge that gives **immediate exam advantage and saves study time**.
-• NOVELTY: Pick a *different* fact/angle from the RECENT DEVELOPMENTS. Do not repeat questions. Use this seed for variation: ${timeMarker}
+${noveltyInstruction}
 
 MANDATORY OUTPUT:
-• "hook": Generate contextual hook based on the specific SSC topic being tested (15-25 chars, reference actual subject/strategy/fact). Examples: "SSC History trick! 📚", "Geography hack! 🌍", "Math shortcut! ⚡"
 • "question": Clear, exam-style question that tests real SSC concepts (NO hook text in question)
 • "options": Object with "A", "B", "C", "D" - one correct answer, three smart distractors based on common exam errors
 • "answer": Single letter "A", "B", "C", or "D"
 • "explanation": **The ultimate exam logic.** Why this answer is correct + **strategic exam relevance tip** (under 120 characters)
 • "cta": Use engaging, **HIGH-URGENCY** CTA (under 80 chars - e.g., "Follow now or miss your next 5 marks!").
-• "content_type": "multiple_choice"
+• "content_type": "${questionFormat}"
 
 Create current affairs content that makes aspirants confident about 2025 updates. [${timeMarker}-${tokenMarker}]`;
   } else {
-    return `You are an expert SSC exam coach creating viral current affairs content for YouTube Shorts.${contextSection}
+    // Fallback for missing topicData
+    basePrompt = `You are an expert SSC exam coach creating viral current affairs content for YouTube Shorts.${contextSection}
 
 Generate an SSC current affairs question for ${primaryAudience} on "${topic}" that builds exam confidence with 2025 updates.
 
@@ -282,34 +289,55 @@ REQUIREMENTS:
 • ENGAGING: Create immediate "current affairs upgrade" value for aspirants
 • EXPLANATION: Provide insight that improves exam performance (under 120 characters)
 • CTA: Use engaging SSC exam CTA (under 80 chars - make it compelling and action-oriented)
-• NOVELTY: Pick a *different* fact/angle from the RECENT DEVELOPMENTS. Do not repeat questions. Use this seed for variation: ${timeMarker}
+${noveltyInstruction}
+
+MANDATORY OUTPUT:
+• "question": Clear, exam-style question
+• "options": {"A": "...", "B": "...", "C": "...", "D": "..."}
+• "answer": "A", "B", "C", or "D"
+• "explanation": Exam-focused explanation
+• "cta": Engaging CTA
+• "content_type": "${questionFormat}"
 
 Make aspirants feel updated and ready for their SSC current affairs section. [${timeMarker}-${tokenMarker}]`;
   }
+
+  return addJsonFormatInstructions(basePrompt, questionFormat);
 }
+
 
 /**
  * Generates main SSC exam preparation prompt for MCQ format
  * SIMPLIFIED & BEGINNER-FRIENDLY - Focus on helpful learning, not competition/fear
  */
 export function generateSSCMCQPrompt(config: PromptConfig): string {
-  const { topicData, topic, markers } = config;
+  const { topicData, topic, markers, questionFormat = 'multiple_choice' } = config; // <-- FIX: Added questionFormat
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getSSCTopicGuidelines(topic);
+  const guidelines = getSSCTopicGuidelines(topicData?.key || topic); // Use topicData.key
 
   const primaryAudience = 'SSC exam aspirants';
 
+  // --- Dynamic Variation ---
+  const randomization = generateRandomizationElements(topic); // Pass persona
+  const { expertRole, contentStrategy } = createBasePromptStructure(
+    randomization, 
+    generateContextInjections(topic), 
+    getPromptVariation()
+  );
+  // --- End Dynamic Variation ---
+
+  // --- FIX: Create a stronger, combined novelty instruction ---
+  const noveltyInstruction = `• NOVELTY: MUST be a different question. Avoid the most common examples. The question MUST take a "${randomization.approach}" angle. Use this seed to ensure variation: ${timeMarker}`;
+
+  let basePrompt: string; // <-- FIX: Declare basePrompt
+
   if (topicData) {
-    return `You are a helpful SSC exam coach creating simple quiz content for YouTube Shorts.
+    basePrompt = `You are a helpful SSC exam coach. ${expertRole}.
+${contentStrategy}.
 
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Important SSC exam topics'}
 
 TONE: Helpful, encouraging, beginner-friendly (NO pressure tactics, NO "you'll fail", focus on LEARNING)
-
-WINNING HOOK EXAMPLES:
-• "SSC History Trick! 📚" (helpful, not scary)
-• "Geography Fact Flash! 🌍" (educational, inviting)
-• "SSC 2025 Alert! ⚡" (informative, not stressful)
 
 CONTENT STYLE:
 • Make it feel like learning a useful exam tip
@@ -318,55 +346,59 @@ CONTENT STYLE:
 • Make people feel more prepared, not anxious
 
 QUESTION REQUIREMENTS:
-• NOVELTY: MUST be a different question than previous requests. Avoid the most common examples for this topic. Use this seed to ensure variation: ${timeMarker}
-• "hook": Simple, helpful hook (15-25 chars) about the SSC topic
+${noveltyInstruction}
 • "question": Clear exam-style question (MAX 120 chars, NO hook text)
 • "options": A, B, C, D - short, clear options (each MAX 45 chars)
 • "answer": Correct letter (A, B, C, or D)
 • "explanation": Why this is important for SSC (MAX 120 chars)
 • "cta": Encouraging study CTA under 80 chars
-• "content_type": "multiple_choice"
+• "content_type": "${questionFormat}"
 
 TARGET: SSC aspirants who want helpful study content
 
 Create content that makes aspirants feel more prepared and confident. [${timeMarker}-${tokenMarker}]`;
   } else {
-    return `You are a helpful SSC exam coach creating simple quiz content for YouTube Shorts.
+    // Fallback for missing topicData
+    basePrompt = `You are a helpful SSC exam coach creating simple quiz content for YouTube Shorts. ${expertRole}.
 
 TOPIC: "${topic}" - Important SSC exam topics
 
 TONE: Helpful, encouraging, beginner-friendly
 
 REQUIREMENTS:
-• NOVELTY: MUST generate a *different* question than previous requests. Avoid the most common, basic examples for this topic. Use this seed for variation: ${timeMarker}
+${noveltyInstruction}
 
 Make questions that feel like useful study tips, not pressure tests. [${timeMarker}-${tokenMarker}]`;
   }
+
+  // --- FIX: Apply the JSON formatting instructions ---
+  return addJsonFormatInstructions(basePrompt, questionFormat);
 }
 
-/**
- * Generates Common Mistake format prompt (SSC)
- */
-
-
-/**
- * Generates Quick Tip format prompt (SSC)
- * SIMPLIFIED & BEGINNER-FRIENDLY - Based on "CRACK SSC 2X FASTER" (118 views + 1 like - ONLY video with engagement!)
- */
+// ... (generateSSCQuickTipPrompt remains the same) ...
 export function generateSSCQuickTipPrompt(config: PromptConfig): string {
-  const { topicData, markers } = config;
+  const { topicData, topic, markers } = config; // Added topic
   const { timeMarker, tokenMarker } = markers;
 
-  return `You are a helpful SSC study coach creating simple study tips for YouTube Shorts.
+  // --- Dynamic Variation ---
+  const randomization = generateRandomizationElements(topic); // Pass persona
+  const { expertRole, contentStrategy } = createBasePromptStructure(
+    randomization, 
+    generateContextInjections(topic), 
+    getPromptVariation()
+  );
+  // --- End Dynamic Variation ---
+
+  // --- FIX: Create a stronger, combined novelty instruction ---
+  const noveltyInstruction = `• NOVELTY: MUST be a different tip. Avoid generic advice (e.g., "study more," "use Pomodoro"). The tip MUST take a "${randomization.approach}" angle. Be specific. Use this seed for variation: ${timeMarker}`;
+
+
+  return `You are a helpful SSC study coach. ${expertRole}.
+${contentStrategy}.
 
 TOPIC: "${topicData.displayName}" - Easy study shortcuts for SSC exams
 
 TONE: Helpful, encouraging, beginner-friendly (NO pressure, focus on MAKING STUDY EASIER)
-
-WINNING HOOK - "CRACK SSC 2X FASTER with this trick!" (118 views + 1 like - best engagement):
-• Promise to make study easier/faster
-• Use actionable language ("crack", "faster", "trick")
-• Be specific about the benefit
 
 CONTENT STYLE:
 • Share a simple study tip that actually saves time
@@ -374,8 +406,7 @@ CONTENT STYLE:
 • Focus on helping, not creating pressure
 
 CONTENT REQUIREMENTS:
-• NOVELTY: MUST be a different tip than previous requests. Avoid generic advice (e.g., "study more," "use Pomodoro"). Be specific. Use this seed for variation: ${timeMarker}
-• HOOK: Promise a simple, helpful study improvement (under 60 chars)
+${noveltyInstruction}
 • TRADITIONAL_APPROACH: Show the common (slower) way most students study
 • SMART_SHORTCUT: Share an easier, faster way to learn the same thing
 • APPLICATION_EXAMPLE: Give a specific SSC exam example
@@ -385,7 +416,6 @@ TARGET: SSC aspirants who want to study smarter, not harder
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
-  "hook": "helpful_study_improvement_promise_under_60_chars",
   "traditional_approach": "common_slower_study_method",
   "smart_shortcut": "easier_faster_learning_method",
   "application_example": "specific_SSC_exam_example",

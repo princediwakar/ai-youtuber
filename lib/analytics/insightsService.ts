@@ -54,7 +54,6 @@ interface ParameterAnalyticsRow {
     audio?: string;
     durationRange?: string;
     questionType?: string;
-    hookType?: string;
     avgEngagementRate: string;
     videoCount: string;
 }
@@ -523,24 +522,11 @@ class AnalyticsInsightsService {
       ORDER BY "avgEngagementRate" DESC
     `, params);
 
-    const hookTypeData = await query<ParameterAnalyticsRow>(`
-      SELECT 
-        COALESCE(va.hook_type, 'Unknown') as "hookType",
-        ROUND(AVG(va.engagement_rate), 2) as "avgEngagementRate",
-        COUNT(*) as "videoCount"
-      FROM video_analytics va
-      JOIN quiz_jobs qj ON va.job_id = qj.id
-      ${whereClause.replace('WHERE', 'WHERE va.hook_type IS NOT NULL AND')}
-      GROUP BY va.hook_type
-      HAVING COUNT(*) >= 2
-      ORDER BY "avgEngagementRate" DESC
-    `, params);
 
     return {
       themeAudioCombinations: themeAudioData.rows,
       durationAnalytics: durationData.rows,
       questionTypePerformance: questionTypeData.rows,
-      hookTypePerformance: hookTypeData.rows
     };
   }
 
@@ -598,7 +584,6 @@ class AnalyticsInsightsService {
       nextTestSuggestions: [
         'Test new theme variations against the current winner.',
         'Experiment with different audio genres and styles.',
-        'Test hook effectiveness across different content types.'
       ]
     };
   }
@@ -728,8 +713,8 @@ PREDICTIVE_INSIGHTS:
   private getAudienceDescription(persona: string): string {
     const descriptions: Record<string, string> = {
       'english_vocab_builder': 'Global English language learners seeking vocabulary improvement',
-      'brain_health_tips': 'Health-conscious individuals interested in cognitive wellness',
-      'eye_health_tips': 'People concerned about vision health and screen time effects',
+      'mental_health_tips': 'Health-conscious individuals interested in cognitive wellness',
+      'general_health_tips': 'People concerned about vision health and screen time effects',
     };
     return descriptions[persona] || 'Educational content consumers';
   }

@@ -17,12 +17,11 @@ import {
 import {
   generateEnglishPrompt,
   generateSimplifiedWordPrompt,
-  generateQuickFixPrompt
 } from '../personas/english/prompts';
 
 import {
-  generateBrainHealthPrompt,
-  generateEyeHealthPrompt,
+  generateMentalHealthPrompt,
+  generateGeneralHealthPrompt,
   generateQuickTipPrompt,
 } from '../personas/health/prompts';
 
@@ -45,10 +44,9 @@ export { generateVariationMarkers, addJsonFormatInstructions };
 
 // Re-export persona-specific functions for backward compatibility
 export {
-  generateBrainHealthPrompt,
-  generateEyeHealthPrompt,
+  generateMentalHealthPrompt,
+  generateGeneralHealthPrompt,
   generateEnglishPrompt,
-  generateQuickFixPrompt,
   generateQuickTipPrompt,
 };
 
@@ -61,21 +59,16 @@ const PROMPT_ROUTE_CONFIG: Record<FormatType, Partial<Record<PersonaType, Prompt
       english_vocab_builder: generateSimplifiedWordPrompt,
       default: generateSimplifiedWordPrompt
   },
-  quick_fix: {
-      english_vocab_builder: generateQuickFixPrompt,
-      default: generateQuickFixPrompt
-  },
   quick_tip: {
-      brain_health_tips: generateQuickTipPrompt,
-      eye_health_tips: generateQuickTipPrompt,
-      english_vocab_builder: generateQuickTipPrompt,
+      mental_health_tips: generateQuickTipPrompt,
+      general_health_tips: generateQuickTipPrompt,
       ssc_shots: generateSSCQuickTipPrompt,
       space_facts_quiz: generateAstronomyPrompt,
       default: generateQuickTipPrompt
   },
   mcq: {
-    brain_health_tips: generateBrainHealthPrompt,
-    eye_health_tips: generateEyeHealthPrompt,
+    mental_health_tips: generateMentalHealthPrompt,
+    general_health_tips: generateGeneralHealthPrompt,
     english_vocab_builder: generateEnglishPrompt,
     // FIX: Handle SSC Current Affairs within the centralized routing table
     ssc_shots: async (config) => { // <--- This function returns Promise<string>
@@ -95,9 +88,9 @@ const PROMPT_ROUTE_CONFIG: Record<FormatType, Partial<Record<PersonaType, Prompt
 * Removed unused formats with zero engagement
 */
 const FORMAT_ROTATION: Record<PersonaType, FormatType[]> = {
-  english_vocab_builder: ['mcq', 'quick_tip'],
-  brain_health_tips: ['quick_tip', 'mcq'], // Quick tip performs better
-  eye_health_tips: ['quick_tip', 'mcq'], // Quick tip performs better
+  english_vocab_builder: ['mcq'],
+  mental_health_tips: ['quick_tip', 'mcq'], // Quick tip performs better
+  general_health_tips: ['quick_tip', 'mcq'], // Quick tip performs better
   ssc_shots: ['mcq', 'quick_tip'],
   space_facts_quiz: ['mcq', 'quick_tip']
 };

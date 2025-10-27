@@ -2,13 +2,12 @@ import { PersonaConfig } from './types';
 
 /**
  * Master Personas for Multi-Account YouTube Content Generation
- * 
- * English Persona: Comprehensive vocabulary builder for automated short-form video quizzes
- * Health Personas: Brain and eye health tips for wellness-focused content
+ * * English Persona: Comprehensive vocabulary builder for automated short-form video quizzes
+ * Health Personas: Mental and general health tips for wellness-focused content
  * SSC Persona: Government exam preparation content for competitive exam aspirants
  *
- * Updated on: 2025-09-08
- * Rationale: Extended to support three-channel architecture with SSC exam preparation content
+ * Updated on: 2025-10-27
+ * Rationale: Added comprehensive topic lists for mental and general health personas.
  */
 export const MasterPersonas: PersonaConfig = {
   // English Learning Content - Optimized for 15-20s Videos
@@ -29,32 +28,51 @@ export const MasterPersonas: PersonaConfig = {
     ],
   },
 
-  // Health Content - Brain Health - Optimized for Quick Consumption
-  brain_health_tips: {
+  // Health Content - Mental Health - Optimized for Quick Consumption
+  mental_health_tips: {
     displayName: '@HealthShotsDaily',
     subCategories: [
-      { key: 'memory_hacks', displayName: '5-Second Memory Boost 🧠' },
-      { key: 'focus_tricks', displayName: 'Instant Focus Fix ⚡' },
-      { key: 'brain_foods', displayName: 'This Food Boosts Your IQ 🥗' },
-      { key: 'brain_exercises', displayName: '10-Second Brain Workout 🧩' },
-      { key: 'stress_killers', displayName: 'Kill Stress in 15 Seconds 😌' },
-      { key: 'sleep_hacks', displayName: 'Sleep Better Tonight 😴' },
-      { key: 'brain_myths', displayName: 'Brain Myth BUSTED 🔍' },
-      { key: 'productivity_hacks', displayName: 'Double Your Focus Now 🎯' }
+      { key: 'stress_management', displayName: 'Stress Relief Tips 🧘' },
+      { key: 'focus_boost', displayName: 'Improve Your Focus 🧠' },
+      { key: 'mood_enhancers', displayName: 'Quick Mood Boosters 😊' },
+      { key: 'mindfulness_hacks', displayName: 'Mindfulness Hacks 🌿' },
+      { key: 'sleep_quality', displayName: 'Better Sleep Tips 😴' },
+      { key: 'cognitive_habits', displayName: 'Brain-Boosting Habits ⚡' },
+      { key: 'anxiety_relief', displayName: 'Anxiety Relief 🌬️' },
+      { key: 'digital_detox', displayName: 'Digital Detox 📵' },
+      { key: 'gratitude_practice', displayName: 'Gratitude Practice 🙏' },
+      { key: 'positive_affirmations', displayName: 'Positive Affirmations ✨' },
+      { key: 'memory_tricks', displayName: 'Memory Hacks 💡' },
+      { key: 'emotional_intelligence', displayName: 'Emotional IQ 💖' },
+      { key: 'burnout_prevention', displayName: 'Avoid Burnout 🔥' },
+      { key: 'social_connection', displayName: 'Social Connection 🤝' },
+      { key: 'self_care_ideas', displayName: 'Self-Care Ideas 🛁' },
+      { key: 'morning_routine', displayName: 'Mindful Morning ☀️' },
+      { key: 'laughter_therapy', displayName: 'Laughter is Medicine 😂' },
     ],
   },
 
-  // Health Content - Eye Health - Optimized for Instant Action
-  eye_health_tips: {
+  // Health Content - General Health - Optimized for Instant Action
+  general_health_tips: {
     displayName: '@HealthShotsDaily',
     subCategories: [
-      { key: 'screen_damage', displayName: 'Your Phone Is Killing Your Eyes 📱' },
-      { key: 'eye_exercises', displayName: '10-Second Eye Relief 👁️' },
-      { key: 'vision_foods', displayName: 'This Food Improves Eyesight 🥕' },
-      { key: 'eye_protection', displayName: 'Save Your Eyes Daily 🌟' },
-      { key: 'computer_strain', displayName: 'Fix Screen Strain Instantly 💻' },
-      { key: 'vision_myths', displayName: 'Eye Health Myth BUSTED 🔍' },
-      { key: 'quick_eye_care', displayName: 'Instant Eye Care Hack ⚡' }
+      { key: 'heart_health', displayName: 'Heart Health Tips ❤️' },
+      { key: 'digestive_wellness', displayName: 'Digestive Health 🍉' },
+      { key: 'skin_health', displayName: 'Healthy Skin Hacks ✨' },
+      { key: 'joint_support', displayName: 'Joint & Bone Health 💪' },
+      { key: 'immune_boosters', displayName: 'Immune System Tips 🛡️' },
+      { key: 'hydration_facts', displayName: 'Hydration Facts 💧' },
+      { key: 'energy_boosts', displayName: 'Natural Energy Boosts ⚡' },
+      { key: 'lung_health', displayName: 'Lung Health 🫁' },
+      { key: 'eye_care', displayName: 'Protect Your Eyes 👁️' },
+      { key: 'posture_tips', displayName: 'Better Posture Tips 🚶' },
+      { key: 'nutrition_hacks', displayName: 'Nutrition Hacks 🥦' },
+      { key: 'fitness_motivation', displayName: 'Fitness Motivation 👟' },
+      { key: 'metabolism_myths', displayName: 'Metabolism Myths 📈' },
+      { key: 'sun_safety', displayName: 'Sun Safety ☀️' },
+      { key: 'gut_microbiome', displayName: 'Gut Health 🦠' },
+      { key: 'oral_health', displayName: 'Oral Health 🦷' },
+      { key: 'healthy_aging', displayName: 'Healthy Aging ⏳' },
     ],
   },
 

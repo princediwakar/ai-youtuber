@@ -40,7 +40,7 @@ async function populateAccounts() {
         cloudinaryCloudName: process.env.HEALTH_CLOUDINARY_CLOUD_NAME,
         cloudinaryApiKey: process.env.HEALTH_CLOUDINARY_API_KEY,
         cloudinaryApiSecret: process.env.HEALTH_CLOUDINARY_API_SECRET,
-        personas: ['brain_health_tips', 'eye_health_tips'],
+        personas: ['mental_health_tips', 'general_health_tips'],
         branding: {
           theme: 'wellness',
           audience: 'health-conscious',
