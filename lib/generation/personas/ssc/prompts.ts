@@ -174,6 +174,7 @@ FACT SELECTION CRITERIA:
 • RELEVANCE: Focus on information that **separates high scorers from the rest**.
 • DIFFICULTY: Important enough to be tested but easy to memorize with your tip.
 • IMPACT: Provide knowledge that immediately **IMPROVES EXAM SCORE**.
+• NOVELTY: MUST generate a *different* fact than previous requests. Do NOT repeat common examples. Use this seed for variation: ${timeMarker}
 
 RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
 {
@@ -203,6 +204,7 @@ REQUIREMENTS:
 • ENGAGEMENT: Create immediate "exam preparation upgrade" value
 • DEFINITION: Provide clear explanation that improves exam readiness (under 100 characters)
 • USAGE: Include practical example that shows exam application (under 120 characters)
+• NOVELTY: MUST be a different fact than previous requests. Avoid common examples. Use this seed for variation: ${timeMarker}
 
 OUTPUT FORMAT:
 • "fact_title": Exam-relevant fact/concept specifically relevant to "${topic}"
@@ -256,6 +258,7 @@ QUESTION CRAFTING:
 • FACTUAL: Use **accurate, verified** information.
 • EXAM-FOCUSED: Frame questions in typical **SSC difficulty and pattern**.
 • IMPACT: Provide knowledge that gives **immediate exam advantage and saves study time**.
+• NOVELTY: Pick a *different* fact/angle from the RECENT DEVELOPMENTS. Do not repeat questions. Use this seed for variation: ${timeMarker}
 
 MANDATORY OUTPUT:
 • "hook": Generate contextual hook based on the specific SSC topic being tested (15-25 chars, reference actual subject/strategy/fact). Examples: "SSC History trick! 📚", "Geography hack! 🌍", "Math shortcut! ⚡"
@@ -279,6 +282,7 @@ REQUIREMENTS:
 • ENGAGING: Create immediate "current affairs upgrade" value for aspirants
 • EXPLANATION: Provide insight that improves exam performance (under 120 characters)
 • CTA: Use engaging SSC exam CTA (under 80 chars - make it compelling and action-oriented)
+• NOVELTY: Pick a *different* fact/angle from the RECENT DEVELOPMENTS. Do not repeat questions. Use this seed for variation: ${timeMarker}
 
 Make aspirants feel updated and ready for their SSC current affairs section. [${timeMarker}-${tokenMarker}]`;
   }
@@ -314,6 +318,7 @@ CONTENT STYLE:
 • Make people feel more prepared, not anxious
 
 QUESTION REQUIREMENTS:
+• NOVELTY: MUST be a different question than previous requests. Avoid the most common examples for this topic. Use this seed to ensure variation: ${timeMarker}
 • "hook": Simple, helpful hook (15-25 chars) about the SSC topic
 • "question": Clear exam-style question (MAX 120 chars, NO hook text)
 • "options": A, B, C, D - short, clear options (each MAX 45 chars)
@@ -331,6 +336,9 @@ Create content that makes aspirants feel more prepared and confident. [${timeMar
 TOPIC: "${topic}" - Important SSC exam topics
 
 TONE: Helpful, encouraging, beginner-friendly
+
+REQUIREMENTS:
+• NOVELTY: MUST generate a *different* question than previous requests. Avoid the most common, basic examples for this topic. Use this seed for variation: ${timeMarker}
 
 Make questions that feel like useful study tips, not pressure tests. [${timeMarker}-${tokenMarker}]`;
   }
@@ -366,6 +374,7 @@ CONTENT STYLE:
 • Focus on helping, not creating pressure
 
 CONTENT REQUIREMENTS:
+• NOVELTY: MUST be a different tip than previous requests. Avoid generic advice (e.g., "study more," "use Pomodoro"). Be specific. Use this seed for variation: ${timeMarker}
 • HOOK: Promise a simple, helpful study improvement (under 60 chars)
 • TRADITIONAL_APPROACH: Show the common (slower) way most students study
 • SMART_SHORTCUT: Share an easier, faster way to learn the same thing
@@ -389,4 +398,3 @@ IMPORTANT: Return ONLY the JSON object above. No markdown, no explanations, no a
 
 Create content that makes studying feel easier and more achievable. [${timeMarker}-${tokenMarker}]`;
 }
-

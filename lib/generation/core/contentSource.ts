@@ -71,6 +71,7 @@ async function loadSources(persona: string): Promise<Sources> {
   const sourceFile = personaToFile[persona];
 
   if (!sourceFile) {
+     // REFACTORED: This error is now caught by getDynamicContext to mean "no context needed"
      throw new Error(`No source file mapping found for persona: ${persona}`);
   }
 
@@ -81,7 +82,8 @@ async function loadSources(persona: string): Promise<Sources> {
     return JSON.parse(data);
   } catch (error) {
     console.error(`[Content Source] ❌ CRITICAL: Could not load source file ${sourceFile}.`, error);
-    return { twitter: { handles: [] }, reddit: { subreddits: [] } };
+    // REFACTORED: Throw the error so getDynamicContext can handle it
+    throw new Error(`Failed to read source file: ${sourceFile}`);
   }
 }
 
@@ -98,7 +100,8 @@ function selectRandomSources<T>(items: T[], count: number): T[] {
  */
 async function fetchFromGoogle(topic: string): Promise<string[]> {
   const userAgent = getRandomUserAgent();
-  const query = `${topic} when:3d`;
+  // REFACTORED: Use 7 days for a wider net of "current" affairs
+  const query = `${topic} when:7d`;
   const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
 
   try {
@@ -108,7 +111,6 @@ async function fetchFromGoogle(topic: string): Promise<string[]> {
     });
 
     if (!response.ok) {
-      // Throw an error if the response is not ok
       throw new Error(`Google News responded with status: ${response.status}`);
     }
 
@@ -116,12 +118,10 @@ async function fetchFromGoogle(topic: string): Promise<string[]> {
     const parsed = await parseStringPromise(xml);
     const items: RssItem[] = parsed?.rss?.channel?.[0]?.item?.slice(0, 3) ?? [];
     
-    // Use map to transform items into an array of titles
     return items.map(item => item.title?.[0]).filter((title): title is string => !!title);
 
   } catch (error) {
     console.warn(`[Content Source] ⚠️ Failed to fetch from Google News:`, error);
-    // Return an empty array on failure
     return [];
   }
 }
@@ -136,7 +136,8 @@ async function fetchFromTwitter(sources: Sources, topic: string): Promise<string
 
   for (const handle of selectedHandles) {
     const cleanHandle = handle.replace('@', '');
-    const query = `site:x.com/${cleanHandle} "${topic}" when:3d`;
+    // REFACTORED: Use 7 days for a wider net
+    const query = `site:x.com/${cleanHandle} "${topic}" when:7d`;
     const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
 
     try {
@@ -170,7 +171,13 @@ async function fetchFromReddit(sources: Sources, topic: string): Promise<string[
     let results: string[] = [];
 
     for (const subreddit of selectedSubreddits) {
-        const url = `https://www.reddit.com/r/${subreddit}/hot.json?limit=5`;
+        // REFACTORED: Use Reddit's search API. 
+        // q=topic: Search for the topic
+        // sort=top&t=week: Get the most important posts from the last week
+        // restrict_sr=on: Only search this subreddit
+        const searchQuery = encodeURIComponent(topic);
+        const url = `https://www.reddit.com/r/${subreddit}/search.json?q=${searchQuery}&sort=top&t=week&restrict_sr=on&limit=3`;
+        
         try {
             const response = await fetchFn(url, {
                 headers: { 'User-Agent': userAgent },
@@ -183,8 +190,8 @@ async function fetchFromReddit(sources: Sources, topic: string): Promise<string[
 
             posts.forEach((post: any) => {
                 const title: string = post.data.title;
-                // A simple check for topic relevance in the title
-                if (title && title.toLowerCase().includes(topic.toLowerCase().substring(0, 5))) {
+                // REFACTORED: No local filtering needed, the search API already found relevant posts.
+                if (title) {
                     results.push(`[Reddit Discussion on r/${subreddit}] ${title}`);
                 }
             });
@@ -192,16 +199,14 @@ async function fetchFromReddit(sources: Sources, topic: string): Promise<string[
             console.warn(`[Content Source] ⚠️ Failed to fetch from Reddit: r/${subreddit}`);
         }
     }
-    return results.slice(0, 3);
+    return results.slice(0, 3); // Return top 3 results overall
 }
 
 // ─────────────────────────────────────────────
 // 🚀 Main API
 // ─────────────────────────────────────────────
 export async function getDynamicContext(persona: string, topic: string): Promise<string> {
-  if (persona !== 'current_affairs' && persona !== 'ssc_current_affairs') {
-    return "";
-  }
+  // REFACTORED: Removed hardcoded persona check. We now let loadSources handle this.
 
   const cacheKey = `${persona}_${topic.toLowerCase().replace(/&/g, 'and').replace(/\s+/g, '_')}`;
   const cached = getCachedContext(cacheKey);
@@ -210,7 +215,9 @@ export async function getDynamicContext(persona: string, topic: string): Promise
   console.log(`[Content Source] 🎯 Fetching real-time context for persona "${persona}" on topic "${topic}"`);
 
   try {
+    // This will throw an error if persona is not in the `personaToFile` map
     const sources = await loadSources(persona);
+    
     // Updated check for the new source structure
     if (!sources || !sources.twitter || !sources.reddit || (sources.twitter.handles.length === 0 && sources.reddit.subreddits.length === 0)) {
         throw new Error("No valid sources found after loading configuration.");
@@ -240,7 +247,16 @@ export async function getDynamicContext(persona: string, topic: string): Promise
     setCachedContext(cacheKey, finalContext);
     return finalContext;
 
-  } catch (error) {
+  } catch (error: any) {
+    // REFACTORED: Catch the "No source file" error specifically
+    if (error?.message?.includes("No source file mapping found")) {
+      // This is not an error. It just means this persona (e.g., 'ssc_history')
+      // doesn't use dynamic context.
+      console.log(`[Content Source] ℹ️ No dynamic context source file for persona "${persona}". Skipping.`);
+      return ""; // Return empty string
+    }
+
+    // This is a *real* error (e.g., file read failed, network timeout)
     console.error(`[Content Source] ❌ Top-level failure in getDynamicContext for "${topic}":`, error);
     return "Could not fetch latest news due to a system error. Using general knowledge.";
   }
