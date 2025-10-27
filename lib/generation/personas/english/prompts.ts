@@ -7,14 +7,14 @@
 import { 
   PromptConfig,
   TopicGuideline,
-  addJsonFormatInstructions // <-- FIX: IMPORT THIS
+  addJsonFormatInstructions // <-- Make sure this is imported
 } from '../../shared/utils';
 
 /**
  * English-specific topic guidelines
  * Moved from topicGuidelines.ts for better organization and reduced dependencies
  */
-// ... (ENGLISH_TOPIC_GUIDELINES remains the same) ...
+// ... (guidelines remain unchanged) ...
 const ENGLISH_TOPIC_GUIDELINES: Record<string, TopicGuideline> = {
   // English Learning - Optimized for 15s Videos
   eng_common_mistakes: {
@@ -72,11 +72,10 @@ function getEnglishTopicGuidelines(topic: string): TopicGuideline | undefined {
  * Generates simplified word format prompt for single-frame videos
  * ENHANCED: Added MCQ-style variability and topic-specific guidelines
  */
-// ... (generateSimplifiedWordPrompt remains the same) ...
 export function generateSimplifiedWordPrompt(config: PromptConfig): string {
-  const { topicData, topic, markers, timingContext, analyticsInsights } = config;
+  const { topicData, topic, markers, timingContext, analyticsInsights, questionFormat = 'simplified_word' } = config; // <-- FIX: Add questionFormat
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getEnglishTopicGuidelines(topic);
+  const guidelines = getEnglishTopicGuidelines(topicData?.key || topic); // <-- FIX: Use topicData.key
   
   const primaryAudience = 'English learners';
   const timingPrefix = timingContext ? `${timingContext.timeOfDay.toUpperCase()} LEARNING` : 'VIRAL LEARNING';
@@ -129,8 +128,10 @@ export function generateSimplifiedWordPrompt(config: PromptConfig): string {
   const topTopicHint = analyticsInsights?.topPerformingTopics?.[0]?.topic ? 
     ` (HINT: Your audience loves content on "${analyticsInsights.topPerformingTopics[0].topic}")` : '';
 
+  let basePrompt: string; // <-- FIX: Declare basePrompt
+
   if (topicData) {
-    return `You are a **VIRAL ENGLISH HUSTLER** creating highly addictive, 15-second vocabulary fixes for YouTube Shorts. Your goal is MAX engagement and growth.
+    basePrompt = `You are a **VIRAL ENGLISH HUSTLER** creating highly addictive, 15-second vocabulary fixes for YouTube Shorts. Your goal is MAX engagement and growth.
 
 TOPIC: "${topicData.displayName}" - ${guidelines?.focus || 'Essential English vocabulary mastery'}
 
@@ -167,12 +168,10 @@ RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
   "format_type": "simplified_word"
 }
 
-CRITICAL: Return EXACTLY ONE JSON object as shown above. Do NOT return an array. Do NOT return multiple objects. The format_type MUST be "simplified_word" exactly. Do NOT use markdown formatting (no triple backticks). Return ONLY the single JSON object above. No markdown, no explanations, no additional content.
-
 [${timeMarker}-${tokenMarker}]`;
   } else {
     // Fallback prompt (less detailed but still high-impact)
-    return `You are an expert English educator creating viral vocabulary content for YouTube Shorts.
+    basePrompt = `You are an expert English educator creating viral vocabulary content for YouTube Shorts.
 
 ENHANCED GENERATION APPROACH: **VIRAL GROWTH HACK** - ${selectedPattern.approach.replace('_', ' ').toUpperCase()}
 • FOCUS: ${selectedPattern.focus}
@@ -200,10 +199,12 @@ RESPONSE FORMAT - OUTPUT ONLY VALID JSON (no other text):
   "format_type": "simplified_word"
 }
 
-CRITICAL: Return EXACTLY ONE JSON object as shown above. Do NOT return an array. Do NOT return multiple objects. The format_type MUST be "simplified_word" exactly. Do NOT use markdown formatting (no triple backticks). Return ONLY the single JSON object above. No markdown, no explanations, no additional content.
-
 [${timeMarker}-${tokenMarker}]`;
   }
+
+  // --- FIX: This prompt was missing the JSON formatter call ---
+  // This is a custom formatter for this specific prompt, separate from addJsonFormatInstructions
+  return basePrompt + `\n\nCRITICAL: Return EXACTLY ONE JSON object as shown above. Do NOT return an array. Do NOT return multiple objects. The format_type MUST be "simplified_word" exactly. Do NOT use markdown formatting (no triple backticks). Return ONLY the single JSON object above. No markdown, no explanations, no additional content.`;
 }
 
 /**
@@ -211,11 +212,11 @@ CRITICAL: Return EXACTLY ONE JSON object as shown above. Do NOT return an array.
  * SIMPLIFIED & BEGINNER-FRIENDLY - Based on "90% Say This WRONG" (176 views - best performer)
  */
 export function generateEnglishPrompt(config: PromptConfig): string {
-  const { topicData, topic, markers, questionFormat = 'multiple_choice' } = config; // <-- FIX: Added questionFormat
+  const { topicData, topic, markers, questionFormat = 'multiple_choice' } = config;
   const { timeMarker, tokenMarker } = markers;
-  const guidelines = getEnglishTopicGuidelines(topicData?.key || topic); // <-- FIX: Use topicData.key
+  const guidelines = getEnglishTopicGuidelines(topicData?.key || topic);
 
-  let basePrompt: string; // <-- FIX: Declare basePrompt
+  let basePrompt: string;
 
   if (topicData) {
     basePrompt = `You are a friendly English teacher creating fun vocabulary quizzes for YouTube Shorts.
@@ -236,7 +237,7 @@ QUESTION REQUIREMENTS:
 • "answer": Correct letter (A, B, C, or D)
 • "explanation": Why this matters in simple terms (MAX 120 chars)
 • "cta": Friendly learning CTA under 80 chars
-• "content_type": "${questionFormat}"
+• "content_type": "multiple_choice"
 
 TARGET: English learners who want to improve without feeling judged
 
@@ -251,6 +252,6 @@ TONE: Curious, inviting, beginner-friendly
 Make questions that feel like fun discoveries, not tests. [${timeMarker}-${tokenMarker}]`;
   }
 
-  // --- FIX: Apply the JSON formatting instructions ---
+  // This was already correct, but confirming it's here
   return addJsonFormatInstructions(basePrompt, questionFormat);
 }

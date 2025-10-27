@@ -20,9 +20,19 @@ export interface ValidationResult {
  */
 export function parseAndValidateResponse(content: string, persona: string, layout?: string): ValidationResult {
   try {
-    const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
-    const data = JSON.parse(cleanedContent);
+// --- FIX: Extract JSON block from potential conversational text ---
+const firstBrace = content.indexOf('{');
+const lastBrace = content.lastIndexOf('}');
 
+if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+  throw new Error('No valid JSON object found in the response.');
+}
+
+// Extract the JSON string
+const jsonString = content.substring(firstBrace, lastBrace + 1);
+// --- END FIX ---
+
+const data = JSON.parse(jsonString);
     // Health content validation (supports both true_false and multiple_choice)
     if (persona === 'mental_health_tips' || persona === 'general_health_tips') {
       return validateHealthContent(data, layout);
