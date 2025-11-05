@@ -113,7 +113,7 @@ async function runPipeline(accountId = 'english_shots', layout = null) {
 }
 
 // Define available accounts
-const ACCOUNTS = ['english_shots',];
+const ACCOUNTS = ['health_shots', 'english_shots', 'ssc_shots', 'astronomy_shots'];
 
 // Get arguments: process.argv[2] is accountId, process.argv[3] is layout
 let accountId = process.argv[2];

@@ -19,23 +19,34 @@ const englishGenerationPattern: HourlySchedule =
   1: ['english_vocab_builder'],
   5: ['english_vocab_builder'],
   9: ['english_vocab_builder'],
-  16: ['english_vocab_builder']
+  16: ['english_vocab_builder'],
+  18: ['english_vocab_builder'],
+
 };
 const healthGenerationPattern: HourlySchedule =
 {
   2: ['mental_health_tips'],
   6: ['general_health_tips'],
+  12: ['mental_health_tips'],
+  15: ['general_health_tips'],
+  18: ['general_health_tips'],
+
 };
 const sscGenerationPattern: HourlySchedule =
 {
   3: ['ssc_shots'],
-  11: ['ssc_shots']
+  11: ['ssc_shots'],
+  13: ['ssc_shots'],
+  14: ['ssc_shots'],
+  18: ['ssc_shots'],
+
 };
 const astronomyGenerationPattern: HourlySchedule =
 {
   8: ['space_facts_quiz'],
   12: ['space_facts_quiz'],
-  16: ['space_facts_quiz'],
+  17: ['space_facts_quiz'],
+  18: ['space_facts_quiz'],
 };
 
 // ===================================================================
@@ -68,7 +79,7 @@ const healthWeekdayUpload: HourlySchedule = {
 const healthWeekendUpload: HourlySchedule = {
   8: ['mental_health_tips'],     // Upload for 10 AM weekend leisure
   12: ['general_health_tips'],      // Upload for 2-3 PM weekend browsing
-  16: ['mental_health_tips', 'general_health_tips'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
+  16: ['mental_health_tips'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
   19: ['general_health_tips'],      // Evening upload
 };
 
@@ -85,7 +96,7 @@ const sscWeekdayUpload: HourlySchedule = {
 const sscWeekendUpload: HourlySchedule = {
   9: ['ssc_shots'],             // Upload for 11 AM weekend study
   12: ['ssc_shots'],            // Upload for 2-3 PM deep dive
-  16: ['ssc_shots', 'ssc_shots'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
+  16: ['ssc_shots'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
   19: ['ssc_shots'],            // Upload for evening block
 };
 
@@ -102,7 +113,7 @@ const astronomyWeekdayUpload: HourlySchedule = {
 const astronomyWeekendUpload: HourlySchedule = {
   9: ['space_facts_quiz'],      // Upload for 11 AM weekend curiosity
   14: ['space_facts_quiz'],     // Upload for 4 PM "explore universe" (PRE-GOLDEN)
-  16: ['space_facts_quiz', 'space_facts_quiz'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
+  16: ['space_facts_quiz'], // **SATURDAY 4 PM GOLDEN HOUR (DOUBLE)**
   20: ['space_facts_quiz'],     // Upload for late evening
 };
 
