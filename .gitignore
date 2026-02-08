@@ -35,4 +35,4 @@ logs
 .vercel
 
 debug-frames/
-generated-videos/
+generated-videos/scripts/apply-env.sh
